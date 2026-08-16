@@ -2096,7 +2096,8 @@ Cera rápida protectora
         // El pelo arranca en y=38, ARRIBA de los ojos (que están en y=50). Es el mismo
         // cuidado que en 3D: más abajo, el fleco le cae sobre la mirada.
         function trazoPeinado(estilo, color) {
-            const casquete = `<path d="M20 50 Q18 12 50 12 Q82 12 80 50 Q75 31 50 30 Q25 31 20 50 Z" fill="${color}"/>`;
+            const casquete = `<path d="M21 43 Q20 12 50 12 Q80 12 79 43
+                                       Q77 30 66 27 Q58 34 44 31 Q29 30 21 43 Z" fill="${color}"/>`;
 
             switch (estilo) {
                 case 'rizado':
@@ -2330,35 +2331,42 @@ Cera rápida protectora
                              le dicen "los gemelos son malos". Una cara perfectamente
                              simétrica se lee como dibujo técnico, no como personaje.
                              Es el mismo criterio que ya se aplicó en el 3D. -->
-                        <path d="M31 37.3 Q38 33.6 45 36.7" stroke="${a.colorCabello}" stroke-width="3.4" fill="none" stroke-linecap="round"/>
-                        <path d="M55 38 Q62 35.1 69 38.4" stroke="${a.colorCabello}" stroke-width="3.2" fill="none" stroke-linecap="round"/>
+                        <path d="M31.5 39.6 Q37 36.3 42.8 39.2" stroke="${a.colorCabello}" stroke-width="3.4" fill="none" stroke-linecap="round"/>
+                        <path d="M57.2 40 Q63 37.3 68.5 40.4" stroke="${a.colorCabello}" stroke-width="3.2" fill="none" stroke-linecap="round"/>
                         <!-- OJOS en cuatro capas: blanco, iris, pupila y brillo.
                              El blanco alrededor es lo que hace que haya MIRADA y no dos manchas.
                              Van juntos en un grupo para poder cerrarlos de una sola vez. -->
                         <g class="av-ojos">
-                            <ellipse cx="38" cy="50" rx="7" ry="8.6" fill="#fdfcfa"/>
-                            <ellipse cx="62" cy="50" rx="7" ry="8.6" fill="#fdfcfa"/>
-                            <circle cx="38" cy="50.5" r="4.6" fill="${a.colorOjos}"/>
-                            <circle cx="62" cy="50.5" r="4.6" fill="${a.colorOjos}"/>
-                            <circle cx="38" cy="50.5" r="2.5" fill="#141018" stroke="none"/>
-                            <circle cx="62" cy="50.5" r="2.5" fill="#141018" stroke="none"/>
-                            <circle cx="36" cy="47.5" r="1.9" fill="#ffffff" stroke="none"/>
-                            <circle cx="60" cy="47.5" r="1.9" fill="#ffffff" stroke="none"/>
-                            <circle cx="40.2" cy="53.2" r="0.95" fill="#ffffff" opacity="0.9" stroke="none"/>
-                            <circle cx="64.2" cy="53.2" r="0.95" fill="#ffffff" opacity="0.9" stroke="none"/>
+                            <ellipse cx="37" cy="51" rx="5.5" ry="6.8" fill="#fdfcfa" stroke-width="1.5"/>
+                            <ellipse cx="63" cy="51" rx="5.5" ry="6.8" fill="#fdfcfa" stroke-width="1.5"/>
+                            <circle cx="37.4" cy="51.4" r="3.6" fill="${a.colorOjos}" stroke="none"/>
+                            <circle cx="63.4" cy="51.4" r="3.6" fill="${a.colorOjos}" stroke="none"/>
+                            <circle cx="37.4" cy="51.4" r="1.9" fill="#141018" stroke="none"/>
+                            <circle cx="63.4" cy="51.4" r="1.9" fill="#141018" stroke="none"/>
+                            <circle cx="35.8" cy="49.2" r="1.5" fill="#ffffff" stroke="none"/>
+                            <circle cx="61.8" cy="49.2" r="1.5" fill="#ffffff" stroke="none"/>
+                            <circle cx="39.1" cy="53.3" r="0.8" fill="#ffffff" opacity="0.9" stroke="none"/>
+                            <circle cx="65.1" cy="53.3" r="0.8" fill="#ffffff" opacity="0.9" stroke="none"/>
+                            <!-- PESTAÑAS: el trazo mas grueso sobre el parpado. Da caracter
+                                 y es de lo que mas se extrana en una cara ilustrada. -->
+                            <path d="M31.6 47.6 Q37 43.6 42.4 47.6" stroke="#241a2e" stroke-width="2.4"
+                                  fill="none" stroke-linecap="round"/>
+                            <path d="M57.6 47.6 Q63 43.6 68.4 47.6" stroke="#241a2e" stroke-width="2.4"
+                                  fill="none" stroke-linecap="round"/>
                         </g>
                         <!-- cachetes rosados: el detalle que más los acerca a tus dibujos -->
                         <ellipse cx="29" cy="62" rx="7.5" ry="5.2" fill="url(#${id}-cachete)" stroke="none"/>
                         <ellipse cx="71" cy="62" rx="7.5" ry="5.2" fill="url(#${id}-cachete)" stroke="none"/>
                         <!-- nariz: chiquita, pero sin ella la cara es una máscara -->
-                        <ellipse cx="50" cy="59" rx="2.6" ry="2" fill="${oscurecer(a.piel, 0.9)}"/>
+                        <ellipse cx="50" cy="59.4" rx="2.9" ry="2.3" fill="${oscurecer(a.piel, 0.93)}" stroke="none"/>
+                        <ellipse cx="49.2" cy="58.7" rx="1.1" ry="0.8" fill="#ffffff" opacity="0.22" stroke="none"/>
                         <!-- boca -->
                         <!-- BOCA con interior. Era una sola raya; con el hueco oscuro
                              detrás y un puntito de brillo en el labio, la sonrisa deja
                              de ser un trazo y se lee como una boca. -->
-                        <path d="M44 66 Q50 72.4 56 66 Q50 69.6 44 66 Z" fill="#7d3b38" stroke="none"/>
-                        <path d="M44 66 Q50 71.5 56 66" stroke="#a8564e" stroke-width="2.6" fill="none" stroke-linecap="round"/>
-                        <ellipse cx="52.6" cy="69.4" rx="1.5" ry="0.8" fill="#ffffff" opacity="0.35" stroke="none"/>
+                        <path d="M42.5 65.5 Q50 74.5 57.5 65.5 Q50 70.6 42.5 65.5 Z" fill="#7d3b38" stroke="none"/>
+                        <path d="M42.5 65.5 Q50 73.4 57.5 65.5" stroke="#a8564e" stroke-width="2.6" fill="none" stroke-linecap="round"/>
+                        <ellipse cx="53.6" cy="70.6" rx="1.7" ry="0.9" fill="#ffffff" opacity="0.35" stroke="none"/>
                         ${trazoAccesorio(a.accesorio)}
                     </g>
                     </g>
@@ -2582,7 +2590,7 @@ Cera rápida protectora
 
         // La versión del archivo. Sirve para que Tristán confirme de un vistazo si
         // el que abrió es el nuevo — ya pasó dos veces que probaba una copia vieja.
-        const VERSION_APP = '2026.08.15c';
+        const VERSION_APP = '2026.08.15d';
 
         function pintarVersion() {
             const el = document.getElementById('marca-version');
@@ -6334,10 +6342,36 @@ Cera rápida protectora
             btn.disabled = true;
             btn.textContent = "Guardando...";
 
+            let yaSeDestrabo = false;
             const restaurarBoton = () => {
+                yaSeDestrabo = true;
                 btn.disabled = false;
                 btn.textContent = etiquetaOriginal;
             };
+
+            // 🐛 EL BOTÓN SE QUEDABA EN "Guardando..." PARA SIEMPRE.
+            //
+            // Es el MISMO defecto que ya tuvimos en el login: el .then y el .catch
+            // estaban bien, pero si Firebase no contesta NUNCA no entra a ninguno
+            // de los dos, y el botón se queda trabado sin error, sin explicación y
+            // sin más salida que recargar. Le pasó a Tristán en la app publicada.
+            //
+            // Igual que allá: límite de tiempo y aviso con el motivo. La cita puede
+            // haberse guardado o no, así que se le dice que revise "Mis citas"
+            // antes de volver a intentar — para que no acabe con dos citas.
+            const RENDIRSE_AL_GUARDAR = 20000;
+            setTimeout(() => {
+                if (yaSeDestrabo) return;
+                restaurarBoton();
+                mostrarAviso("⚠️ La conexión está muy lenta y no pudimos confirmar tu cita.\n\n"
+                    + "Antes de intentar de nuevo, revisa \"Mis citas\": puede que sí se haya guardado.");
+            }, RENDIRSE_AL_GUARDAR);
+
+            if (!hayConexionParaEntrar()) {
+                restaurarBoton();
+                mostrarAviso("⚠️ No hay conexión a internet.\n\nRevisa tu wifi o tus datos e intenta de nuevo.");
+                return;
+            }
 
             if (baseLista() && usuarioActual) {
                 // Primero APARTAMOS el horario, y sólo si lo logramos guardamos la cita.
@@ -6374,18 +6408,36 @@ Cera rápida protectora
                             console.error("Error guardando la orden:", error);
                             liberarHuecos(huecos).catch(() => {});
                             restaurarBoton();
-                            mostrarAviso("⚠️ No se pudo guardar tu cita. Revisa tu conexión e intenta de nuevo.");
+                            mostrarAviso("⚠️ No se pudo guardar tu cita.\n\n" + motivoDeFirebase(error));
                         });
                 })
                 .catch(error => {
                     console.error("Error apartando el horario:", error);
                     restaurarBoton();
-                    mostrarAviso("⚠️ No pudimos apartar tu horario. Revisa tu conexión e intenta de nuevo.");
+                    mostrarAviso("⚠️ No pudimos apartar tu horario.\n\n" + motivoDeFirebase(error));
                 });
             } else {
                 restaurarBoton();
                 mostrarAviso("⚠️ No hay sesión activa. Vuelve a iniciar sesión para agendar.");
             }
+        }
+
+        // Traduce el error de la base de datos a algo que un cliente entienda — y que
+        // a Tristán le diga qué revisar. Sin esto, "revisa tu conexión" sale igual
+        // cuando el problema son las Reglas de Firebase, y nadie sabe dónde buscar.
+        function motivoDeFirebase(error) {
+            const codigo = (error && (error.code || error.message) || "").toString().toUpperCase();
+            if (codigo.includes("PERMISSION_DENIED")) {
+                return "El servidor rechazó el permiso. Suele ser que las Reglas de Firebase "
+                     + "no dejan guardar algún dato de la cita. Mándale captura de esto a Tristán.";
+            }
+            if (codigo.includes("NETWORK") || codigo.includes("UNAVAILABLE") || codigo.includes("DISCONNECT")) {
+                return "No hay conexión con el servidor. Revisa tu wifi o tus datos e intenta de nuevo.";
+            }
+            if (codigo.includes("TIMEOUT") || codigo.includes("TARDÓ")) {
+                return "El servidor tardó demasiado. Intenta de nuevo en un momento.";
+            }
+            return "Revisa tu conexión e intenta de nuevo.\n\n(" + (error && error.message ? error.message : "sin detalle") + ")";
         }
 
         // Llena y muestra la pantalla de confirmación con el resumen completo de la cita.
