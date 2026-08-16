@@ -575,6 +575,16 @@
         }
         .chip.morado { border-color: var(--morado); color: var(--morado-claro); }
         .aviso-aprox { font-size: 11px; color: #fca5a5; margin-top: 8px; line-height: 1.5; }
+        /* Aviso de recordatorios pendientes para mañana. Va arriba de la lista del
+           día y sólo aparece parado en HOY, porque ahí sí es una tarea del día. */
+        .aviso-recordatorios {
+            display: flex; flex-direction: column; gap: 10px; align-items: flex-start;
+            border: 1px solid var(--morado); border-radius: 8px;
+            background: rgba(139, 92, 246, 0.10);
+            padding: 12px 14px; margin-bottom: 16px;
+            font-size: 12px; line-height: 1.55; color: var(--tenue);
+        }
+        .aviso-recordatorios b { color: var(--morado-claro); }
         .chip.verde { border-color: rgba(134, 239, 172, 0.45); color: #86efac; }
         .chip.rojo  { border-color: rgba(252, 165, 165, 0.35); color: #fca5a5; }
         .estado-cita { font-size: 9.5px; font-weight: 700; letter-spacing: 0.22em;
@@ -2100,9 +2110,14 @@ Cera rápida protectora
                                        Q77 30 66 27 Q58 34 44 31 Q29 30 21 43 Z" fill="${color}"/>
                     <!-- MECHONES: cortes que separan el pelo en capas. Sin ellos es
                          una masa de color y se lee como gorro, no como cabello. -->
-                    <path d="M31 26 Q38 17 47 20 Q40 22 35 30 Z" fill="${color}" opacity="0.55" stroke="none"/>
-                    <path d="M55 19 Q65 19 71 28 Q64 22 55 24 Z" fill="${color}" opacity="0.55" stroke="none"/>
-                    <path d="M42 14 Q50 11 57 14 Q50 16 42 14 Z" fill="#ffffff" opacity="0.16" stroke="none"/>`;
+                    <path d="M30 30 Q36 18 47 19.5 Q39 23 34.5 32 Z" fill="#000000" opacity="0.13" stroke="none"/>
+                    <path d="M56 19 Q66 20 71.5 30 Q64.5 23.5 55 23.5 Z" fill="#000000" opacity="0.13" stroke="none"/>
+                    <!-- Un brillo LARGO y afilado, del lado por donde entra la luz.
+                         Antes eran tres parches del mismo color a media opacidad que,
+                         con el brillo de vinil encima, dejaban una mancha gris
+                         angular en la coronilla en vez de leerse como cabello. -->
+                    <path d="M34 24 Q42 14.5 54 14.8 Q43 17.6 37.5 27 Z"
+                          fill="#ffffff" opacity="0.19" stroke="none"/>`;
 
             switch (estilo) {
                 case 'rizado':
@@ -2204,8 +2219,12 @@ Cera rápida protectora
             } else if (a.ropa === 'sudadera') {
                 detalle = `<g>
                     <path d="M36 82 Q50 92 64 82 Q58 78 50 78 Q42 78 36 82 Z" fill="${sombra}"/>
-                    <path d="M46 88 L46 100" stroke="#f5f5f5" stroke-width="2.5" stroke-linecap="round"/>
-                    <path d="M54 88 L54 100" stroke="#f5f5f5" stroke-width="2.5" stroke-linecap="round"/></g>`;
+                    <path d="M46.2 88 Q45.2 94 46 100.5" stroke="#f5f5f5" stroke-width="2.1"
+                          fill="none" stroke-linecap="round"/>
+                    <path d="M54 88 Q55.2 94.5 54.4 101.5" stroke="#f5f5f5" stroke-width="2.1"
+                          fill="none" stroke-linecap="round"/>
+                    <circle cx="46" cy="101.6" r="1.5" fill="#f5f5f5" stroke="none"/>
+                    <circle cx="54.4" cy="102.6" r="1.5" fill="#f5f5f5" stroke="none"/></g>`;
             }
 
             return `
@@ -2215,10 +2234,20 @@ Cera rápida protectora
                      un hueco entre él y el cuerpo — que es justo lo que hacía que los
                      brazos se vieran como salchichas pegadas al lado de la figura.
                      Un trazo que ARRANCA DENTRO del torso no puede despegarse. -->
-                <path d="M43.4 ${piernaY} L42.6 ${piernaY + altoPierna}" stroke="url(#${id}-pantalon)"
-                      stroke-width="12.5" fill="none" stroke-linecap="round"/>
-                <path d="M56.6 ${piernaY} L57.4 ${piernaY + altoPierna}" stroke="url(#${id}-pantalon)"
-                      stroke-width="12.5" fill="none" stroke-linecap="round"/>
+                <!-- ⚠️ Los brazos y las piernas eran las ÚNICAS piezas SIN línea de
+                     contorno, porque al dibujarse como trazo su propio "stroke" ya lo
+                     ocupa el color de la ropa. Que unas lleven línea y otras no es
+                     un descuido que se nota. Se resuelve dibujando cada una DOS
+                     VECES: primero el trazo oscuro más ancho, luego el de color
+                     encima. Lo que asoma por la orilla es la línea. -->
+                <path d="M42.6 ${piernaY} L42.0 ${piernaY + altoPierna}" stroke="#2e2440"
+                      stroke-width="${10.4 + LINEA_SILUETA * 2}" fill="none" stroke-linecap="round"/>
+                <path d="M57.4 ${piernaY} L58.0 ${piernaY + altoPierna}" stroke="#2e2440"
+                      stroke-width="${10.4 + LINEA_SILUETA * 2}" fill="none" stroke-linecap="round"/>
+                <path d="M42.6 ${piernaY} L42.0 ${piernaY + altoPierna}" stroke="url(#${id}-pantalon)"
+                      stroke-width="10.4" fill="none" stroke-linecap="round"/>
+                <path d="M57.4 ${piernaY} L58.0 ${piernaY + altoPierna}" stroke="url(#${id}-pantalon)"
+                      stroke-width="10.4" fill="none" stroke-linecap="round"/>
                 <!-- Zapatos GRANDES, con suela clara. En un juguete de diseñador el
                      calzado es lo que asienta la figura: chiquitos, el personaje se
                      ve de palito y sin base. -->
@@ -2231,6 +2260,35 @@ Cera rápida protectora
                 <path d="M66.9 133.4 Q66.4 137.9 58.2 137.9 Q49.7 137.9 49.6 133.8 Q58 136.4 66.9 133.4 Z"
                       fill="#f2f0ee" opacity="0.95" stroke="none"/>
                 ${cuello}
+                <!-- Cada brazo va en su propia envoltura, con el pivote EN EL HOMBRO:
+                     así se mece colgando en vez de deslizarse de lado. Los dos llevan
+                     ritmos distintos a propósito — dos brazos meciéndose exactamente
+                     igual se ven de robot.
+
+                     ⚠️ VAN ANTES DEL TORSO, o sea POR DETRÁS. Dibujados encima, el
+                     contorno oscuro del brazo arrancaba dentro del pecho y se veía
+                     como una raya suelta cruzando el cuerpo — la línea más obviamente
+                     equivocada de todo el dibujo. Detrás, el torso le tapa la mitad de
+                     adentro y sólo asoma el borde de afuera, que es lo que se quiere.
+                     Además es lo correcto: un brazo que cuelga va detrás del cuerpo. -->
+                <g class="av-brazo-izq">
+                    <path d="M30.5 88 Q23.8 96 21.8 106.5" stroke="#2e2440"
+                          stroke-width="${11.5 + LINEA_SILUETA * 2}" fill="none" stroke-linecap="round"/>
+                    <path d="M30.5 88 Q23.8 96 21.8 106.5" stroke="url(#${id}-ropa)" stroke-width="11.5"
+                          fill="none" stroke-linecap="round"/>
+                    <path d="M22.6 102.5 Q22.1 104.5 21.8 106.5" stroke="${sombra}" stroke-width="11.5"
+                          fill="none" stroke-linecap="butt"/>
+                    <circle cx="21.4" cy="110.8" r="5.0" fill="url(#${id}-piel)"/>
+                </g>
+                <g class="av-brazo-der">
+                    <path d="M69.5 88 Q76.2 96 78.2 106.5" stroke="#2e2440"
+                          stroke-width="${11.5 + LINEA_SILUETA * 2}" fill="none" stroke-linecap="round"/>
+                    <path d="M69.5 88 Q76.2 96 78.2 106.5" stroke="url(#${id}-ropa)" stroke-width="11.5"
+                          fill="none" stroke-linecap="round"/>
+                    <path d="M77.4 102.5 Q77.9 104.5 78.2 106.5" stroke="${sombra}" stroke-width="11.5"
+                          fill="none" stroke-linecap="butt"/>
+                    <circle cx="78.6" cy="110.8" r="5.0" fill="url(#${id}-piel)"/>
+                </g>
                 ${torso}
                 <!-- La sombra que la cabeza le echa al cuerpo. Sin esto la cabeza
                      se ve pegada como calcomanía en vez de apoyada encima. -->
@@ -2240,32 +2298,23 @@ Cera rápida protectora
                      el borde recto del recorte y se leía como una mancha, no como luz. -->
                 <path d="M35 86 Q42 82 47 84 L45 112 Q39 113 35 111 Z" fill="url(#${id}-brillo)" stroke="none"/>
                 ${detalle}
-                <!-- Cada brazo va en su propia envoltura, con el pivote EN EL HOMBRO:
-                     así se mece colgando en vez de deslizarse de lado. Los dos llevan
-                     ritmos distintos a propósito — dos brazos meciéndose exactamente
-                     igual se ven de robot. -->
-                <g class="av-brazo-izq">
-                    <path d="M31 89 Q23.8 96 21.8 106.5" stroke="url(#${id}-ropa)" stroke-width="11.5"
-                          fill="none" stroke-linecap="round"/>
-                    <path d="M22.6 102.5 Q22.1 104.5 21.8 106.5" stroke="${sombra}" stroke-width="11.9"
-                          fill="none" stroke-linecap="butt"/>
-                    <circle cx="21.4" cy="110.8" r="5.0" fill="url(#${id}-piel)"/>
-                </g>
-                <g class="av-brazo-der">
-                    <path d="M69 89 Q76.2 96 78.2 106.5" stroke="url(#${id}-ropa)" stroke-width="11.5"
-                          fill="none" stroke-linecap="round"/>
-                    <path d="M77.4 102.5 Q77.9 104.5 78.2 106.5" stroke="${sombra}" stroke-width="11.9"
-                          fill="none" stroke-linecap="butt"/>
-                    <circle cx="78.6" cy="110.8" r="5.0" fill="url(#${id}-piel)"/>
-                </g>
                 <!-- cuello de la prenda: separa la cabeza del cuerpo -->
-                <path d="M41 82 Q50 88.5 59 82" stroke="${sombra}" stroke-width="3.4" fill="none" stroke-linecap="round"/>`;
+                <path d="M41 82 Q50 88.5 59 82" stroke="${sombra}" stroke-width="3.0" fill="none" stroke-linecap="round"/>`;
         }
 
         // Cada dibujo necesita su propio juego de degradados: si dos personajes en la
         // misma pantalla usaran los mismos identificadores, el segundo se pintaría con
         // los colores del primero.
         let contadorAvatares = 0;
+
+        // JERARQUÍA DE LÍNEA. Los tres grosores del dibujo, en un solo lugar.
+        // Todo iba a 1.5 — cabeza, oreja, zapato, esponja, ojo, todo igual — y eso es
+        // exactamente lo que hace que un dibujo se lea como hecho por alguien que
+        // empieza. En ilustración la línea de afuera es gruesa y la de adentro
+        // delgada: así el ojo entiende sin pensarlo qué pieza está enfrente de cuál.
+        const LINEA_SILUETA  = 2.4;   // el borde de la figura contra el fondo
+        const LINEA_INTERIOR = 1.25;  // piezas que van dentro de la silueta
+        const LINEA_FINA     = 0.85;  // detalle: pliegues, costuras
 
         // Devuelve el SVG completo del personaje. `clase` permite animarlo desde CSS.
         function dibujarAvatar(config, clase) {
@@ -2360,9 +2409,16 @@ Cera rápida protectora
                        Yo lo había descartado argumentando que sobre fondo negro no se
                        vería — razonamiento equivocado: por dentro sí se ve, que es
                        donde más trabaja, y por fuera el halo morado hace la silueta.
-                       Va como stroke heredado en el grupo, así todas las piezas lo
-                       toman con un solo valor y la línea queda pareja. -->
-                  <g class="av-gesto" stroke="#2e2440" stroke-width="1.5"
+                       ⚠️ PERO NO TODAS LAS LÍNEAS VAN DEL MISMO GROSOR — ése era el
+                       error, y es EL delator de un dibujo de principiante. Antes
+                       todo iba a 1.5: la cabeza, la oreja, el zapato, la esponja,
+                       el ojo. Un dibujo profesional tiene JERARQUÍA de línea:
+                         · gruesa en la silueta de afuera (LINEA_SILUETA)
+                         · delgada en las piezas de adentro (LINEA_INTERIOR)
+                         · finísima o ninguna en el detalle (LINEA_FINA)
+                       Es lo que hace que el ojo entienda qué está enfrente de qué.
+                       El grupo lleva la gruesa; las piezas de adentro la pisan. -->
+                  <g class="av-gesto" stroke="#2e2440" stroke-width="${LINEA_SILUETA}"
                      stroke-linejoin="round" stroke-linecap="round">
                     ${trazoCuerpo(a, id)}
                     <g class="av-cabeza-gesto">
@@ -2376,10 +2432,10 @@ Cera rápida protectora
                              bolita. -->
                         <ellipse cx="23.5" cy="54" rx="4.6" ry="5.4" fill="url(#${id}-piel)"/>
                         <ellipse cx="76.5" cy="54" rx="4.6" ry="5.4" fill="url(#${id}-piel)"/>
-                        <path d="M22.6 51.6 Q20.6 54 22.8 56.6" stroke="${oscurecer(a.piel, 0.84)}"
-                              stroke-width="1.2" fill="none" stroke-linecap="round"/>
+                        <path d="M22.7 51.9 Q20.9 54 22.9 56.3" stroke="${oscurecer(a.piel, 0.84)}"
+                              stroke-width="${LINEA_FINA}" fill="none" stroke-linecap="round"/>
                         <path d="M77.4 51.6 Q79.4 54 77.2 56.6" stroke="${oscurecer(a.piel, 0.84)}"
-                              stroke-width="1.2" fill="none" stroke-linecap="round"/>
+                              stroke-width="${LINEA_FINA}" fill="none" stroke-linecap="round"/>
                         <!-- cabeza -->
                         <!-- LA CABEZA ERA UN rectángulo redondeado (rect con rx),
                              que es la forma más floja que existe para una cabeza — no
@@ -2398,17 +2454,22 @@ Cera rápida protectora
                              le dicen "los gemelos son malos". Una cara perfectamente
                              simétrica se lee como dibujo técnico, no como personaje.
                              Es el mismo criterio que ya se aplicó en el 3D. -->
-                        <!-- Más delgadas y más cortas: a 3.4 de grosor y casi rectas
-                             se leían como dos brochazos enojados, y le daban a todos
-                             los personajes la misma cara de pocos amigos. -->
-                        <path d="M32.6 40.2 Q37.2 37.2 42.2 39.8" stroke="${a.colorCabello}" stroke-width="2.5" fill="none" stroke-linecap="round"/>
-                        <path d="M57.8 40.4 Q62.8 37.9 67.6 40.8" stroke="${a.colorCabello}" stroke-width="2.3" fill="none" stroke-linecap="round"/>
+                        <!-- CEJAS CON PUNTA. Eran dos trazos de grosor PAREJO de punta
+                             a punta — y una ceja de grosor parejo es de lo que más
+                             delata un dibujo hecho por alguien que empieza: ninguna
+                             línea de la naturaleza es igual de gruesa en los extremos
+                             que en medio. Ahora van como figura rellena: gorda en el
+                             centro y afilada en las puntas. Cuesta lo mismo. -->
+                        <path d="M32.2 41.2 Q37.2 36.4 42.6 39.4 Q37.4 39.2 32.2 41.2 Z"
+                              fill="${a.colorCabello}" stroke="none"/>
+                        <path d="M57.4 41.4 Q62.8 37.2 68.0 40.5 Q62.9 39.7 57.4 41.4 Z"
+                              fill="${a.colorCabello}" stroke="none"/>
                         <!-- OJOS en cuatro capas: blanco, iris, pupila y brillo.
                              El blanco alrededor es lo que hace que haya MIRADA y no dos manchas.
                              Van juntos en un grupo para poder cerrarlos de una sola vez. -->
                         <g class="av-ojos">
-                            <ellipse cx="37" cy="51" rx="5.5" ry="6.8" fill="#fdfcfa" stroke-width="1.5"/>
-                            <ellipse cx="63" cy="51" rx="5.5" ry="6.8" fill="#fdfcfa" stroke-width="1.5"/>
+                            <ellipse cx="37" cy="51" rx="5.5" ry="6.8" fill="#fdfcfa" stroke-width="${LINEA_INTERIOR}"/>
+                            <ellipse cx="63" cy="51" rx="5.5" ry="6.8" fill="#fdfcfa" stroke-width="${LINEA_INTERIOR}"/>
                             <circle cx="37.4" cy="51.4" r="3.6" fill="${a.colorOjos}" stroke="none"/>
                             <circle cx="63.4" cy="51.4" r="3.6" fill="${a.colorOjos}" stroke="none"/>
                             <circle cx="37.4" cy="51.4" r="1.9" fill="#141018" stroke="none"/>
@@ -2419,10 +2480,10 @@ Cera rápida protectora
                             <circle cx="65.1" cy="53.3" r="0.8" fill="#ffffff" opacity="0.9" stroke="none"/>
                             <!-- PESTAÑAS: el trazo mas grueso sobre el parpado. Da caracter
                                  y es de lo que mas se extrana en una cara ilustrada. -->
-                            <path d="M31.6 47.6 Q37 43.6 42.4 47.6" stroke="#241a2e" stroke-width="2.4"
-                                  fill="none" stroke-linecap="round"/>
-                            <path d="M57.6 47.6 Q63 43.6 68.4 47.6" stroke="#241a2e" stroke-width="2.4"
-                                  fill="none" stroke-linecap="round"/>
+                            <path d="M31.5 47.9 Q37 43.2 42.5 47.5 Q37 45.6 31.5 47.9 Z"
+                                  fill="#241a2e" stroke="none"/>
+                            <path d="M57.5 47.9 Q63 43.2 68.5 47.5 Q63 45.6 57.5 47.9 Z"
+                                  fill="#241a2e" stroke="none"/>
                         </g>
                         <!-- cachetes rosados: el detalle que más los acerca a tus dibujos -->
                         <ellipse cx="29" cy="62" rx="7.5" ry="5.2" fill="url(#${id}-cachete)" stroke="none"/>
@@ -2434,9 +2495,13 @@ Cera rápida protectora
                         <!-- BOCA con interior. Era una sola raya; con el hueco oscuro
                              detrás y un puntito de brillo en el labio, la sonrisa deja
                              de ser un trazo y se lee como una boca. -->
-                        <path d="M42.5 65.5 Q50 74.5 57.5 65.5 Q50 70.6 42.5 65.5 Z" fill="#7d3b38" stroke="none"/>
-                        <path d="M42.5 65.5 Q50 73.4 57.5 65.5" stroke="#a8564e" stroke-width="2.6" fill="none" stroke-linecap="round"/>
-                        <ellipse cx="53.6" cy="70.6" rx="1.7" ry="0.9" fill="#ffffff" opacity="0.35" stroke="none"/>
+                        <path d="M42.5 65.5 Q50 74.8 57.5 65.5 Q50 70.9 42.5 65.5 Z" fill="#7d3b38" stroke="none"/>
+                        <!-- El labio también AFILADO en las comisuras, no un trazo de
+                             grosor parejo: una boca gruesa en las esquinas se lee
+                             pegada con marcador. -->
+                        <path d="M42.3 65.1 Q50 75.0 57.7 65.1 Q50 71.4 42.3 65.1 Z"
+                              fill="#a8564e" stroke="none"/>
+                        <ellipse cx="53.4" cy="70.2" rx="1.6" ry="0.85" fill="#ffffff" opacity="0.35" stroke="none"/>
                         ${trazoAccesorio(a.accesorio)}
                         <!-- El reflejo de plástico va HASTA ARRIBA, encima del pelo y
                              del accesorio: es luz sobre el material, no una capa más. -->
@@ -2453,11 +2518,11 @@ Cera rápida protectora
                          como un objeto suelto flotando junto al personaje, no como
                          algo que trae agarrado. Ahora se traslapa con la mano. -->
                     <g class="av-esponja" transform="rotate(-16 15 116)">
-                        <rect x="8" y="112" width="15.5" height="10.5" rx="3.2" fill="#f2c14e"/>
-                        <rect x="8" y="112" width="15.5" height="4.2" rx="2" fill="#f7d580"/>
-                        <circle cx="11" cy="110.2" r="2.9" fill="#fbfaff"/>
-                        <circle cx="16.1" cy="109" r="2.2" fill="#fbfaff"/>
-                        <circle cx="20.3" cy="110.5" r="1.6" fill="#fbfaff"/>
+                        <rect x="8" y="112" width="15.5" height="10.5" rx="3.2" fill="#f2c14e" stroke-width="${LINEA_INTERIOR}"/>
+                        <rect x="8" y="112" width="15.5" height="4.2" rx="2" fill="#f7d580" stroke="none"/>
+                        <circle cx="11" cy="110.2" r="2.9" fill="#fbfaff" stroke-width="${LINEA_INTERIOR}"/>
+                        <circle cx="16.1" cy="109" r="2.2" fill="#fbfaff" stroke-width="${LINEA_INTERIOR}"/>
+                        <circle cx="20.3" cy="110.5" r="1.6" fill="#fbfaff" stroke-width="${LINEA_INTERIOR}"/>
                     </g>
                   </g>
                 </g>
@@ -2668,7 +2733,7 @@ Cera rápida protectora
 
         // La versión del archivo. Sirve para que Tristán confirme de un vistazo si
         // el que abrió es el nuevo — ya pasó dos veces que probaba una copia vieja.
-        const VERSION_APP = '2026.08.16a';
+        const VERSION_APP = '2026.08.16b';
 
         function pintarVersion() {
             const el = document.getElementById('marca-version');
@@ -6827,17 +6892,27 @@ Cera rápida protectora
                     }
 
                     const delDia = [];
+                    // De paso se cuentan las de MAÑANA, para poder avisar que hay
+                    // recordatorios que mandar. Va en el mismo recorrido: no cuesta
+                    // ninguna consulta extra, porque las citas ya están todas aquí.
+                    const manana = sumarDias(fechaLocalISO(new Date()), 1);
+                    let pendientesManana = 0;
+
                     // El primer nivel es el cliente (uid), el segundo son sus citas.
                     // Guardamos uid y citaId junto con la cita: sin ellos no se podría
                     // volver a escribir en esa cita para marcarla como completada.
                     Object.entries(todo).forEach(([uid, citasDeUnCliente]) => {
                         Object.entries(citasDeUnCliente || {}).forEach(([citaId, cita]) => {
-                            if (cita && cita.agendaDia === fecha) delDia.push({ uid, citaId, cita });
+                            if (!cita) return;
+                            if (cita.agendaDia === fecha) delDia.push({ uid, citaId, cita });
+                            if (cita.agendaDia === manana && (!cita.status || cita.status === 'Pendiente')) {
+                                pendientesManana++;
+                            }
                         });
                     });
                     delDia.sort((a, b) => horaAMinutos(a.cita.agendaHora) - horaAMinutos(b.cita.agendaHora));
                     citasDelDiaCargadas = delDia;   // se guarda para no releer todo al marcar una cita
-                    pintarAgendaAdmin(delDia, fecha);
+                    pintarAgendaAdmin(delDia, fecha, pendientesManana);
                 })
                 .catch(error => {
                     console.error("Error leyendo la agenda del día:", error);
@@ -6848,6 +6923,46 @@ Cera rápida protectora
                 });
         }
 
+        // ── RECORDATORIOS ──────────────────────────────────────────────────────
+        //
+        // Un cliente al que se le olvida la cita es un viaje perdido: se va el
+        // tiempo de los dos y la gasolina. Mandar el recordatorio SOLO necesitaría
+        // un servidor propio o la API de pago de Meta (cobran por mensaje), así que
+        // lo realista y gratis es que la app **escriba el mensaje** y Tristán sólo
+        // toque enviar — igual que ya se hace con los clientes que "ya les toca".
+        //
+        // El mensaje incluye a propósito la confirmación de la dirección y, cuando
+        // aplica, el recordatorio de la toma de corriente: son las dos cosas que
+        // hacen que un servicio se caiga estando ya en la puerta.
+        function mensajeRecordatorio(cita, fecha) {
+            const nombre = String(cita.cliente || "").split(' ')[0] || "";
+            const cuando = diasDeDiferencia(fechaLocalISO(new Date()), fecha) === 1
+                ? "mañana" : "el " + formatearFechaLegible(fecha);
+            const auto = cita.auto ? ` de tu ${cita.auto}` : "";
+
+            let m = `Hola ${nombre}, te saluda CarWashExpress 🚿 Te recordamos tu `
+                  + `${cita.paquete || 'servicio'}${auto} ${cuando} a las ${cita.agendaHora}.`;
+
+            if (cita.referencia) {
+                m += ` Llegamos a: ${cita.referencia}. ¿Sigue siendo la dirección correcta?`;
+            } else {
+                m += ` ¿Nos confirmas la dirección?`;
+            }
+            if (cita.tomaCorriente === 'nose') {
+                m += ` Una cosa más: necesitamos una toma de corriente a menos de `
+                   + `${METROS_MAXIMOS_CORRIENTE} metros del auto. ¿Nos confirmas que hay?`;
+            }
+            return m;
+        }
+
+        // Cuántos días hay entre dos fechas "AAAA-MM-DD". Se comparan a mediodía
+        // para que el cambio de horario de verano no mueva el resultado un día.
+        function diasDeDiferencia(desde, hasta) {
+            const a = new Date(desde + 'T12:00:00');
+            const b = new Date(hasta + 'T12:00:00');
+            return Math.round((b - a) / 86400000);
+        }
+
         // Estados por los que puede pasar una cita. "Pendiente" es el inicial.
         const ESTADOS = {
             Pendiente:  { etiqueta: 'Pendiente',  color: 'var(--muy-tenue)' },
@@ -6855,9 +6970,10 @@ Cera rápida protectora
             NoSeHizo:   { etiqueta: 'No se hizo', color: '#fca5a5' }
         };
 
-        function pintarAgendaAdmin(citas, fecha) {
+        function pintarAgendaAdmin(citas, fecha, pendientesManana) {
             const lista = document.getElementById('admin-lista');
             const resumen = document.getElementById('admin-resumen');
+            const hoy = fechaLocalISO(new Date());
 
             // Cuánto se agendó y cuánto se cobró de verdad (sólo lo completado).
             const totalAgendado = citas.reduce((s, c) => s + (c.cita.total || 0), 0);
@@ -6871,6 +6987,26 @@ Cera rápida protectora
                 cobrado <span class="fuerte">$${totalCobrado}</span>`;
 
             lista.innerHTML = "";
+
+            // AVISO DE RECORDATORIOS. Sólo estando parado en HOY: si estuviera en
+            // todos los días, al navegar la semana saldría siempre y dejaría de
+            // avisar nada. Aquí sí es una tarea del día.
+            if (fecha === hoy && pendientesManana > 0) {
+                const aviso = document.createElement('div');
+                aviso.className = "aviso-recordatorios";
+                aviso.innerHTML = `<div><b>Mañana tienes ${pendientesManana}
+                    ${pendientesManana === 1 ? 'cita' : 'citas'}.</b>
+                    Mándales el recordatorio hoy: un cliente que se le olvida es un viaje perdido.</div>`;
+                const btn = document.createElement('button');
+                btn.className = "chip morado";
+                btn.textContent = "Ver las de mañana";
+                btn.onclick = () => {
+                    document.getElementById('admin-fecha').value = sumarDias(hoy, 1);
+                    cargarAgendaAdmin();
+                };
+                aviso.appendChild(btn);
+                lista.appendChild(aviso);
+            }
 
             if (citas.length === 0) {
                 const vacio = document.createElement('p');
@@ -6925,7 +7061,17 @@ Cera rápida protectora
 
                 const tel = String(cita.contacto || "").replace(/\D/g, "");
                 if (tel.length >= 10) {
-                    acciones.appendChild(chipEnlace("WhatsApp", "chip", `https://wa.me/52${encodeURIComponent(tel)}`, true));
+                    // Si la cita todavía no pasa y sigue pendiente, el botón lleva el
+                    // RECORDATORIO ya escrito. Si ya pasó o ya se marcó, sería raro
+                    // mandarle un recordatorio, así que queda el WhatsApp de siempre.
+                    const porVenir = diasDeDiferencia(fechaLocalISO(new Date()), fecha) >= 0
+                                  && (!cita.status || cita.status === 'Pendiente');
+                    const texto = porVenir
+                        ? '?text=' + encodeURIComponent(mensajeRecordatorio(cita, fecha)) : '';
+                    acciones.appendChild(chipEnlace(
+                        porVenir ? "Recordar por WhatsApp" : "WhatsApp",
+                        porVenir ? "chip morado" : "chip",
+                        `https://wa.me/52${encodeURIComponent(tel)}${texto}`, true));
                     acciones.appendChild(chipEnlace("Llamar", "chip", `tel:${encodeURIComponent(tel)}`, false));
                 }
 
