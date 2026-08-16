@@ -194,48 +194,88 @@
             to   { opacity: 1; transform: scale(1) translateY(0); }
         }
 
+        /* ── Los dos mosaicos de contacto ────────────────────────────────────
+           Cada uno con el color de SU marca a lo grande. Es lo que hace que se
+           reconozcan sin leer, y lo que los separa de las filas de "mi cuenta". */
+        .menu-mosaicos {
+            display: grid; grid-template-columns: 1fr 1fr; gap: 10px; padding: 12px;
+        }
+        .mosaico {
+            position: relative; overflow: hidden; isolation: isolate;
+            display: flex; flex-direction: column; align-items: flex-start; gap: 1px;
+            padding: 14px 13px 12px; border-radius: 15px;
+            text-decoration: none; color: #fff; cursor: pointer;
+            border: 1px solid rgba(255, 255, 255, 0.14);
+            transition: transform 0.14s ease, filter 0.14s ease;
+        }
+        .mosaico:active { transform: scale(0.965); filter: brightness(1.12); }
+        .mosaico.wa { background: linear-gradient(150deg, #2fd968 0%, #16a34a 55%, #0d7a55 100%); }
+        .mosaico.ig { background: linear-gradient(150deg, #fbb034 0%, #ee2a7b 52%, #6228d7 100%); }
+        /* Un velo oscuro abajo: sin él, el texto blanco sobre el verde claro o el
+           amarillo del degradado de Instagram casi no se lee. */
+        .mosaico::after {
+            content: ''; position: absolute; inset: 0; z-index: -1;
+            background: linear-gradient(180deg, rgba(0,0,0,0) 34%, rgba(0,0,0,0.30) 100%);
+        }
+        .mosaico-glifo {
+            width: 30px; height: 30px; margin-bottom: 8px;
+            display: flex; align-items: center; justify-content: center;
+            color: #fff; filter: drop-shadow(0 1px 3px rgba(0,0,0,0.35));
+        }
+        .mosaico-glifo svg { width: 100%; height: 100%; }
+        .mosaico-titulo {
+            font-family: var(--serif); font-size: 20px; font-weight: 500;
+            line-height: 1.05; letter-spacing: 0.01em;
+            text-shadow: 0 1px 4px rgba(0,0,0,0.28);
+        }
+        .mosaico-dato {
+            font-size: 11.5px; font-weight: 600; letter-spacing: 0.02em;
+            color: rgba(255,255,255,0.96); font-variant-numeric: tabular-nums;
+            max-width: 100%; overflow: hidden; text-overflow: ellipsis; white-space: nowrap;
+        }
+        .mosaico-pie {
+            font-size: 10px; letter-spacing: 0.10em; text-transform: uppercase;
+            color: rgba(255,255,255,0.80);
+            /* Pegado abajo: así los dos mosaicos quedan parejos aunque uno tenga
+               el texto más largo que el otro. */
+            margin-top: auto; padding-top: 7px; white-space: nowrap;
+        }
+
+        /* ── Las filas de "mi cuenta" ─────────────────────────────────────── */
         .menu-fila {
             display: flex; align-items: center; gap: 13px; width: 100%;
-            padding: 14px 16px; text-align: left; cursor: pointer;
-            background: transparent; border: 0; border-bottom: 1px solid rgba(255,255,255,0.06);
+            padding: 13px 16px; text-align: left; cursor: pointer;
+            background: transparent; border: 0; border-bottom: 1px solid rgba(255,255,255,0.055);
             color: var(--texto); text-decoration: none;
             transition: background 0.14s ease;
         }
         .menu-fila:last-child { border-bottom: 0; }
         .menu-fila:active { background: rgba(139, 92, 246, 0.16); }
         .menu-fila.peligro .menu-texto b { color: #fca5a5; }
-        .menu-fila.peligro .menu-icono { color: #fca5a5; background: rgba(248, 113, 113, 0.12); }
+        .menu-fila.peligro .menu-icono { color: #fca5a5; background: rgba(248, 113, 113, 0.11); }
 
         .menu-icono {
-            width: 38px; height: 38px; flex-shrink: 0; border-radius: 12px;
+            width: 36px; height: 36px; flex-shrink: 0; border-radius: 11px;
             display: flex; align-items: center; justify-content: center;
-            background: rgba(139, 92, 246, 0.14); color: var(--morado-claro);
+            background: rgba(139, 92, 246, 0.13); color: var(--morado-claro);
         }
-        .menu-icono svg { width: 21px; height: 21px; }
-        /* Cada servicio con su color, que es como la gente los reconoce */
-        .menu-icono.wa { background: rgba(37, 211, 102, 0.14); color: #4ade80; }
-        .menu-icono.ig { background: rgba(225, 48, 108, 0.14); color: #f472b6; }
+        .menu-icono svg { width: 19px; height: 19px; }
 
-        .menu-texto { flex: 1; min-width: 0; display: flex; flex-direction: column; gap: 2px; }
-        .menu-texto b { font-size: 13.5px; font-weight: 600; color: var(--texto); }
+        .menu-texto { flex: 1; min-width: 0; display: flex; flex-direction: column; gap: 1px; }
+        .menu-texto b {
+            font-family: var(--serif); font-size: 17px; font-weight: 500;
+            color: var(--blanco); line-height: 1.2;
+        }
         .menu-texto small {
-            font-size: 11px; color: var(--tenue); line-height: 1.4;
+            font-size: 10.5px; color: var(--muy-tenue); line-height: 1.4;
             overflow: hidden; text-overflow: ellipsis;
         }
 
-        /* La vista chica de Instagram: el logo dentro de un marco con el degradado
-           de la marca de Instagram, para que se lea de un vistazo qué es. */
-        .menu-ig-vista {
-            width: 46px; height: 46px; flex-shrink: 0; border-radius: 12px;
-            padding: 2px; overflow: hidden;
-            background: linear-gradient(135deg, #f9ce34, #ee2a7b 52%, #6228d7);
+        .menu-separador {
+            height: 1px; margin: 2px 16px 4px;
+            background: linear-gradient(90deg, rgba(196,181,253,0) 0%,
+                        rgba(196,181,253,0.22) 45%, rgba(196,181,253,0) 100%);
         }
-        .menu-ig-vista img, .menu-ig-vista svg {
-            width: 100%; height: 100%; border-radius: 10px;
-            object-fit: cover; object-position: center; display: block;
-        }
-
-        .menu-separador { height: 7px; background: rgba(255,255,255,0.035); }
 
         @media (prefers-reduced-motion: reduce) {
             .menu-flotante, .menu-capa { animation: none; }
@@ -1039,39 +1079,41 @@
         <div class="menu-capa hidden" id="menu-capa" onclick="cerrarMenu()"></div>
         <nav class="menu-flotante hidden" id="menu-flotante" aria-label="Menú rápido">
 
-            <a class="menu-fila" id="menu-whatsapp" target="_blank" rel="noopener">
-                <span class="menu-icono wa" aria-hidden="true">
-                    <svg viewBox="0 0 24 24" fill="currentColor">
-                        <path d="M12.04 2C6.58 2 2.13 6.45 2.13 11.91c0 1.75.46 3.45 1.32 4.95L2 22l5.25-1.38a9.9 9.9 0 0 0 4.79 1.22h.01c5.46 0 9.91-4.45 9.91-9.91C21.96 6.45 17.5 2 12.04 2Zm5.8 14.03c-.24.68-1.2 1.26-1.97 1.42-.52.11-1.21.2-3.52-.76-2.95-1.22-4.85-4.22-5-4.42-.14-.2-1.19-1.58-1.19-3.02 0-1.43.75-2.13 1.02-2.42.27-.29.58-.36.78-.36l.56.01c.18.01.42-.07.66.5.24.59.83 2.02.9 2.17.07.15.12.32.02.51-.09.2-.14.32-.28.49l-.42.49c-.14.14-.28.3-.12.58.16.29.71 1.17 1.52 1.9 1.05.93 1.93 1.22 2.21 1.36.27.15.43.12.59-.07.16-.2.68-.79.86-1.07.18-.27.36-.22.61-.13.24.09 1.55.73 1.82.86.27.14.44.2.51.32.07.12.07.68-.17 1.36Z"/>
-                    </svg>
-                </span>
-                <span class="menu-texto">
-                    <b>Escríbenos por WhatsApp</b>
-                    <small>625 100 9755 · te contestamos personal</small>
-                </span>
-            </a>
+            <!-- ⚠️ LOS DOS DE CONTACTO VAN COMO MOSAICOS, NO COMO RENGLONES.
+                 Como renglones de lista se veían iguales que "Cerrar sesión", o sea
+                 sin jerarquía: todo con el mismo peso se lee barato. Son dos cosas
+                 distintas — éstas son "búscanos", las de abajo son "mi cuenta" — y
+                 la forma tiene que decirlo. Además el mosaico deja usar el color de
+                 marca de cada servicio a lo grande, que es lo que hace que se
+                 reconozcan de un vistazo sin leer nada. -->
+            <div class="menu-mosaicos">
+                <a class="mosaico wa" id="menu-whatsapp" target="_blank" rel="noopener">
+                    <span class="mosaico-glifo" aria-hidden="true">
+                        <svg viewBox="0 0 24 24" fill="currentColor">
+                            <path d="M12.04 2C6.58 2 2.13 6.45 2.13 11.91c0 1.75.46 3.45 1.32 4.95L2 22l5.25-1.38a9.9 9.9 0 0 0 4.79 1.22h.01c5.46 0 9.91-4.45 9.91-9.91C21.96 6.45 17.5 2 12.04 2Zm5.8 14.03c-.24.68-1.2 1.26-1.97 1.42-.52.11-1.21.2-3.52-.76-2.95-1.22-4.85-4.22-5-4.42-.14-.2-1.19-1.58-1.19-3.02 0-1.43.75-2.13 1.02-2.42.27-.29.58-.36.78-.36l.56.01c.18.01.42-.07.66.5.24.59.83 2.02.9 2.17.07.15.12.32.02.51-.09.2-.14.32-.28.49l-.42.49c-.14.14-.28.3-.12.58.16.29.71 1.17 1.52 1.9 1.05.93 1.93 1.22 2.21 1.36.27.15.43.12.59-.07.16-.2.68-.79.86-1.07.18-.27.36-.22.61-.13.24.09 1.55.73 1.82.86.27.14.44.2.51.32.07.12.07.68-.17 1.36Z"/>
+                        </svg>
+                    </span>
+                    <span class="mosaico-titulo">WhatsApp</span>
+                    <span class="mosaico-dato">625 100 9755</span>
+                    <span class="mosaico-pie">Escríbenos</span>
+                </a>
 
-            <!-- Instagram: la vista chica con el logo real de la marca dentro.
-                 No es un recuadro con las publicaciones de verdad a propósito: eso
-                 necesita el script de Instagram, que no carga sin internet y que
-                 además vigila a quien lo ve. Esto pesa cero y hace lo mismo: lleva
-                 al perfil de un toque. -->
-            <a class="menu-fila" id="menu-instagram" target="_blank" rel="noopener">
-                <span class="menu-icono ig" aria-hidden="true">
-                    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.9">
-                        <rect x="3" y="3" width="18" height="18" rx="5.4"/>
-                        <circle cx="12" cy="12" r="4.1"/>
-                        <circle cx="17.2" cy="6.8" r="1.15" fill="currentColor" stroke="none"/>
-                    </svg>
-                </span>
-                <span class="menu-texto">
-                    <b>Míranos en Instagram</b>
-                    <small id="menu-ig-usuario">@carwashexpress</small>
-                </span>
-                <span class="menu-ig-vista" aria-hidden="true">
-                    <img data-logo="1" alt="" onerror="usarLogoDeRespaldo(this)">
-                </span>
-            </a>
+                <!-- No lleva un recuadro con las publicaciones de verdad a propósito:
+                     eso necesita el script de Instagram, que no carga sin internet y
+                     que además vigila a quien lo ve. Esto pesa cero y hace lo mismo. -->
+                <a class="mosaico ig" id="menu-instagram" target="_blank" rel="noopener">
+                    <span class="mosaico-glifo" aria-hidden="true">
+                        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                            <rect x="3" y="3" width="18" height="18" rx="5.4"/>
+                            <circle cx="12" cy="12" r="4.1"/>
+                            <circle cx="17.2" cy="6.8" r="1.2" fill="currentColor" stroke="none"/>
+                        </svg>
+                    </span>
+                    <span class="mosaico-titulo">Instagram</span>
+                    <span class="mosaico-dato" id="menu-ig-usuario">@carwashexpress</span>
+                    <span class="mosaico-pie">Ver trabajos</span>
+                </a>
+            </div>
 
             <div class="menu-separador" id="menu-separador"></div>
 
@@ -1161,7 +1203,7 @@
         <div class="screen hidden" id="screen-password">
             <div class="text-group">
                 <h2 class="titulo">Cambiar<span class="cursiva">contraseña</span></h2>
-                <p class="subtitulo">Puedes cambiarla cuantas veces quieras.</p>
+                <p class="subtitulo">Para cuando te la sabes y quieres otra.<br>Puedes hacerlo cuantas veces quieras.</p>
             </div>
 
             <div class="menu-content-holder">
@@ -1197,6 +1239,12 @@
             <div class="action-buttons-group">
                 <button class="btn-premium" id="btn-guardar-pass" onclick="guardarContrasenaNueva()">Guardar</button>
                 <button class="btn-premium secundario" onclick="mostrarPantalla('screen-welcome', true)">Cancelar</button>
+                <!-- La salida para quien llegó aquí SIN acordarse de la de ahora.
+                     Sin esto, esta pantalla es un callejón sin salida: le pide algo
+                     que justamente no tiene. -->
+                <button class="enlace-suave" onclick="pedirAyudaConContrasena()">
+                    No me acuerdo de la de ahora
+                </button>
             </div>
         </div>
 
@@ -3036,7 +3084,7 @@ Cera rápida protectora
 
         // La versión del archivo. Sirve para que Tristán confirme de un vistazo si
         // el que abrió es el nuevo — ya pasó dos veces que probaba una copia vieja.
-        const VERSION_APP = '2026.08.16d';
+        const VERSION_APP = '2026.08.16e';
 
         function pintarVersion() {
             const el = document.getElementById('marca-version');
@@ -3515,7 +3563,14 @@ Cera rápida protectora
         // Lo que sí se puede hacer sin servidor: dejarle el mensaje escrito con su
         // número, para que Tristán se la reponga desde la consola en un minuto.
         function pedirAyudaConContrasena() {
-            const tel = String(document.getElementById('input-login-telefono').value || "").replace(/\D/g, "");
+            // El número se saca de donde esté: si ya inició sesión, de su propia
+            // cuenta; si está en el login, de lo que haya escrito. Así el mensaje
+            // llega completo desde los dos lados y Tristán no tiene que preguntarlo.
+            const deLaCuenta = usuarioActual && usuarioActual.email
+                ? String(usuarioActual.email).split('@')[0].replace(/\D/g, "") : "";
+            const delCampo = String((document.getElementById('input-login-telefono') || {}).value || "")
+                .replace(/\D/g, "");
+            const tel = /^\d{10}$/.test(deLaCuenta) ? deLaCuenta : delCampo;
             const conNumero = /^\d{10}$/.test(tel)
                 ? ` Mi número es ${tel}.`
                 : "";
