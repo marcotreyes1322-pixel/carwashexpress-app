@@ -680,11 +680,11 @@
            parece que la trae en la mano y no pegada con cinta. El giro base de -14°
            se repite dentro del keyframe porque una animación de transform PISA el
            transform del atributo — si no, la esponja saltaría a derecha al empezar. */
-        .av-esponja { transform-box: view-box; transform-origin: 12px 115px;
+        .av-esponja { transform-box: view-box; transform-origin: 15px 116px;
                       animation: avTalla 2.3s ease-in-out infinite; }
         @keyframes avTalla {
-            0%, 100% { transform: rotate(-14deg) translateX(0); }
-            50%      { transform: rotate(-9deg)  translateX(1.2px); }
+            0%, 100% { transform: rotate(-16deg) translateX(0); }
+            50%      { transform: rotate(-11deg) translateX(1.2px); }
         }
 
         /* TÓCALO TAMBIÉN AQUÍ. El personaje del mapa ya reacciona al dedo, pero el
@@ -737,9 +737,9 @@
            (2.3 s), para que el brazo y lo que trae en la mano se muevan juntos. */
         @keyframes avBrazoIzq { 0%,100% { transform: rotate(1.2deg); } 50% { transform: rotate(-1.6deg); } }
         @keyframes avBrazoDer { 0%,100% { transform: rotate(-1.5deg); } 50% { transform: rotate(1.1deg); } }
-        .av-brazo-izq { transform-box: view-box; transform-origin: 22.5px 90px;
+        .av-brazo-izq { transform-box: view-box; transform-origin: 31px 89px;
                         animation: avBrazoIzq 2.3s ease-in-out infinite; }
-        .av-brazo-der { transform-box: view-box; transform-origin: 77.5px 90px;
+        .av-brazo-der { transform-box: view-box; transform-origin: 69px 89px;
                         animation: avBrazoDer 3.7s ease-in-out infinite; }
 
         @media (prefers-reduced-motion: reduce) {
@@ -2165,14 +2165,31 @@ Cera rápida protectora
         // El cuerpo cambia según el tipo de ropa: es lo que da variedad de verdad.
         function trazoCuerpo(a, id) {
             const sombra = oscurecer(a.colorRopa);
-            const piernaY = a.ropa === 'vestido' ? 118 : 114;
-            const altoPierna = a.ropa === 'vestido' ? 11 : 15;
+            const piernaY = a.ropa === 'vestido' ? 119 : 115;
+            const altoPierna = a.ropa === 'vestido' ? 11 : 14;
 
+            // CUELLO. No existía: la cabeza salía directamente del torso, pegada como
+            // calcomanía. Va ANTES del torso, para que la prenda le tape la base y
+            // sólo asome el pedacito de arriba — que es justo lo que se ve en alguien.
+            const cuello = `<path d="M43 70 L43 86 Q50 90 57 86 L57 70 Z"
+                                  fill="${oscurecer(a.piel, 0.88)}"/>`;
+
+            // TORSO CON HOMBROS. Antes era un TRAPECIO PELÓN: dos líneas rectas que
+            // se abrían hacia abajo, sin hombro donde colgar los brazos. Ahora la
+            // silueta baja del cuello, se abre en el hombro y se mete en la cintura.
+            // Es de lo que más lo hacía ver de principiante: un cuerpo de verdad
+            // tiene hombros, y el hombro es de donde nace el brazo.
             let torso;
             if (a.ropa === 'vestido') {
-                torso = `<path d="M27 88 Q50 78 73 88 L78 118 Q50 124 22 118 Z" fill="url(#${id}-ropa)"/>`;
+                torso = `<path d="M50 79 C39.5 79 32 83 28.5 89.5 C26 94 25.2 99 25.6 104
+                                  L20.5 122 Q50 128.5 79.5 122 L74.4 104
+                                  C74.8 99 74 94 71.5 89.5 C68 83 60.5 79 50 79 Z"
+                               fill="url(#${id}-ropa)"/>`;
             } else {
-                torso = `<path d="M26 88 Q50 77 74 88 L72 114 Q50 120 28 114 Z" fill="url(#${id}-ropa)"/>`;
+                torso = `<path d="M50 79 C39.5 79 32 83 28.5 89.5 C26 94 25.2 99 25.6 104
+                                  L28.2 117 Q50 121.5 71.8 117 L74.4 104
+                                  C74.8 99 74 94 71.5 89.5 C68 83 60.5 79 50 79 Z"
+                               fill="url(#${id}-ropa)"/>`;
             }
 
             let detalle = '';
@@ -2192,15 +2209,28 @@ Cera rápida protectora
             }
 
             return `
-                <rect x="38" y="${piernaY}" width="11" height="${altoPierna}" rx="5" fill="url(#${id}-pantalon)"/>
-                <rect x="51" y="${piernaY}" width="11" height="${altoPierna}" rx="5" fill="url(#${id}-pantalon)"/>
-                <!-- Zapatos con SUELA: una franja clara abajo. Es el detalle que
-                     separa "una mancha de color" de "un zapato", y en un juguete de
-                     diseñador el calzado es justo lo que se ve más caro. -->
-                <ellipse cx="42" cy="132" rx="8" ry="5.5" fill="url(#${id}-zapato)"/>
-                <ellipse cx="58" cy="132" rx="8" ry="5.5" fill="url(#${id}-zapato)"/>
-                <path d="M34.2 133.6 Q42 138.4 49.8 133.6 Q42 136.2 34.2 133.6 Z" fill="#f2f0ee" opacity="0.92" stroke="none"/>
-                <path d="M50.2 133.6 Q58 138.4 65.8 133.6 Q58 136.2 50.2 133.6 Z" fill="#f2f0ee" opacity="0.92" stroke="none"/>
+                <!-- PIERNAS Y BRAZOS SE DIBUJAN COMO TRAZOS GRUESOS con la punta
+                     redonda, no como rectángulos sueltos. Es la diferencia que más
+                     se nota: un rectángulo hay que colocarlo a mano y siempre queda
+                     un hueco entre él y el cuerpo — que es justo lo que hacía que los
+                     brazos se vieran como salchichas pegadas al lado de la figura.
+                     Un trazo que ARRANCA DENTRO del torso no puede despegarse. -->
+                <path d="M43.4 ${piernaY} L42.6 ${piernaY + altoPierna}" stroke="url(#${id}-pantalon)"
+                      stroke-width="12.5" fill="none" stroke-linecap="round"/>
+                <path d="M56.6 ${piernaY} L57.4 ${piernaY + altoPierna}" stroke="url(#${id}-pantalon)"
+                      stroke-width="12.5" fill="none" stroke-linecap="round"/>
+                <!-- Zapatos GRANDES, con suela clara. En un juguete de diseñador el
+                     calzado es lo que asienta la figura: chiquitos, el personaje se
+                     ve de palito y sin base. -->
+                <path d="M33 131 Q32.6 138 41.8 138 Q50.4 138 50.4 131.5 Q50.4 127 41.8 127 Q33.4 127 33 131 Z"
+                      fill="url(#${id}-zapato)"/>
+                <path d="M67 131 Q67.4 138 58.2 138 Q49.6 138 49.6 131.5 Q49.6 127 58.2 127 Q66.6 127 67 131 Z"
+                      fill="url(#${id}-zapato)"/>
+                <path d="M33.1 133.4 Q33.6 137.9 41.8 137.9 Q50.3 137.9 50.4 133.8 Q42 136.4 33.1 133.4 Z"
+                      fill="#f2f0ee" opacity="0.95" stroke="none"/>
+                <path d="M66.9 133.4 Q66.4 137.9 58.2 137.9 Q49.7 137.9 49.6 133.8 Q58 136.4 66.9 133.4 Z"
+                      fill="#f2f0ee" opacity="0.95" stroke="none"/>
+                ${cuello}
                 ${torso}
                 <!-- La sombra que la cabeza le echa al cuerpo. Sin esto la cabeza
                      se ve pegada como calcomanía en vez de apoyada encima. -->
@@ -2215,17 +2245,21 @@ Cera rápida protectora
                      ritmos distintos a propósito — dos brazos meciéndose exactamente
                      igual se ven de robot. -->
                 <g class="av-brazo-izq">
-                    <rect x="17" y="88" width="11" height="19" rx="5.5" fill="url(#${id}-ropa)"/>
-                    <rect x="16.4" y="101.5" width="12.2" height="3.4" rx="1.7" fill="${sombra}" stroke="none"/>
-                    <circle cx="22.5" cy="109" r="5.6" fill="url(#${id}-piel)"/>
+                    <path d="M31 89 Q23.8 96 21.8 106.5" stroke="url(#${id}-ropa)" stroke-width="11.5"
+                          fill="none" stroke-linecap="round"/>
+                    <path d="M22.6 102.5 Q22.1 104.5 21.8 106.5" stroke="${sombra}" stroke-width="11.9"
+                          fill="none" stroke-linecap="butt"/>
+                    <circle cx="21.4" cy="110.8" r="5.0" fill="url(#${id}-piel)"/>
                 </g>
                 <g class="av-brazo-der">
-                    <rect x="72" y="88" width="11" height="19" rx="5.5" fill="url(#${id}-ropa)"/>
-                    <rect x="71.4" y="101.5" width="12.2" height="3.4" rx="1.7" fill="${sombra}" stroke="none"/>
-                    <circle cx="77.5" cy="109" r="5.6" fill="url(#${id}-piel)"/>
+                    <path d="M69 89 Q76.2 96 78.2 106.5" stroke="url(#${id}-ropa)" stroke-width="11.5"
+                          fill="none" stroke-linecap="round"/>
+                    <path d="M77.4 102.5 Q77.9 104.5 78.2 106.5" stroke="${sombra}" stroke-width="11.9"
+                          fill="none" stroke-linecap="butt"/>
+                    <circle cx="78.6" cy="110.8" r="5.0" fill="url(#${id}-piel)"/>
                 </g>
                 <!-- cuello de la prenda: separa la cabeza del cuerpo -->
-                <path d="M40 83 Q50 89 60 83" stroke="${sombra}" stroke-width="3.2" fill="none" stroke-linecap="round"/>`;
+                <path d="M41 82 Q50 88.5 59 82" stroke="${sombra}" stroke-width="3.4" fill="none" stroke-linecap="round"/>`;
         }
 
         // Cada dibujo necesita su propio juego de degradados: si dos personajes en la
@@ -2281,9 +2315,9 @@ Cera rápida protectora
                      dibujo, y están justo abajo, donde el ojo aterriza. Con su
                      degradado dejan de verse como recortes de papel. -->
                 <linearGradient id="${id}-pantalon" x1="0.15" y1="0" x2="0.85" y2="1">
-                    <stop offset="0%" stop-color="#4a4a58"/>
-                    <stop offset="55%" stop-color="#2b2b33"/>
-                    <stop offset="100%" stop-color="#1a1a20"/>
+                    <stop offset="0%" stop-color="#6a6d82"/>
+                    <stop offset="55%" stop-color="#3f4152"/>
+                    <stop offset="100%" stop-color="#2a2b38"/>
                 </linearGradient>
                 <linearGradient id="${id}-zapato" x1="0.2" y1="0" x2="0.8" y2="1">
                     <stop offset="0%" stop-color="${aclarar(a.zapatos, 0.32)}"/>
@@ -2333,9 +2367,19 @@ Cera rápida protectora
                     ${trazoCuerpo(a, id)}
                     <g class="av-cabeza-gesto">
                     <g class="av-cabeza">
-                        <!-- orejas salidas, como en las referencias -->
-                        <circle cx="20" cy="52" r="7" fill="url(#${id}-piel)"/>
-                        <circle cx="80" cy="52" r="7" fill="url(#${id}-piel)"/>
+                        <!-- ⚠️ OREJAS. Eran círculos de radio 7 puestos en x=20 y 80,
+                             cuando el borde de la cabeza está en 21 y 79: o sea que
+                             la oreja entera quedaba POR FUERA del cráneo. En el
+                             dibujo se leían como dos asas pálidas pegadas a los
+                             lados. Ahora son más chicas, ovaladas y metidas, con su
+                             pliegue interior — que es lo que las hace oreja y no
+                             bolita. -->
+                        <ellipse cx="23.5" cy="54" rx="4.6" ry="5.4" fill="url(#${id}-piel)"/>
+                        <ellipse cx="76.5" cy="54" rx="4.6" ry="5.4" fill="url(#${id}-piel)"/>
+                        <path d="M22.6 51.6 Q20.6 54 22.8 56.6" stroke="${oscurecer(a.piel, 0.84)}"
+                              stroke-width="1.2" fill="none" stroke-linecap="round"/>
+                        <path d="M77.4 51.6 Q79.4 54 77.2 56.6" stroke="${oscurecer(a.piel, 0.84)}"
+                              stroke-width="1.2" fill="none" stroke-linecap="round"/>
                         <!-- cabeza -->
                         <!-- LA CABEZA ERA UN rectángulo redondeado (rect con rx),
                              que es la forma más floja que existe para una cabeza — no
@@ -2354,8 +2398,11 @@ Cera rápida protectora
                              le dicen "los gemelos son malos". Una cara perfectamente
                              simétrica se lee como dibujo técnico, no como personaje.
                              Es el mismo criterio que ya se aplicó en el 3D. -->
-                        <path d="M31.5 39.6 Q37 36.3 42.8 39.2" stroke="${a.colorCabello}" stroke-width="3.4" fill="none" stroke-linecap="round"/>
-                        <path d="M57.2 40 Q63 37.3 68.5 40.4" stroke="${a.colorCabello}" stroke-width="3.2" fill="none" stroke-linecap="round"/>
+                        <!-- Más delgadas y más cortas: a 3.4 de grosor y casi rectas
+                             se leían como dos brochazos enojados, y le daban a todos
+                             los personajes la misma cara de pocos amigos. -->
+                        <path d="M32.6 40.2 Q37.2 37.2 42.2 39.8" stroke="${a.colorCabello}" stroke-width="2.5" fill="none" stroke-linecap="round"/>
+                        <path d="M57.8 40.4 Q62.8 37.9 67.6 40.8" stroke="${a.colorCabello}" stroke-width="2.3" fill="none" stroke-linecap="round"/>
                         <!-- OJOS en cuatro capas: blanco, iris, pupila y brillo.
                              El blanco alrededor es lo que hace que haya MIRADA y no dos manchas.
                              Van juntos en un grupo para poder cerrarlos de una sola vez. -->
@@ -2401,12 +2448,16 @@ Cera rápida protectora
                          es lo que vuelve a este personaje el de un negocio de lavado
                          de autos y no el de cualquier app. Va fuera del grupo de la
                          cabeza para que no se mueva cuando la cabeza se mece. -->
-                    <g class="av-esponja" transform="rotate(-14 12 115)">
-                        <rect x="4.5" y="110" width="15" height="10" rx="3" fill="#f2c14e"/>
-                        <rect x="4.5" y="110" width="15" height="4" rx="2" fill="#f7d580"/>
-                        <circle cx="7.5" cy="108" r="2.9" fill="#fbfaff"/>
-                        <circle cx="12.6" cy="106.8" r="2.2" fill="#fbfaff"/>
-                        <circle cx="16.8" cy="108.3" r="1.6" fill="#fbfaff"/>
+                    <!-- ⚠️ La esponja estaba en x=4.5..19.5, o sea PEGADA AL BORDE
+                         del dibujo y despegada de la mano (que está en x≈21): se veía
+                         como un objeto suelto flotando junto al personaje, no como
+                         algo que trae agarrado. Ahora se traslapa con la mano. -->
+                    <g class="av-esponja" transform="rotate(-16 15 116)">
+                        <rect x="8" y="112" width="15.5" height="10.5" rx="3.2" fill="#f2c14e"/>
+                        <rect x="8" y="112" width="15.5" height="4.2" rx="2" fill="#f7d580"/>
+                        <circle cx="11" cy="110.2" r="2.9" fill="#fbfaff"/>
+                        <circle cx="16.1" cy="109" r="2.2" fill="#fbfaff"/>
+                        <circle cx="20.3" cy="110.5" r="1.6" fill="#fbfaff"/>
                     </g>
                   </g>
                 </g>
@@ -2617,7 +2668,7 @@ Cera rápida protectora
 
         // La versión del archivo. Sirve para que Tristán confirme de un vistazo si
         // el que abrió es el nuevo — ya pasó dos veces que probaba una copia vieja.
-        const VERSION_APP = '2026.08.15e';
+        const VERSION_APP = '2026.08.16a';
 
         function pintarVersion() {
             const el = document.getElementById('marca-version');
@@ -3306,6 +3357,22 @@ Cera rápida protectora
             CACHE_MATERIALES.clear();
         }
 
+        // ⚠️ LA CABEZA ES UNA ESFERA, y su superficie SE METE HACIA ATRÁS conforme uno
+        // se aleja del centro. Ya van CINCO veces que se coloca un rasgo de la cara "a
+        // ojo" y queda flotando por delante: la nariz, la boca, las cejas, la esponja
+        // del 2D y —la peor— los cachetes, que en el render medían 0.74 de separación
+        // y se veían como dos discos rosas pegados al aire a los lados de la cara.
+        //
+        // Esta función devuelve la Z REAL de la superficie en un punto (x, y) de la
+        // cabeza. Colocar un rasgo es ahora una resta, no una adivinanza:
+        //     z = zDeLaCara(x, y) - fondoDeLaPieza + loQueSeQuiereQueSobresalga
+        const R_CABEZA = 3.4, CY_CABEZA = 10.0, ESCALA_Y_CABEZA = 1.02, ESCALA_Z_CABEZA = 0.95;
+        function zDeLaCara(x, y) {
+            const dy = (y - CY_CABEZA) / ESCALA_Y_CABEZA;
+            const r2 = R_CABEZA * R_CABEZA - dy * dy - x * x;
+            return r2 <= 0 ? 0 : Math.sqrt(r2) * ESCALA_Z_CABEZA;
+        }
+
         // Arma el muñeco con los mismos rasgos que el cliente eligió en el editor 2D,
         // para que su avatar y su personaje del mapa sean la misma persona.
         // Devuelve DOS grupos anidados a propósito:
@@ -3356,9 +3423,20 @@ Cera rápida protectora
             // pedestal: eso es lo que los hace ver de colección.
             const cabeza = ponerEnCabeza(geo('Sphere', 3.4, 16, 12), piel, 0, 10.0);
             cabeza.scale.set(1, 1.02, 0.95);
-            // Orejas salidas, como en las referencias que mandó Tristán
-            ponerEnCabeza(geo('Sphere', 0.92, 10, 8), piel, -3.3, 9.6);
-            ponerEnCabeza(geo('Sphere', 0.92, 10, 8), piel,  3.3, 9.6);
+
+            // OREJAS. Eran esferas de 0.92 puestas en x=±3.3 — o sea, con el centro
+            // JUSTO en la superficie del cráneo (radio 3.4), así que la esfera entera
+            // sobresalía. En el render se leían como dos asas pegadas a los lados.
+            // Ahora son más chicas, aplastadas contra el cráneo y metidas hacia
+            // adentro, que es como se ven en las referencias.
+            [-1, 1].forEach(lado => {
+                const oreja = ponerEnCabeza(geo('Sphere', 0.72, 10, 8), piel, 3.22 * lado, 9.5, -0.1);
+                oreja.scale.set(0.5, 1.0, 0.78);
+                const hoyo = ponerEnCabeza(geo('Sphere', 0.4, 8, 6),
+                                           material(oscurecer(a.piel, 0.86), 'piel'),
+                                           3.36 * lado, 9.45, -0.1);
+                hoyo.scale.set(0.34, 0.8, 0.6);
+            });
 
             // Ojos GRANDES: son el 80% de la expresión. Van con un aro de color
             // alrededor (el iris) que antes no existía y que es lo que hace que
@@ -3367,15 +3445,27 @@ Cera rápida protectora
             // Antes eran dos bolas negras con un punto blanco — se leían como botones.
             // El blanco alrededor del iris es LO que hace que una cara se sienta viva:
             // sin él no hay mirada, sólo dos manchas.
-            const blancoOjo = material('#f2ede6', 'lustroso');
+            const blancoOjo = material('#f7f3ec', 'lustroso');
             const iris = material(a.colorOjos, 'lustroso');
             const pupila = material('#141018', 'lustroso');
             const luz = material('#ffffff', 'plano');
             const ojos = [], brillos = [], mirada = [], pupilas = [];
 
-            [-1.28, 1.28].forEach(x => {
-                const b = ponerEnCabeza(geo('Sphere', 1.06, 14, 12), blancoOjo, x, 9.5, 2.4);
-                b.scale.set(1, 0.95, 0.6);
+            // Los ojos eran DOS BOLAS CASI REDONDAS de 2.12 de ancho puestas a ±1.28:
+            // juntas ocupaban el 69% del ancho de la cara y casi se tocaban en medio.
+            // Eso es lo que los hacía leer como ojos saltones de juguete de broma.
+            // Ahora son ovalados (más altos que anchos), un poco más chicos y más
+            // separados — que es como se ven en las referencias que mandó Tristán.
+            const X_OJO = 1.44;
+            [-X_OJO, X_OJO].forEach(x => {
+                // ⚠️ LA CÁMARA DEL MAPA MIRA DESDE ARRIBA (inclinación 62°), no de
+                // frente. Con el blanco muy alto se le veía el ojo por encima del
+                // iris desde ese ángulo, y el personaje parecía estar volteando los
+                // ojos o medio dormido. Se probó renderizando desde la cámara de
+                // verdad, no de frente — de frente se veía bien y en la app no.
+                const b = ponerEnCabeza(geo('Sphere', 0.95, 14, 12), blancoOjo,
+                                        x, 9.55, zDeLaCara(x, 9.55) - 0.95 * 0.5 + 0.06);
+                b.scale.set(0.88, 0.96, 0.5);
 
                 // EL IRIS, LA PUPILA Y LOS BRILLOS VAN EN UN GRUPO PROPIO, para que
                 // la MIRADA se pueda correr dentro del ojo sin arrastrar el blanco.
@@ -3393,14 +3483,32 @@ Cera rápida protectora
                     return m;
                 };
 
-                const i = ponerEnOjo(geo('Sphere', 0.82, 12, 10), iris, x, 9.48, 2.8);
-                i.scale.set(1, 1, 0.42);
-                const p = ponerEnOjo(geo('Sphere', 0.46, 10, 8), pupila, x, 9.48, 2.98);
-                p.scale.set(1, 1, 0.42);
+                // Cada capa se coloca CONTRA LA SUPERFICIE, no a ojo: se calcula dónde
+                // está la cara en ese punto y se le deja el saliente que se quiere.
+                // EL IRIS LLENA CASI TODO EL OJO. Con un iris chico rodeado de mucho
+                // blanco la cara se lee asustada, no tierna — y en las referencias que
+                // mandó Tristán el iris ocupa casi todo, con el blanco asomando apenas
+                // por las esquinas. Es de lo que más cambia la expresión.
+                const zOjo = zDeLaCara(x, 9.62);
+                const i = ponerEnOjo(geo('Sphere', 0.70, 12, 10), iris, x, 9.62, zOjo - 0.10);
+                i.scale.set(1, 1, 0.40);
+                const p = ponerEnOjo(geo('Sphere', 0.40, 10, 8), pupila, x, 9.62, zOjo - 0.02);
+                p.scale.set(1, 1, 0.40);
                 // Brillo grande arriba-izquierda y chispita abajo-derecha: el par que
                 // usan los ilustradores para que el ojo se vea húmedo y no de plástico.
-                const g1 = ponerEnOjo(geo('Sphere', 0.28, 8, 6), luz, x - 0.32, 9.85, 3.08);
-                const g2 = ponerEnOjo(geo('Sphere', 0.14, 6, 5), luz, x + 0.34, 9.15, 3.04);
+                const g1 = ponerEnOjo(geo('Sphere', 0.20, 8, 6), luz, x - 0.26, 9.94,
+                                      zDeLaCara(x - 0.26, 9.94) - 0.10);
+                const g2 = ponerEnOjo(geo('Sphere', 0.10, 6, 5), luz, x + 0.28, 9.34,
+                                      zDeLaCara(x + 0.28, 9.34) - 0.04);
+
+                // 🐛 AQUÍ HABÍA UN PÁRPADO en forma de arco (medio Torus) y salió mal:
+                // el aro mide 0.80 de radio, así que sus extremos caen a x = ±0.80 del
+                // centro del ojo, donde la cara YA SE METIÓ HACIA ATRÁS. Los extremos
+                // se salían de la mejilla y en el render se veía **una mancha oscura al
+                // lado del ojo**, como si el personaje estuviera golpeado.
+                // Es el mismo error de siempre — colocar una pieza ANCHA a una sola Z
+                // sobre una cara curva — pero esta vez en una pieza, no en un punto.
+                // La ceja ya hace ese trabajo, así que el párpado sobra.
 
                 ojos.push(b, i, p);
                 pupilas.push(i, p);
@@ -3417,10 +3525,10 @@ Cera rápida protectora
             // puede sorprenderse al caer y relajarse al saludar. Sin cejas, la cara
             // se queda con una sola expresión para siempre.
             const cejas = [];
-            [-1.28, 1.28].forEach((x, i) => {
-                const c = ponerEnCabeza(geo('Capsule', 0.22, 1.45, 3, 6), pelo, x, 10.78, 2.55);
+            [-X_OJO, X_OJO].forEach((x, i) => {
+                const c = ponerEnCabeza(geo('Capsule', 0.19, 1.30, 3, 6), pelo,
+                                        x, 10.85, zDeLaCara(x, 10.85) - 0.30);
                 c.rotation.z = Math.PI / 2 + (i === 0 ? 0.16 : -0.16);
-                c.userData.sinContorno = true;
                 c.userData.yBase = c.position.y;   // ya en coordenadas de la cabeza
                 cejas.push(c);
             });
@@ -3432,30 +3540,38 @@ Cera rápida protectora
             grupo.userData.pupilas = pupilas;  // para dilatarlas según la emoción
 
             // Cachetes rosados: es el detalle que más los hace verse como tus dibujos
-            const cachete = geo('Sphere', 0.85, 10, 8);
+            // 🐛 Estaban puestos a z=2.28 cuando la cara en ese punto está a 1.82:
+            // flotaban 0.74 POR DELANTE, y en el render se veían como dos discos
+            // rosas pegados al aire junto a la cara. Ahora se calcula el punto.
+            const cachete = geo('Sphere', 0.78, 10, 8);
             const rubor = material('#f0868a', 'plano');
-            const cachIzq = ponerEnCabeza(cachete, rubor, -2.3, 8.35, 2.28);
-            const cachDer = ponerEnCabeza(cachete, rubor,  2.3, 8.35, 2.28);
-            cachIzq.scale.set(1, 0.66, 0.32);
-            cachDer.scale.set(1, 0.66, 0.32);
+            // Y METIDOS HACIA ADENTRO: a ±2.16 caían justo en la orilla de la
+            // silueta y desde la cámara del mapa se veían como dos calcomanías
+            // rosas asomando por el borde de la cara.
+            [-1, 1].forEach(lado => {
+                const cx = 1.94 * lado, cy = 8.72;
+                const c = ponerEnCabeza(cachete, rubor, cx, cy, zDeLaCara(cx, cy) - 0.78 * 0.30);
+                c.scale.set(0.92, 0.58, 0.30);
+            });
 
             // NARIZ. Tan chica que casi no se ve, y aun así es de lo que más se
             // extraña: sin ella la cara se queda como una máscara. Va en un tono
             // apenas más cálido que la piel, no en un color aparte.
-            const nariz = ponerEnCabeza(geo('Sphere', 0.34, 10, 8), material(oscurecer(a.piel, 0.94), 'piel'), 0, 8.4, 2.68);
+            const nariz = ponerEnCabeza(geo('Sphere', 0.34, 10, 8), material(oscurecer(a.piel, 0.94), 'piel'),
+                                        0, 8.5, zDeLaCara(0, 8.5) - 0.16);
             nariz.scale.set(1.15, 0.85, 0.9);
 
             // BOCA QUE SE ABRE. Antes era una sonrisa fija: el personaje se caía del
             // cielo con la misma cara que cuando saluda. Ahora hay dos piezas — el
             // arco de la sonrisa y un hueco oscuro detrás — y la animación las
             // combina para hacer sonrisa, "oh" de sorpresa, o risa abierta.
-            const boca = ponerEnCabeza(geo('Torus', 0.5, 0.14, 6, 12, Math.PI), material('#a8564e', 'piel'), 0, 7.85, 2.42);
+            const boca = ponerEnCabeza(geo('Torus', 0.60, 0.145, 6, 14, Math.PI), material('#a8564e', 'piel'),
+                                       0, 7.72, zDeLaCara(0, 7.72) - 0.06);
             boca.rotation.z = Math.PI;
-            boca.userData.sinContorno = true;
 
-            const hueco = ponerEnCabeza(geo('Sphere', 0.46, 10, 8), material('#7d3b38', 'plano'), 0, 7.9, 2.3);
+            const hueco = ponerEnCabeza(geo('Sphere', 0.52, 10, 8), material('#7d3b38', 'plano'),
+                                        0, 7.78, zDeLaCara(0, 7.78) - 0.20);
             hueco.scale.set(0.9, 0.1, 0.35);   // empieza cerrada
-            hueco.userData.sinContorno = true;
 
             grupo.userData.boca = boca;
             grupo.userData.hueco = hueco;
@@ -3464,7 +3580,6 @@ Cera rápida protectora
             // cinta. Un cuello corto, en un tono de piel un poco más oscuro (ahí
             // siempre hay sombra), le da anatomía a la figura.
             const cuello = poner(geo('Cylinder', 0.95, 1.15, 1.0, 12), material(oscurecer(a.piel, 0.86), 'piel'), 0, 6.9);
-            cuello.userData.sinContorno = true;
 
             grupo.userData.cuerpo = cuerpo;
 
@@ -3519,8 +3634,6 @@ Cera rápida protectora
             // flotando por encima del pelo. Aquí se vuelve a leer, no se supone.
             grupo.userData.brazos.forEach(h => { h.userData.yBase = h.position.y; });
 
-            agregarContorno3D(cuerpo);
-
             // Se ajusta al alto declarado. Sin esto, ALTURA_PERSONAJE_3D sería un
             // número decorativo y el muñeco mediría lo que saliera de sumar las
             // piezas — que además cambia según el peinado y el accesorio.
@@ -3535,58 +3648,22 @@ Cera rápida protectora
             return grupo;
         }
 
-        // CONTORNO estilo sticker, como en la segunda referencia de Tristán.
+        // ❌ AQUÍ VIVÍA EL "CONTORNO ESTILO STICKER" — se eliminó en agosto 2026.
         //
-        // El truco clásico de los videojuegos: por cada pieza se agrega una copia un
-        // poco más grande, pintada de negro y **volteada al revés** (`BackSide`). Como
-        // sólo se ven sus caras traseras, la copia queda escondida detrás de la pieza
-        // original y sólo asoma por la orilla — o sea, un borde.
+        // Era el truco de los videojuegos: por cada pieza, una copia un poco más
+        // grande, negra y volteada al revés (`BackSide`), que sólo asoma por la
+        // orilla y hace de borde.
         //
-        // Sólo se le pone a las piezas GRANDES (las que definen la silueta). En un
-        // cordón de sudadera o en la visera, un borde del mismo grosor se comería la
-        // pieza entera. Ése era el motivo real para no hacerlo antes, no el costo:
-        // el personaje cuesta 0.17 ms por cuadro y tiene margen de sobra.
-        const MATERIAL_CONTORNO = { valor: null };
-        const TAMANO_MINIMO_CONTORNO = 1.1;   // radio aproximado, en metros del mapa
-
-        function materialContorno() {
-            if (!MATERIAL_CONTORNO.valor) {
-                MATERIAL_CONTORNO.valor = new THREE.MeshBasicMaterial({
-                    color: 0x14121a, side: THREE.BackSide
-                });
-            }
-            return MATERIAL_CONTORNO.valor;
-        }
-
-        function agregarContorno3D(cuerpo) {
-            // Se recorre TODO el árbol, no sólo el primer nivel: los brazos viven
-            // dentro de un pivote de hombro y si no, se quedarían sin borde.
-            const piezas = [];
-            cuerpo.traverse(o => { if (o.isMesh) piezas.push(o); });
-            piezas.forEach(pieza => {
-                if (!pieza.isMesh || !pieza.geometry) return;
-                // Algunas piezas se marcan para NO llevar borde: un aro negro con
-                // borde negro deja de leerse como lentes y parece un antifaz.
-                if (pieza.userData.sinContorno) return;
-
-                // ¿Es lo bastante grande como para merecer borde?
-                if (!pieza.geometry.boundingSphere) pieza.geometry.computeBoundingSphere();
-                const radio = pieza.geometry.boundingSphere.radius *
-                              Math.max(pieza.scale.x, pieza.scale.y, pieza.scale.z);
-                if (radio < TAMANO_MINIMO_CONTORNO) return;
-
-                // El borde va COLGADO de su pieza, no al lado. Así, cuando la
-                // animación mueva un brazo o achate el cuerpo, el borde se mueve y se
-                // achata con él. Puesto como hermano se quedaría atrás y se vería el
-                // brazo salido de su propio contorno.
-                const borde = new THREE.Mesh(pieza.geometry, materialContorno());
-                // Un grosor parejo: las piezas chicas necesitan crecer más en
-                // proporción para que su borde se vea igual de grueso que el de la cabeza.
-                const grosor = 1 + (0.42 / radio);
-                borde.scale.setScalar(grosor);
-                pieza.add(borde);
-            });
-        }
+        // Al renderizar el personaje de cerca se vio el problema: como CADA pieza
+        // llevaba su propia copia, y las piezas se enciman (el pelo sobre la cabeza,
+        // las orejas contra el cráneo, los ojos contra la cara), las copias negras se
+        // asomaban unas entre otras. En vez de una línea limpia quedaba **un halo
+        // negro grumoso** alrededor de toda la figura — justo lo que la hacía verse
+        // de aficionado.
+        //
+        // Las referencias que mandó Tristán no tienen contorno: el volumen sale de
+        // la LUZ. Aquí ya hay tres luces, incluida la morada de contorno por detrás,
+        // que es la que despega al personaje del mapa. Ésa hace ese trabajo bien.
 
         // Cinco tipos de ropa. Es lo que da variedad de verdad entre un cliente y otro:
         // con sólo cambiar el color, todos los personajes se veían iguales.
@@ -3607,7 +3684,10 @@ Cera rápida protectora
             // pie, que es lo que hace un maniquí colgado, no alguien parado.
             const pierna = geo('Capsule', 0.66, esVestido ? 1.0 : 1.5, 3, 8);
             const zapato = geo('Sphere', 1.02, 10, 8);
-            const telaPierna = material('#2b2b33', 'tela');
+            // El pantalón era casi negro (#2b2b33) y las piernas se leían como dos
+            // palos sin forma: la luz no alcanzaba a dibujarles el volumen. Un
+            // grafito azulado sí recibe la luz y se ve como tela.
+            const telaPierna = material('#3f4152', 'tela');
             const piernas = [];
 
             [-0.9, 0.9].forEach(x => {
@@ -3630,7 +3710,6 @@ Cera rápida protectora
                 const s = new THREE.Mesh(zapato, material('#f2f0ee', 'lustroso'));
                 s.position.set(0, 0.30, 0.3);
                 s.scale.set(1.0, 0.26, 1.28);
-                s.userData.sinContorno = true;
                 pata.add(s);
 
                 piernas.push(pata);
@@ -3641,8 +3720,12 @@ Cera rápida protectora
                 poner(geo('Cylinder', 1.5, 3.15, 3.5, 12), tela, 0, 4.8);
                 poner(geo('Sphere', 1.55, 12, 8), tela, 0, 6.4);
             } else {
-                poner(geo('Cylinder', 1.6, 2.05, 3.2, 12), tela, 0, 4.9);
-                poner(geo('Sphere', 1.6, 12, 8), tela, 0, 6.4);
+                // El torso era MÁS ANCHO ABAJO que arriba (1.6 arriba, 2.05 abajo):
+                // o sea con forma de pera, con los hombros más angostos que la
+                // cadera. Es de lo que más lo hacía ver desgarbado. Ahora el pecho
+                // es lo ancho y la cintura se mete un poco, como en un juguete.
+                poner(geo('Cylinder', 1.92, 1.74, 3.2, 12), tela, 0, 4.9);
+                poner(geo('Sphere', 1.86, 12, 8), tela, 0, 6.3);
             }
 
             if (a.ropa === 'rayas') {
@@ -3679,12 +3762,10 @@ Cera rápida protectora
             // Cuestan tres piezas y cambian por completo cómo se lee la figura.
             const cuelloPrenda = poner(geo('Torus', 1.12, 0.17, 6, 14), sombra, 0, 7.65);
             cuelloPrenda.rotation.x = Math.PI / 2;
-            cuelloPrenda.userData.sinContorno = true;
 
-            const dobladillo = poner(geo('Torus', esVestido ? 3.18 : 2.08, 0.15, 6, 16), sombra,
+            const dobladillo = poner(geo('Torus', esVestido ? 3.18 : 1.78, 0.15, 6, 16), sombra,
                                      0, esVestido ? 3.2 : 3.45);
             dobladillo.rotation.x = Math.PI / 2;
-            dobladillo.userData.sinContorno = true;
 
             // Los brazos van dentro de un pivote puesto EN EL HOMBRO. Sin esto, al
             // girarlos para saludar rotarían alrededor de su propio centro y el brazo
@@ -3694,9 +3775,13 @@ Cera rápida protectora
             // que la mano llegue un instante DESPUÉS que el hombro — y ése es de los
             // detalles que más separan una animación profesional de una de
             // aficionado. Es el mismo principio del pelo, aplicado al brazo.
-            const brazoGeo    = geo('Capsule', 0.48, 0.85, 3, 8);
-            const antebrazoGeo = geo('Capsule', 0.45, 0.70, 3, 8);
-            const codoGeo     = geo('Sphere', 0.47, 8, 6);
+            // Brazos MÁS GRUESOS y pegados al cuerpo. Eran cápsulas de 0.48 colgadas
+            // a x=±2.25, o sea por FUERA de un torso de 2.05 de radio: quedaba un
+            // hueco visible y se leían como dos salchichas sueltas al lado de la
+            // figura, no como brazos que salen del hombro.
+            const brazoGeo    = geo('Capsule', 0.56, 0.85, 3, 8);
+            const antebrazoGeo = geo('Capsule', 0.52, 0.70, 3, 8);
+            const codoGeo     = geo('Sphere', 0.54, 8, 6);
             const manoGeo = geo('Sphere', 0.6, 10, 8);
             const punoGeo = geo('Torus', 0.5, 0.13, 6, 12);
             const brazos = [];
@@ -3708,7 +3793,7 @@ Cera rápida protectora
                 // personaje. Ver la nota de SESGO_DE_LA_CEJA.
                 const hombro = new THREE.Group();
                 const alturaHombro = 6.1 + (lado === -1 ? 0.07 : -0.05);
-                hombro.position.set(2.25 * lado, alturaHombro, 0);
+                hombro.position.set(1.94 * lado, alturaHombro, 0);
                 hombro.userData.yBase = alturaHombro;   // para poder subirlos al encogerse
 
                 const b = new THREE.Mesh(brazoGeo, tela);
@@ -3719,7 +3804,6 @@ Cera rápida protectora
                 // ella se ve el corte justo donde el brazo se dobla.
                 const codo = new THREE.Mesh(codoGeo, tela);
                 codo.position.y = ALTURA_DEL_CODO;
-                codo.userData.sinContorno = true;
                 hombro.add(codo);
 
                 // De aquí para abajo cuelga del CODO, no del hombro
@@ -3735,7 +3819,6 @@ Cera rápida protectora
                 const p = new THREE.Mesh(punoGeo, sombra);
                 p.position.y = -0.82;
                 p.rotation.x = Math.PI / 2;
-                p.userData.sinContorno = true;
                 antebrazo.add(p);
 
                 // LA MANO CUELGA DE SU PROPIA MUÑECA. Un saludo de verdad es un
@@ -3759,20 +3842,22 @@ Cera rápida protectora
                 // autos. Va en la mano IZQUIERDA a propósito: la derecha es la que
                 // saluda, y saludar con la esponja en la mano se veía raro.
                 if (lado === -1) {
-                    const esponja = new THREE.Mesh(geo('Box', 1.5, 0.95, 1.15),
+                    // Más grande y girada hacia quien mira: pegada al cuerpo y de
+                    // canto se veía como una astillita amarilla y no se entendía qué
+                    // era. Es el objeto que dice de qué es el negocio: tiene que leerse.
+                    const esponja = new THREE.Mesh(geo('Box', 1.85, 1.15, 1.35),
                                                    material('#f2c14e', 'tela'));
-                    esponja.position.set(0, -0.62, 0.15);
-                    esponja.rotation.z = 0.22;
+                    esponja.position.set(-0.45, -0.72, 0.55);
+                    esponja.rotation.set(0.18, 0.55, 0.28);
                     muneca.add(esponja);
                     hombro.userData.esponja = esponja;
 
                     // Tres pegotes de espuma encima: es lo que la hace leer como
                     // esponja mojada y no como un ladrillo amarillo.
-                    [[-0.42, 0.2, 0.3], [0.3, 0.34, -0.1], [0.05, 0.16, 0.5]].forEach(([ex, ey, ez], n) => {
-                        const espuma = new THREE.Mesh(geo('Sphere', 0.3 + n * 0.06, 7, 5),
+                    [[-0.85, 0.28, 0.75], [-0.2, 0.42, 0.35], [-0.5, 0.24, 1.05]].forEach(([ex, ey, ez], n) => {
+                        const espuma = new THREE.Mesh(geo('Sphere', 0.32 + n * 0.07, 7, 5),
                                                       material('#fbfaff', 'plano'));
-                        espuma.position.set(ex, -0.62 + ey, ez);
-                        espuma.userData.sinContorno = true;
+                        espuma.position.set(ex, -0.72 + ey, ez);
                         muneca.add(espuma);
                     });
                 }
@@ -3813,6 +3898,33 @@ Cera rápida protectora
                 const casquete = poner(geo('Sphere', 3.46, 14, 8, 0, Math.PI * 2, 0, Math.PI / 2), pelo, 0, BASE_PELO);
                 casquete.scale.set(1, 1.0, 0.96);
                 if (a.peinado === 'rapado') casquete.scale.set(1, 0.5, 0.96);
+
+                // 🐛 AQUÍ PUSE TRES BULTOS ENCIMA DEL CASQUETE como "mechones" y salió
+                // peor: al asomar por arriba de la media esfera cada uno agarraba la
+                // luz por su cuenta, y sobre pelo oscuro se leían como **dos hoyos**
+                // en la coronilla, no como cabello.
+                //
+                // Lo que sí hace que un casquete deje de verse como casco de tazón no
+                // es ponerle bultos arriba, es que el pelo BAJE POR DELANTE: un
+                // flequillo sobre la frente y las patillas por delante de la oreja.
+                // Ahí es donde el ojo lee "peinado".
+                if (a.peinado !== 'rapado') {
+                    // ⚠️ El flequillo tiene que ser MÁS ANCHO QUE LA CABEZA (3.4). Al
+                    // primer intento le puse 3.30 y sus orillas quedaron POR DENTRO
+                    // del cráneo: en el render se veía una costura, como una diadema
+                    // cruzada en la frente en vez de pelo.
+                    const fleco = poner(geo('Sphere', 3.52, 14, 8, 0, Math.PI * 2, 0, Math.PI / 2),
+                                        pelo, 0, 11.00, 0.30);
+                    fleco.scale.set(1.0, 0.44, 0.90);
+                    fleco.rotation.x = 0.10;   // cae hacia el frente, que es lo que lo hace fleco
+                    fleco.rotation.z = 0.05;   // un pelo chueco: perfecto se ve fabricado
+
+                    [-1, 1].forEach(lado => {
+                        const patilla = poner(geo('Capsule', 0.40, 0.85, 3, 6), pelo,
+                                              2.86 * lado, 10.30, 0.15);
+                        patilla.scale.set(0.62, 1, 0.9);
+                    });
+                }
             }
 
             if (a.peinado === 'largo' || a.peinado === 'coletas') {
@@ -3828,11 +3940,15 @@ Cera rápida protectora
             }
 
             if (a.peinado === 'coletas') {
-                // Dos coletas a los lados, como en las referencias
-                [-3.85, 3.85].forEach(x => {
-                    poner(geo('Sphere', 1.2, 10, 8), pelo, x, 9.8, -0.35);
-                    const cola = poner(geo('Capsule', 0.7, 1.7, 3, 8), pelo, x * 1.12, 8.25, -0.35);
-                    cola.rotation.z = x > 0 ? -0.28 : 0.28;
+                // Dos coletas a los lados. ⚠️ Estaban a la altura de los ojos (y=9.8)
+                // y bien al frente (z=-0.35 pero con radio 1.2): en el render tapaban
+                // media cara, como dos bolas de crema pegadas sobre las mejillas.
+                // Van más ARRIBA (arriba de la oreja, que es donde se amarran) y más
+                // ATRÁS, para que la cara quede libre.
+                [-3.7, 3.7].forEach(x => {
+                    poner(geo('Sphere', 1.1, 10, 8), pelo, x, 10.9, -1.0);
+                    const cola = poner(geo('Capsule', 0.66, 1.6, 3, 8), pelo, x * 1.14, 9.5, -1.15);
+                    cola.rotation.z = x > 0 ? -0.30 : 0.30;
                 });
             }
 
@@ -3862,7 +3978,15 @@ Cera rápida protectora
                                      material('#6d28d9', 'tela'), 0, 11.35);
                 // Angosta de lado y salida al frente: así se lee como GORRA. A lo ancho
                 // completo parecía sombrero de sol, que no es la idea.
-                visera.scale.set(0.7, 1, 1.15);
+                // ⚠️ EL LARGO Y LA INCLINACIÓN VAN JUNTOS. Horizontal, la visera queda
+                // DE CANTO para quien mira de frente y no se ve (parecía gorro de
+                // alberca). Pero al inclinarla 0.30 con el largo viejo (salía 5.08 al
+                // frente) **la punta bajaba 1.5 y quedaba colgando delante de los
+                // ojos**: en el render se veía una banda morada cruzando la cara.
+                // Corta y con poca inclinación: se ve, y la punta queda muy por
+                // encima de la mirada. Es la cuarta vez que esta visera da problemas.
+                visera.scale.set(0.7, 1, 0.78);
+                visera.rotation.x = 0.16;
             }
             if (a.accesorio === 'gorro') {
                 // Gorro de invierno. La vuelta doblada va ARRIBA DE LOS OJOS (y=9.8):
@@ -3890,7 +4014,6 @@ Cera rápida protectora
                 const l2 = ponerEnCara(aro, material('#15151a', 'lustroso'),  1.28, 9.5, 3.0);
                 const puente = ponerEnCara(geo('Cylinder', 0.11, 0.11, 0.8, 6), material('#15151a', 'lustroso'), 0, 9.5, 3.0);
                 puente.rotation.z = Math.PI / 2;
-                [l1, l2, puente].forEach(p => { p.userData.sinContorno = true; });
             }
         }
 
