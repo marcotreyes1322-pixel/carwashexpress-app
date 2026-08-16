@@ -680,7 +680,7 @@
            parece que la trae en la mano y no pegada con cinta. El giro base de -14°
            se repite dentro del keyframe porque una animación de transform PISA el
            transform del atributo — si no, la esponja saltaría a derecha al empezar. */
-        .av-esponja { transform-box: view-box; transform-origin: 12px 119px;
+        .av-esponja { transform-box: view-box; transform-origin: 12px 115px;
                       animation: avTalla 2.3s ease-in-out infinite; }
         @keyframes avTalla {
             0%, 100% { transform: rotate(-14deg) translateX(0); }
@@ -737,9 +737,9 @@
            (2.3 s), para que el brazo y lo que trae en la mano se muevan juntos. */
         @keyframes avBrazoIzq { 0%,100% { transform: rotate(1.2deg); } 50% { transform: rotate(-1.6deg); } }
         @keyframes avBrazoDer { 0%,100% { transform: rotate(-1.5deg); } 50% { transform: rotate(1.1deg); } }
-        .av-brazo-izq { transform-box: view-box; transform-origin: 22.5px 88px;
+        .av-brazo-izq { transform-box: view-box; transform-origin: 22.5px 90px;
                         animation: avBrazoIzq 2.3s ease-in-out infinite; }
-        .av-brazo-der { transform-box: view-box; transform-origin: 77.5px 88px;
+        .av-brazo-der { transform-box: view-box; transform-origin: 77.5px 90px;
                         animation: avBrazoDer 3.7s ease-in-out infinite; }
 
         @media (prefers-reduced-motion: reduce) {
@@ -2097,7 +2097,12 @@ Cera rápida protectora
         // cuidado que en 3D: más abajo, el fleco le cae sobre la mirada.
         function trazoPeinado(estilo, color) {
             const casquete = `<path d="M21 43 Q20 12 50 12 Q80 12 79 43
-                                       Q77 30 66 27 Q58 34 44 31 Q29 30 21 43 Z" fill="${color}"/>`;
+                                       Q77 30 66 27 Q58 34 44 31 Q29 30 21 43 Z" fill="${color}"/>
+                    <!-- MECHONES: cortes que separan el pelo en capas. Sin ellos es
+                         una masa de color y se lee como gorro, no como cabello. -->
+                    <path d="M31 26 Q38 17 47 20 Q40 22 35 30 Z" fill="${color}" opacity="0.55" stroke="none"/>
+                    <path d="M55 19 Q65 19 71 28 Q64 22 55 24 Z" fill="${color}" opacity="0.55" stroke="none"/>
+                    <path d="M42 14 Q50 11 57 14 Q50 16 42 14 Z" fill="#ffffff" opacity="0.16" stroke="none"/>`;
 
             switch (estilo) {
                 case 'rizado':
@@ -2160,8 +2165,8 @@ Cera rápida protectora
         // El cuerpo cambia según el tipo de ropa: es lo que da variedad de verdad.
         function trazoCuerpo(a, id) {
             const sombra = oscurecer(a.colorRopa);
-            const piernaY = a.ropa === 'vestido' ? 116 : 110;
-            const altoPierna = a.ropa === 'vestido' ? 14 : 20;
+            const piernaY = a.ropa === 'vestido' ? 118 : 114;
+            const altoPierna = a.ropa === 'vestido' ? 11 : 15;
 
             let torso;
             if (a.ropa === 'vestido') {
@@ -2187,8 +2192,8 @@ Cera rápida protectora
             }
 
             return `
-                <rect x="37" y="${piernaY}" width="10" height="${altoPierna}" rx="4.5" fill="url(#${id}-pantalon)"/>
-                <rect x="53" y="${piernaY}" width="10" height="${altoPierna}" rx="4.5" fill="url(#${id}-pantalon)"/>
+                <rect x="38" y="${piernaY}" width="11" height="${altoPierna}" rx="5" fill="url(#${id}-pantalon)"/>
+                <rect x="51" y="${piernaY}" width="11" height="${altoPierna}" rx="5" fill="url(#${id}-pantalon)"/>
                 <!-- Zapatos con SUELA: una franja clara abajo. Es el detalle que
                      separa "una mancha de color" de "un zapato", y en un juguete de
                      diseñador el calzado es justo lo que se ve más caro. -->
@@ -2197,6 +2202,9 @@ Cera rápida protectora
                 <path d="M34.2 133.6 Q42 138.4 49.8 133.6 Q42 136.2 34.2 133.6 Z" fill="#f2f0ee" opacity="0.92" stroke="none"/>
                 <path d="M50.2 133.6 Q58 138.4 65.8 133.6 Q58 136.2 50.2 133.6 Z" fill="#f2f0ee" opacity="0.92" stroke="none"/>
                 ${torso}
+                <!-- La sombra que la cabeza le echa al cuerpo. Sin esto la cabeza
+                     se ve pegada como calcomanía en vez de apoyada encima. -->
+                <path d="M30 86 Q50 78 70 86 L69 100 Q50 94 31 100 Z" fill="url(#${id}-oclusion)" stroke="none"/>
                 <!-- Un brillo suave sobre la prenda: la tela deja de verse de cartón.
                      Va con DEGRADADO, no con opacidad plana: al primer intento se veía
                      el borde recto del recorte y se leía como una mancha, no como luz. -->
@@ -2207,14 +2215,14 @@ Cera rápida protectora
                      ritmos distintos a propósito — dos brazos meciéndose exactamente
                      igual se ven de robot. -->
                 <g class="av-brazo-izq">
-                    <rect x="18" y="86" width="9" height="25" rx="4.5" fill="url(#${id}-ropa)"/>
-                    <rect x="17.4" y="105" width="10.2" height="3.4" rx="1.7" fill="${sombra}" stroke="none"/>
-                    <circle cx="22.5" cy="113" r="5" fill="url(#${id}-piel)"/>
+                    <rect x="17" y="88" width="11" height="19" rx="5.5" fill="url(#${id}-ropa)"/>
+                    <rect x="16.4" y="101.5" width="12.2" height="3.4" rx="1.7" fill="${sombra}" stroke="none"/>
+                    <circle cx="22.5" cy="109" r="5.6" fill="url(#${id}-piel)"/>
                 </g>
                 <g class="av-brazo-der">
-                    <rect x="73" y="86" width="9" height="25" rx="4.5" fill="url(#${id}-ropa)"/>
-                    <rect x="72.4" y="105" width="10.2" height="3.4" rx="1.7" fill="${sombra}" stroke="none"/>
-                    <circle cx="77.5" cy="113" r="5" fill="url(#${id}-piel)"/>
+                    <rect x="72" y="88" width="11" height="19" rx="5.5" fill="url(#${id}-ropa)"/>
+                    <rect x="71.4" y="101.5" width="12.2" height="3.4" rx="1.7" fill="${sombra}" stroke="none"/>
+                    <circle cx="77.5" cy="109" r="5.6" fill="url(#${id}-piel)"/>
                 </g>
                 <!-- cuello de la prenda: separa la cabeza del cuerpo -->
                 <path d="M40 83 Q50 89 60 83" stroke="${sombra}" stroke-width="3.2" fill="none" stroke-linecap="round"/>`;
@@ -2250,9 +2258,24 @@ Cera rápida protectora
                     <stop offset="100%" stop-color="${oscurecer(a.colorCabello, 0.82)}"/>
                 </radialGradient>
                 <radialGradient id="${id}-suelo">
-                    <stop offset="0%" stop-color="#000" stop-opacity="0.5"/>
-                    <stop offset="60%" stop-color="#000" stop-opacity="0.18"/>
+                    <stop offset="0%" stop-color="#000" stop-opacity="0.85"/>
+                    <stop offset="45%" stop-color="#000" stop-opacity="0.45"/>
                     <stop offset="100%" stop-color="#000" stop-opacity="0"/>
+                </radialGradient>
+                <!-- OCLUSIÓN: la sombra que la cabeza le echa al cuerpo. Es de lo
+                     que MÁS profundidad da y no estaba: sin ella la cabeza se ve
+                     pegada al torso como calcomanía, no apoyada encima de él. -->
+                <linearGradient id="${id}-oclusion" x1="0" y1="0" x2="0" y2="1">
+                    <stop offset="0%" stop-color="#000" stop-opacity="0.42"/>
+                    <stop offset="100%" stop-color="#000" stop-opacity="0"/>
+                </linearGradient>
+                <!-- BRILLO DE VINIL en la coronilla: el reflejo suave que tienen
+                     los juguetes de plástico de la referencia. Es lo que hace que
+                     se lea como MATERIAL y no como dibujo. -->
+                <radialGradient id="${id}-vinil" cx="40%" cy="22%" r="46%">
+                    <stop offset="0%" stop-color="#ffffff" stop-opacity="0.34"/>
+                    <stop offset="70%" stop-color="#ffffff" stop-opacity="0.08"/>
+                    <stop offset="100%" stop-color="#ffffff" stop-opacity="0"/>
                 </radialGradient>
                 <!-- El pantalón y los zapatos eran las ÚNICAS piezas planas del
                      dibujo, y están justo abajo, donde el ojo aterriza. Con su
@@ -2292,7 +2315,7 @@ Cera rápida protectora
                 ${luces}
                 <!-- sombrita en el piso: lo que hace que se vea PARADO y no flotando -->
                 <ellipse cx="50" cy="80" rx="46" ry="60" fill="url(#${id}-halo)"/>
-                <ellipse cx="50" cy="136" rx="26" ry="6" fill="url(#${id}-suelo)"/>
+                <ellipse cx="50" cy="137" rx="30" ry="7.5" fill="url(#${id}-suelo)"/>
                 <!-- La sombra se queda AFUERA del grupo que respira: si subiera con
                      el cuerpo, se vería como que el piso también flota. -->
                 <g class="av-flota">
@@ -2305,7 +2328,7 @@ Cera rápida protectora
                        donde más trabaja, y por fuera el halo morado hace la silueta.
                        Va como stroke heredado en el grupo, así todas las piezas lo
                        toman con un solo valor y la línea queda pareja. -->
-                  <g class="av-gesto" stroke="#241a2e" stroke-width="2.1"
+                  <g class="av-gesto" stroke="#2e2440" stroke-width="1.5"
                      stroke-linejoin="round" stroke-linecap="round">
                     ${trazoCuerpo(a, id)}
                     <g class="av-cabeza-gesto">
@@ -2368,18 +2391,22 @@ Cera rápida protectora
                         <path d="M42.5 65.5 Q50 73.4 57.5 65.5" stroke="#a8564e" stroke-width="2.6" fill="none" stroke-linecap="round"/>
                         <ellipse cx="53.6" cy="70.6" rx="1.7" ry="0.9" fill="#ffffff" opacity="0.35" stroke="none"/>
                         ${trazoAccesorio(a.accesorio)}
+                        <!-- El reflejo de plástico va HASTA ARRIBA, encima del pelo y
+                             del accesorio: es luz sobre el material, no una capa más. -->
+                        <ellipse cx="50" cy="45" rx="29" ry="30" fill="url(#${id}-vinil)"
+                                 stroke="none" pointer-events="none"/>
                     </g>
                     </g>
                     <!-- LA ESPONJA en la mano izquierda, igual que en el 3D del mapa:
                          es lo que vuelve a este personaje el de un negocio de lavado
                          de autos y no el de cualquier app. Va fuera del grupo de la
                          cabeza para que no se mueva cuando la cabeza se mece. -->
-                    <g class="av-esponja" transform="rotate(-14 12 119)">
-                        <rect x="4.5" y="114" width="15" height="10" rx="3" fill="#f2c14e"/>
-                        <rect x="4.5" y="114" width="15" height="4" rx="2" fill="#f7d580"/>
-                        <circle cx="7.5" cy="112" r="2.9" fill="#fbfaff"/>
-                        <circle cx="12.6" cy="110.8" r="2.2" fill="#fbfaff"/>
-                        <circle cx="16.8" cy="112.3" r="1.6" fill="#fbfaff"/>
+                    <g class="av-esponja" transform="rotate(-14 12 115)">
+                        <rect x="4.5" y="110" width="15" height="10" rx="3" fill="#f2c14e"/>
+                        <rect x="4.5" y="110" width="15" height="4" rx="2" fill="#f7d580"/>
+                        <circle cx="7.5" cy="108" r="2.9" fill="#fbfaff"/>
+                        <circle cx="12.6" cy="106.8" r="2.2" fill="#fbfaff"/>
+                        <circle cx="16.8" cy="108.3" r="1.6" fill="#fbfaff"/>
                     </g>
                   </g>
                 </g>
@@ -2590,7 +2617,7 @@ Cera rápida protectora
 
         // La versión del archivo. Sirve para que Tristán confirme de un vistazo si
         // el que abrió es el nuevo — ya pasó dos veces que probaba una copia vieja.
-        const VERSION_APP = '2026.08.15d';
+        const VERSION_APP = '2026.08.15e';
 
         function pintarVersion() {
             const el = document.getElementById('marca-version');
