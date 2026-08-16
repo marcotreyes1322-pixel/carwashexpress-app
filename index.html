@@ -340,7 +340,7 @@
         }
 
         /* --- FEED DE TRABAJOS Y RESEÑAS (carrusel horizontal) --- */
-        .feed-bloque { width: 100%; }
+        .feed-bloque { width: 100%; margin-top: 10px; }
         .feed-encabezado { display: flex; justify-content: space-between; align-items: baseline;
                            padding: 0 2px 8px 2px; }
         .feed-titulo { font-family: var(--serif); font-size: 17px; color: var(--blanco); }
@@ -2001,11 +2001,10 @@ Cera rápida protectora
         // =====================================================================
         const ADMIN_TELEFONO = "6251009755";
 
-        // ⚠️ CONFIRMAR CON TRISTÁN. En el CLAUDE.md el usuario de Instagram aparece
-        // cortado ("car_washex..."), así que éste es el más probable, no el
-        // confirmado. Si está mal, el botón lleva a un perfil que no existe — que es
-        // peor que no tener botón. Se cambia AQUÍ y en ningún otro lado.
-        const INSTAGRAM_USUARIO = "car_washexpress";
+        // ✅ CONFIRMADO por Tristán en agosto 2026, con captura de su pantalla de
+        // "Editar perfil". Ojo con las TRES ESES del final: yo había puesto
+        // "car_washexpress" (dos) y ése es un perfil que no es suyo.
+        const INSTAGRAM_USUARIO = "car_washexpresss";
         function esAdministrador() {
             return !!(usuarioActual && usuarioActual.email === telefonoAPseudoEmail(ADMIN_TELEFONO));
         }
@@ -3167,7 +3166,7 @@ Cera rápida protectora
 
         // La versión del archivo. Sirve para que Tristán confirme de un vistazo si
         // el que abrió es el nuevo — ya pasó dos veces que probaba una copia vieja.
-        const VERSION_APP = '2026.08.16f';
+        const VERSION_APP = '2026.08.16g';
 
         function pintarVersion() {
             const el = document.getElementById('marca-version');
@@ -3189,13 +3188,38 @@ Cera rápida protectora
             }
         }
 
+        // FOTOS DE TRABAJOS, servidas desde el propio repositorio.
+        //
+        // Se buscan por número: trabajos/1.jpg, trabajos/2.jpg, y así. La que no
+        // exista simplemente NO SE MUESTRA — no hay que avisar en ningún lado
+        // cuántas hay ni tocar código para agregar una más. Tristán sube el archivo
+        // y aparece sola.
+        //
+        // Van sin texto, sin estrellas y sin autor a propósito: son fotos de su
+        // trabajo, no reseñas. Inventarle un testimonio a un cliente sería engañar
+        // a quien lo lee, y el daño sería a la reputación del negocio.
+        const CUANTAS_FOTOS_BUSCAR = 12;
+
+        function fotosDeTrabajos() {
+            const lista = {};
+            for (let i = 1; i <= CUANTAS_FOTOS_BUSCAR; i++) {
+                lista['trabajo' + i] = { foto: 'trabajos/' + i + '.jpg', orden: -i };
+            }
+            return lista;
+        }
+
         function cargarFeedDeResenas() {
             const bloque = document.getElementById('feed-bloque');
-            if (!bloque || !baseLista()) return;
+            if (!bloque) return;
 
+            // Las fotos se pintan de inmediato: son archivos del propio sitio y no
+            // dependen de Firebase. Si además hay reseñas, se agregan encima.
+            pintarFeed(fotosDeTrabajos());
+
+            if (!baseLista()) return;
             conTiempoLimite(firebase.database().ref('resenas').once('value'), 8000)
-                .then(snap => pintarFeed(snap.val()))
-                .catch(() => { /* Sin feed la app funciona igual: no se estorba al cliente */ });
+                .then(snap => pintarFeed(Object.assign({}, fotosDeTrabajos(), snap.val() || {})))
+                .catch(() => { /* Sin reseñas quedan las fotos: no se estorba al cliente */ });
         }
 
         // VISTA PREVIA DEL FEED, SÓLO PARA TRISTÁN.
@@ -3258,19 +3282,45 @@ Cera rápida protectora
                            <img src="${esc(r.antes)}" alt="Antes" loading="lazy">
                            <img src="${esc(r.despues)}" alt="Después" loading="lazy">
                        </div>`
-                    : (r.foto ? `<img class="feed-foto" src="${esc(r.foto)}" alt="Trabajo terminado" loading="lazy">` : '');
-                return `<article class="feed-card">
-                    ${imagen}
-                    ${r.servicio ? `<span class="feed-etiqueta">${esc(r.servicio)}</span>` : ''}
-                    <div class="feed-cuerpo">
+                    : (r.foto ? `<img class="feed-foto" src="${esc(r.foto)}" alt="Trabajo terminado"
+                                      loading="lazy" onerror="quitarTarjetaSinFoto(this)">` : '');
+                // El cuerpo SÓLO se dibuja si hay algo que poner. Una tarjeta que
+                // es nada más la foto dejaba una franja oscura vacía abajo, y se
+                // veía como si le faltara cargar algo.
+                const cuerpo = (estrellas || r.texto || r.autor)
+                    ? `<div class="feed-cuerpo">
                         ${estrellas ? `<div class="feed-estrellas">${'★'.repeat(estrellas)}${'☆'.repeat(5 - estrellas)}</div>` : ''}
                         ${r.texto ? `<p class="feed-texto">${esc(r.texto)}</p>` : ''}
                         ${r.autor ? `<div class="feed-autor">${esc(r.autor)}</div>` : ''}
-                    </div>
+                       </div>`
+                    : '';
+                return `<article class="feed-card">
+                    ${imagen}
+                    ${r.servicio ? `<span class="feed-etiqueta">${esc(r.servicio)}</span>` : ''}
+                    ${cuerpo}
                 </article>`;
             }).join('');
 
             bloque.classList.remove('hidden');
+            // Puede que TODAS las tarjetas sean fotos que todavía no existen. En ese
+            // caso el bloque se queda vacío y hay que volver a esconderlo — si no,
+            // quedaría un encabezado "Trabajos recientes" sobre la nada.
+            revisarSiElFeedQuedoVacio();
+        }
+
+        // Una foto que no está en el repositorio se lleva su tarjeta completa. Así
+        // no se ve el icono de imagen rota, que es peor que no mostrar nada.
+        function quitarTarjetaSinFoto(img) {
+            const tarjeta = img.closest('.feed-card');
+            if (tarjeta) tarjeta.remove();
+            revisarSiElFeedQuedoVacio();
+        }
+
+        function revisarSiElFeedQuedoVacio() {
+            const bloque = document.getElementById('feed-bloque');
+            const carrusel = document.getElementById('feed-carrusel');
+            if (!bloque || !carrusel) return;
+            if (!carrusel.querySelector('.feed-card')) bloque.classList.add('hidden');
         }
 
         // =====================================================================
