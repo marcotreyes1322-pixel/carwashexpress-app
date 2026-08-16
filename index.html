@@ -992,6 +992,35 @@
             font-size: 11px; color: var(--muy-tenue); line-height: 1.6; margin-top: 14px;
         }
         .vacio-nota { font-size: 12.5px; color: var(--muy-tenue); padding: 26px 0; text-align: left; line-height: 1.6; }
+        /* Un estado vacío que sólo dice "no tienes nada" deja al cliente parado.
+           El que además OFRECE el siguiente paso es el que sirve para algo. */
+        .vacio-invita { display: flex; flex-direction: column; gap: 16px; padding: 26px 0 6px; }
+        .vacio-invita p { font-size: 12.5px; color: var(--muy-tenue); line-height: 1.6; margin: 0; }
+
+        /* ── Tu próxima cita, en la bienvenida ──────────────────────────────── */
+        .proxima-cita {
+            width: 100%; display: flex; flex-direction: column; align-items: flex-start;
+            gap: 3px; padding: 15px 17px; margin: 4px 0 2px; cursor: pointer;
+            text-align: left; border-radius: 16px;
+            background: linear-gradient(145deg, rgba(139,92,246,0.16), rgba(232,121,201,0.07));
+            border: 1px solid rgba(196,181,253,0.24);
+            transition: transform 0.13s ease, border-color 0.15s ease;
+        }
+        .proxima-cita:active { transform: scale(0.985); border-color: rgba(196,181,253,0.45); }
+        .proxima-etiqueta {
+            font-size: 9.5px; letter-spacing: 0.20em; text-transform: uppercase;
+            color: var(--morado-claro); font-weight: 600;
+        }
+        .proxima-cuando {
+            font-family: var(--serif); font-size: 25px; font-weight: 400;
+            color: var(--blanco); line-height: 1.15;
+        }
+        .proxima-cuando .hora { color: var(--morado-claro); }
+        .proxima-detalle { font-size: 11.5px; color: var(--tenue); line-height: 1.45; }
+        .proxima-ver {
+            font-size: 10px; letter-spacing: 0.12em; text-transform: uppercase;
+            color: var(--morado-claro); margin-top: 7px;
+        }
     
         /* =================================================================
            🖱️ EL :hover SÓLO DONDE HAY RATÓN.
@@ -1303,6 +1332,18 @@
                     </div>
                 </div>
             </div>
+
+            <!-- TU PRÓXIMA CITA.
+                 Aquí había un hueco de casi un tercio de la pantalla — el mejor
+                 lugar de toda la app, sin hacer nada. Y lo primero que quiere saber
+                 alguien que ya agendó es justo esto: cuándo le toca. Si no tiene
+                 ninguna, el bloque no aparece y el hueco se cierra solo. -->
+            <button class="proxima-cita hidden" id="proxima-cita" onclick="irADetalleDeMisCitas()">
+                <span class="proxima-etiqueta">Tu próxima cita</span>
+                <span class="proxima-cuando" id="proxima-cuando"></span>
+                <span class="proxima-detalle" id="proxima-detalle"></span>
+                <span class="proxima-ver">Ver mis citas →</span>
+            </button>
 
             <!-- FEED DE TRABAJOS Y RESEÑAS.
                  Se llena desde Firebase (nodo resenas), NO con texto de ejemplo:
@@ -2950,6 +2991,7 @@ Cera rápida protectora
         function cargarPersonajeDelUsuario() {
             pintarAvatarEnBienvenida();   // se pinta ya con lo que haya, sin esperar la red
             cargarFeedDeResenas();        // el feed va por su cuenta: si falla, no estorba
+            pintarProximaCita();          // igual: si falla, el bloque simplemente no sale
             if (!baseLista() || !usuarioActual) return;
 
             firebase.database().ref('usuarios/' + usuarioActual.uid).once('value')
@@ -2971,6 +3013,47 @@ Cera rápida protectora
                 const primerNombre = String(nombre).trim().split(/\s+/)[0];
                 document.getElementById('saludo-nombre').textContent = "Hola, " + primerNombre;
             }
+        }
+
+        // Lo primero que quiere saber alguien que ya agendó es cuándo le toca. Se lee
+        // SÓLO su propio nodo (ordenes/{uid}), que son un puñado de citas — no la base
+        // entera como hace la agenda del administrador.
+        function pintarProximaCita() {
+            const caja = document.getElementById('proxima-cita');
+            if (!caja) return;
+            caja.classList.add('hidden');   // se esconde hasta saber que hay algo
+            if (!baseLista() || !usuarioActual) return;
+
+            firebase.database().ref('ordenes/' + usuarioActual.uid).once('value')
+                .then(snap => {
+                    const hoy = fechaLocalISO(new Date());
+                    const proximas = Object.values(snap.val() || {})
+                        .filter(c => c && c.agendaDia && c.agendaDia >= hoy
+                                  && (!c.status || c.status === 'Pendiente'))
+                        .sort((a, b) => (a.agendaDia + a.agendaHora).localeCompare(b.agendaDia + b.agendaHora));
+
+                    const cita = proximas[0];
+                    if (!cita) return;   // sin citas, el bloque no aparece y el hueco se cierra
+
+                    const faltan = diasDeDiferencia(hoy, cita.agendaDia);
+                    const dia = faltan === 0 ? "Hoy"
+                              : faltan === 1 ? "Mañana"
+                              : formatearFechaLegible(cita.agendaDia);
+
+                    // Con esc(): el nombre del auto lo escribe el cliente.
+                    document.getElementById('proxima-cuando').innerHTML =
+                        esc(dia) + ' · <span class="hora">' + esc(cita.agendaHora || '') + '</span>';
+                    document.getElementById('proxima-detalle').textContent =
+                        [cita.paquete, cita.auto].filter(Boolean).join(' · ')
+                        + (cita.total ? '  ·  $' + cita.total : '');
+                    caja.classList.remove('hidden');
+                })
+                .catch(err => console.error("No se pudo leer la próxima cita:", err));
+        }
+
+        function irADetalleDeMisCitas() {
+            mostrarPantalla('screen-ver-citas');
+            renderizarCitas();
         }
 
         // Escapa el texto que escribió un cliente antes de meterlo en la pantalla.
@@ -3084,7 +3167,7 @@ Cera rápida protectora
 
         // La versión del archivo. Sirve para que Tristán confirme de un vistazo si
         // el que abrió es el nuevo — ya pasó dos veces que probaba una copia vieja.
-        const VERSION_APP = '2026.08.16e';
+        const VERSION_APP = '2026.08.16f';
 
         function pintarVersion() {
             const el = document.getElementById('marca-version');
@@ -6697,7 +6780,7 @@ Cera rápida protectora
         function irAPantallaCitas() {
             document.getElementById('screen-services').classList.add('hidden');
             document.getElementById('screen-ver-citas').classList.remove('hidden');
-            renderizarCitas();
+            renderizarCitas(); pintarProximaCita();
         }
 
         function regresarAMenuDesdeCitas() {
@@ -6721,7 +6804,10 @@ Cera rápida protectora
                 .then((snapshot) => {
                     const data = snapshot.val();
                     if (!data) {
-                        contenedor.innerHTML = `<p class="vacio-nota">Todavía no tienes ninguna cita agendada.</p>`;
+                        contenedor.innerHTML = `<div class="vacio-invita">
+                            <p>Todavía no tienes ninguna cita agendada.</p>
+                            <button class="btn-premium" onclick="pedirGPS()">Agendar mi primer lavado</button>
+                        </div>`;
                         return;
                     }
                     // Firebase las devuelve en el orden en que se apartaron, no en el
@@ -6754,7 +6840,10 @@ Cera rápida protectora
                     });
 
                     if (proximas.length === 0) {
-                        contenedor.innerHTML = `<p class="vacio-nota">No tienes citas próximas.</p>`;
+                        contenedor.innerHTML = `<div class="vacio-invita">
+                            <p>No tienes citas próximas.</p>
+                            <button class="btn-premium" onclick="pedirGPS()">Agendar otro lavado</button>
+                        </div>`;
                     } else {
                         pintar(proximas, false);
                     }
@@ -6824,7 +6913,7 @@ Cera rápida protectora
         function cancelarReagenda() {
             salirDeModoReagenda();
             mostrarPantalla('screen-ver-citas');
-            renderizarCitas();
+            renderizarCitas(); pintarProximaCita();
         }
 
         function confirmarReagenda() {
@@ -6873,7 +6962,7 @@ Cera rápida protectora
                         salirDeModoReagenda();
                         mostrarAviso("✅ Tu cita quedó cambiada al " + formatearFechaLegible(fechaSeleccionada) + " a las " + horaSeleccionada + ".");
                         mostrarPantalla('screen-ver-citas');
-                        renderizarCitas();
+                        renderizarCitas(); pintarProximaCita();
                     })
                     .catch(err => {
                         // No se pudo mover: devolvemos el hueco nuevo para no dejarlo bloqueado
@@ -6923,7 +7012,7 @@ Cera rápida protectora
                         });
                     })
                     .then(() => {
-                        renderizarCitas();
+                        renderizarCitas(); pintarProximaCita();
                         mostrarAviso("🗑️ La reservación ha sido cancelada y el horario quedó libre.");
                     })
                     .catch((error) => {
