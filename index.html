@@ -2103,6 +2103,29 @@ Cera rápida protectora
             return '#' + ((1 << 24) + (r << 16) + (g << 8) + b).toString(16).slice(1);
         }
 
+        // ⚠️ EL RUBOR Y EL LABIO SALEN DE LA PIEL, no son colores fijos.
+        //
+        // Tristán: *"parece que los personajes están maquillados"*. Y sí: el cachete
+        // era un rosa FIJO (#f0868a) y el labio un rojo FIJO (#a8564e), iguales para
+        // todos. Un rosa fijo sobre piel clara se lee como rubor de maquillaje, y
+        // sobre piel morena se lee peor todavía — como un disco rosa pegado encima,
+        // porque no tiene nada que ver con el tono de esa cara.
+        //
+        // Un rubor de verdad es LA MISMA PIEL, un poco más caliente: sube el rojo y
+        // baja el azul. Así funciona en los seis tonos sin colores nuevos.
+        function calentar(hex, fuerza) {
+            const n = parseInt(String(hex).slice(1), 16);
+            const f = fuerza === undefined ? 1 : fuerza;
+            let r = (n >> 16) & 255, g = (n >> 8) & 255, b = n & 255;
+            r = Math.round(r + (255 - r) * 0.12 * f);
+            g = Math.round(g * (1 - 0.20 * f));
+            b = Math.round(b * (1 - 0.28 * f));
+            return '#' + ((1 << 24) + (r << 16) + (g << 8) + b).toString(16).slice(1);
+        }
+
+        // El labio: la piel calentada y un poco más oscura. Nunca rojo.
+        function tonoDeLabio(piel) { return oscurecer(calentar(piel, 1), 0.66); }
+
         // El pelo arranca en y=38, ARRIBA de los ojos (que están en y=50). Es el mismo
         // cuidado que en 3D: más abajo, el fleco le cae sobre la mirada.
         function trazoPeinado(estilo, color) {
@@ -2376,9 +2399,9 @@ Cera rápida protectora
                 <!-- Cachetes con degradado: antes eran manchas planas con opacidad,
                      y el borde duro se notaba. Difuminados se funden con la piel. -->
                 <radialGradient id="${id}-cachete">
-                    <stop offset="0%" stop-color="#f0868a" stop-opacity="0.92"/>
-                    <stop offset="55%" stop-color="#f0868a" stop-opacity="0.55"/>
-                    <stop offset="100%" stop-color="#f0868a" stop-opacity="0"/>
+                    <stop offset="0%" stop-color="${calentar(a.piel, 1.25)}" stop-opacity="0.62"/>
+                    <stop offset="52%" stop-color="${calentar(a.piel, 1.25)}" stop-opacity="0.30"/>
+                    <stop offset="100%" stop-color="${calentar(a.piel, 1.25)}" stop-opacity="0"/>
                 </radialGradient>
                 <!-- Halo morado detrás: es la luz de contorno del 3D traída al 2D.
                      Sobre el fondo negro de la app, es lo que despega la figura del
@@ -2480,14 +2503,14 @@ Cera rápida protectora
                             <circle cx="65.1" cy="53.3" r="0.8" fill="#ffffff" opacity="0.9" stroke="none"/>
                             <!-- PESTAÑAS: el trazo mas grueso sobre el parpado. Da caracter
                                  y es de lo que mas se extrana en una cara ilustrada. -->
-                            <path d="M31.5 47.9 Q37 43.2 42.5 47.5 Q37 45.6 31.5 47.9 Z"
-                                  fill="#241a2e" stroke="none"/>
-                            <path d="M57.5 47.9 Q63 43.2 68.5 47.5 Q63 45.6 57.5 47.9 Z"
-                                  fill="#241a2e" stroke="none"/>
+                            <path d="M32.4 48.0 Q37 44.5 42.0 47.6 Q37 46.5 32.4 48.0 Z"
+                                  fill="#2e2440" stroke="none"/>
+                            <path d="M58.4 48.0 Q63 44.5 68.0 47.6 Q63 46.5 58.4 48.0 Z"
+                                  fill="#2e2440" stroke="none"/>
                         </g>
                         <!-- cachetes rosados: el detalle que más los acerca a tus dibujos -->
-                        <ellipse cx="29" cy="62" rx="7.5" ry="5.2" fill="url(#${id}-cachete)" stroke="none"/>
-                        <ellipse cx="71" cy="62" rx="7.5" ry="5.2" fill="url(#${id}-cachete)" stroke="none"/>
+                        <ellipse cx="29.5" cy="61.5" rx="6.2" ry="4.1" fill="url(#${id}-cachete)" stroke="none"/>
+                        <ellipse cx="70.5" cy="61.5" rx="6.2" ry="4.1" fill="url(#${id}-cachete)" stroke="none"/>
                         <!-- nariz: chiquita, pero sin ella la cara es una máscara -->
                         <ellipse cx="50" cy="59.4" rx="2.9" ry="2.3" fill="${oscurecer(a.piel, 0.93)}" stroke="none"/>
                         <ellipse cx="49.2" cy="58.7" rx="1.1" ry="0.8" fill="#ffffff" opacity="0.22" stroke="none"/>
@@ -2495,13 +2518,13 @@ Cera rápida protectora
                         <!-- BOCA con interior. Era una sola raya; con el hueco oscuro
                              detrás y un puntito de brillo en el labio, la sonrisa deja
                              de ser un trazo y se lee como una boca. -->
-                        <path d="M42.5 65.5 Q50 74.8 57.5 65.5 Q50 70.9 42.5 65.5 Z" fill="#7d3b38" stroke="none"/>
+                        <path d="M42.5 65.5 Q50 74.8 57.5 65.5 Q50 70.9 42.5 65.5 Z" fill="${oscurecer(tonoDeLabio(a.piel), 0.6)}" stroke="none"/>
                         <!-- El labio también AFILADO en las comisuras, no un trazo de
                              grosor parejo: una boca gruesa en las esquinas se lee
                              pegada con marcador. -->
                         <path d="M42.3 65.1 Q50 75.0 57.7 65.1 Q50 71.4 42.3 65.1 Z"
-                              fill="#a8564e" stroke="none"/>
-                        <ellipse cx="53.4" cy="70.2" rx="1.6" ry="0.85" fill="#ffffff" opacity="0.35" stroke="none"/>
+                              fill="${tonoDeLabio(a.piel)}" stroke="none"/>
+                        <!-- Aquí había un punto blanco sobre el labio: eso es brillo labial. Fuera. -->
                         ${trazoAccesorio(a.accesorio)}
                         <!-- El reflejo de plástico va HASTA ARRIBA, encima del pelo y
                              del accesorio: es luz sobre el material, no una capa más. -->
@@ -2733,7 +2756,7 @@ Cera rápida protectora
 
         // La versión del archivo. Sirve para que Tristán confirme de un vistazo si
         // el que abrió es el nuevo — ya pasó dos veces que probaba una copia vieja.
-        const VERSION_APP = '2026.08.16b';
+        const VERSION_APP = '2026.08.16c';
 
         function pintarVersion() {
             const el = document.getElementById('marca-version');
@@ -3608,14 +3631,18 @@ Cera rápida protectora
             // 🐛 Estaban puestos a z=2.28 cuando la cara en ese punto está a 1.82:
             // flotaban 0.74 POR DELANTE, y en el render se veían como dos discos
             // rosas pegados al aire junto a la cara. Ahora se calcula el punto.
-            const cachete = geo('Sphere', 0.78, 10, 8);
-            const rubor = material('#f0868a', 'plano');
+            const cachete = geo('Sphere', 0.70, 10, 8);
+            // En 3D el cachete NO tiene desvanecido — es un parche sólido — así que
+            // con la misma fuerza que en el 2D quedaba como una mancha naranja pegada.
+            // Va más suave, y con acabado de PIEL para que reciba la misma luz que la
+            // cara y se funda con ella en vez de recortarse encima.
+            const rubor = material(calentar(a.piel, 0.62), 'piel');
             // Y METIDOS HACIA ADENTRO: a ±2.16 caían justo en la orilla de la
             // silueta y desde la cámara del mapa se veían como dos calcomanías
             // rosas asomando por el borde de la cara.
             [-1, 1].forEach(lado => {
                 const cx = 1.94 * lado, cy = 8.72;
-                const c = ponerEnCabeza(cachete, rubor, cx, cy, zDeLaCara(cx, cy) - 0.78 * 0.30);
+                const c = ponerEnCabeza(cachete, rubor, cx, cy, zDeLaCara(cx, cy) - 0.70 * 0.30);
                 c.scale.set(0.92, 0.58, 0.30);
             });
 
@@ -3630,11 +3657,11 @@ Cera rápida protectora
             // cielo con la misma cara que cuando saluda. Ahora hay dos piezas — el
             // arco de la sonrisa y un hueco oscuro detrás — y la animación las
             // combina para hacer sonrisa, "oh" de sorpresa, o risa abierta.
-            const boca = ponerEnCabeza(geo('Torus', 0.60, 0.145, 6, 14, Math.PI), material('#a8564e', 'piel'),
+            const boca = ponerEnCabeza(geo('Torus', 0.60, 0.145, 6, 14, Math.PI), material(tonoDeLabio(a.piel), 'piel'),
                                        0, 7.72, zDeLaCara(0, 7.72) - 0.06);
             boca.rotation.z = Math.PI;
 
-            const hueco = ponerEnCabeza(geo('Sphere', 0.52, 10, 8), material('#7d3b38', 'plano'),
+            const hueco = ponerEnCabeza(geo('Sphere', 0.52, 10, 8), material(oscurecer(tonoDeLabio(a.piel), 0.6), 'plano'),
                                         0, 7.78, zDeLaCara(0, 7.78) - 0.20);
             hueco.scale.set(0.9, 0.1, 0.35);   // empieza cerrada
 
