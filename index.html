@@ -100,8 +100,19 @@
             -webkit-font-smoothing: antialiased;
         }
 
+        /* 🐛 LA ALTURA ERA FIJA: 844px, y el <body> lleva overflow:hidden. En
+           cualquier teléfono con la pantalla más corta que eso —o con la barra
+           del navegador comiéndose espacio— el fondo de la app quedaba CORTADO Y
+           SIN FORMA DE ALCANZARLO, botones incluidos. Venía de cuando esto era
+           una maqueta con forma de teléfono; ahora que se abre en teléfonos de
+           verdad, hay que ceder a la pantalla real.
+           100dvh es el alto de la ventana DESCONTANDO la barra del navegador,
+           que es justo lo que cambia al desplazarse en el móvil. */
         .app-container {
-            width: 100%; max-width: 412px; height: 844px;
+            width: 100%; max-width: 412px;
+            height: 100vh;          /* respaldo para navegadores viejos */
+            height: 100dvh;
+            max-height: 844px;
             background: var(--negro);
             border-radius: 36px; overflow: hidden; position: relative;
             box-shadow: 0 0 60px rgba(0, 0, 0, 0.9);
@@ -357,16 +368,18 @@
         }
         .carrusel::-webkit-scrollbar { height: 0; }
         .feed-card {
-            flex: 0 0 200px; scroll-snap-align: start; text-align: left;
+            flex: 0 0 158px; scroll-snap-align: start; text-align: left;
             border-radius: 16px; overflow: hidden; position: relative;
             background: rgba(15, 9, 20, 0.9);
             border: 1px solid rgba(196, 181, 253, 0.18);
             box-shadow: 0 0 16px rgba(168, 85, 247, 0.16);
         }
-        .feed-foto { width: 100%; height: 116px; object-fit: cover; display: block;
+        /* Vertical, no horizontal: las fotos del trabajo se toman con el teléfono de
+           pie, y en una tarjeta apaisada el recorte le cortaba el auto. */
+        .feed-foto { width: 100%; height: 210px; object-fit: cover; display: block;
                      background: #17111f; }
         /* Antes/después: dos fotos partidas por una línea de neón */
-        .feed-antes-despues { display: flex; height: 116px; position: relative; }
+        .feed-antes-despues { display: flex; height: 210px; position: relative; }
         .feed-antes-despues img { width: 50%; height: 100%; object-fit: cover; display: block; }
         .feed-antes-despues::after {
             content: ""; position: absolute; top: 0; bottom: 0; left: 50%; width: 2px;
@@ -496,8 +509,16 @@
         .btn-premium.peligro { background: transparent; border-color: rgba(248, 113, 113, 0.35); color: #fca5a5; }
 
         /* --- LOGO --- */
-        .logo-container { width: 100%; display: flex; justify-content: center; align-items: center; padding: 14px 0; }
-        .logo-frame { width: 150px; height: 150px; border-radius: 50%; overflow: hidden;
+        /* 🐛 flex-shrink en el CONTENEDOR dejaba su caja más baja que el logo, y
+           el logo se salía por abajo encimándose con el título. El que tiene que
+           encoger es el logo, no su caja. */
+        .logo-container { width: 100%; display: flex; justify-content: center; align-items: center;
+                          padding: 14px 0; flex-shrink: 0; }
+        /* El tamaño sale de la ALTURA de la pantalla: con la próxima cita y el
+           feed abajo, un logo fijo de 150px empujaba "Agendar mi lavado" fuera de
+           la vista en una tablet chica. El logo puede ceder; la acción principal no. */
+        .logo-frame { width: min(150px, 17vh); height: min(150px, 17vh);
+                      border-radius: 50%; overflow: hidden;
                       display: flex; justify-content: center; align-items: center; background-color: #000; }
         .logo-img { width: 100%; height: 100%; object-fit: cover; object-position: center; display: block; }
 
@@ -997,6 +1018,18 @@
         .vacio-invita { display: flex; flex-direction: column; gap: 16px; padding: 26px 0 6px; }
         .vacio-invita p { font-size: 12.5px; color: var(--muy-tenue); line-height: 1.6; margin: 0; }
 
+        /* EL BOTÓN PRINCIPAL SE QUEDA PEGADO ABAJO en la bienvenida.
+           Con la próxima cita y las fotos de trabajos, el contenido ya no cabe de
+           un jalón en una tablet chica — y lo que se salía era justamente
+           "Agendar mi lavado", que es LA acción de toda la app. Pegado abajo, el
+           cliente puede desplazarse a ver las fotos sin perder de vista el botón.
+           El degradado evita que el contenido se vea cortado en seco por detrás. */
+        #screen-welcome .action-buttons-group {
+            position: sticky; bottom: 0; z-index: 5;
+            padding-top: 14px; margin-top: 6px;
+            background: linear-gradient(180deg, rgba(9,9,11,0) 0%, var(--negro) 38%);
+        }
+
         /* ── Tu próxima cita, en la bienvenida ──────────────────────────────── */
         .proxima-cita {
             width: 100%; display: flex; flex-direction: column; align-items: flex-start;
@@ -1359,7 +1392,6 @@
 
             <div class="action-buttons-group">
                 <button class="btn-premium" onclick="pedirGPS()">Agendar mi lavado</button>
-                <button class="btn-premium secundario" onclick="abrirEditorPersonaje()">Mi personaje</button>
             </div>
         </div>
 
@@ -3166,7 +3198,7 @@ Cera rápida protectora
 
         // La versión del archivo. Sirve para que Tristán confirme de un vistazo si
         // el que abrió es el nuevo — ya pasó dos veces que probaba una copia vieja.
-        const VERSION_APP = '2026.08.16g';
+        const VERSION_APP = '2026.08.16h';
 
         function pintarVersion() {
             const el = document.getElementById('marca-version');
