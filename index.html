@@ -141,6 +141,107 @@
             text-indent: 0.42em; opacity: 0.9;
         }
 
+        /* ── MENÚ RÁPIDO ────────────────────────────────────────────────────── */
+        .marca-fila {
+            width: 100%; display: flex; align-items: center; gap: 10px;
+        }
+        .marca-fila .marca-logo { align-self: center; margin-right: auto; }
+        .marca-fila .marca-version { position: static; }
+
+        /* El botón de tres rayas. 44px es el mínimo que se toca sin fallar con el
+           dedo — más chico se ve elegante y se falla, que es peor. */
+        .menu-boton {
+            width: 44px; height: 44px; flex-shrink: 0;
+            display: flex; flex-direction: column; align-items: center; justify-content: center;
+            gap: 5px; padding: 0; cursor: pointer;
+            background: rgba(139, 92, 246, 0.10);
+            border: 1px solid rgba(196, 181, 253, 0.26);
+            border-radius: 14px;
+            transition: background 0.18s ease, transform 0.12s ease;
+        }
+        .menu-boton span {
+            display: block; width: 18px; height: 2px; border-radius: 2px;
+            background: var(--morado-claro);
+            transition: transform 0.22s ease, opacity 0.16s ease;
+        }
+        .menu-boton:active { transform: scale(0.93); background: rgba(139, 92, 246, 0.22); }
+        /* Abierto, las rayas se vuelven una X: le dice al cliente que ese mismo
+           botón ahora cierra. */
+        .menu-boton.abierto span:nth-child(1) { transform: translateY(7px) rotate(45deg); }
+        .menu-boton.abierto span:nth-child(2) { opacity: 0; }
+        .menu-boton.abierto span:nth-child(3) { transform: translateY(-7px) rotate(-45deg); }
+
+        .menu-capa {
+            position: absolute; inset: 0; z-index: 45;
+            background: rgba(6, 5, 10, 0.55);
+            animation: menuCapaEntra 0.18s ease-out;
+        }
+        @keyframes menuCapaEntra { from { opacity: 0; } to { opacity: 1; } }
+
+        .menu-flotante {
+            position: absolute; top: 68px; right: 16px; left: 16px; z-index: 50;
+            display: flex; flex-direction: column;
+            background: #14101d;
+            border: 1px solid rgba(196, 181, 253, 0.20);
+            border-radius: 18px;
+            box-shadow: 0 22px 50px rgba(0, 0, 0, 0.62), 0 0 0 1px rgba(139, 92, 246, 0.10);
+            overflow: hidden;
+            transform-origin: top right;
+            animation: menuEntra 0.2s cubic-bezier(0.2, 0.9, 0.3, 1.1);
+        }
+        @keyframes menuEntra {
+            from { opacity: 0; transform: scale(0.92) translateY(-8px); }
+            to   { opacity: 1; transform: scale(1) translateY(0); }
+        }
+
+        .menu-fila {
+            display: flex; align-items: center; gap: 13px; width: 100%;
+            padding: 14px 16px; text-align: left; cursor: pointer;
+            background: transparent; border: 0; border-bottom: 1px solid rgba(255,255,255,0.06);
+            color: var(--texto); text-decoration: none;
+            transition: background 0.14s ease;
+        }
+        .menu-fila:last-child { border-bottom: 0; }
+        .menu-fila:active { background: rgba(139, 92, 246, 0.16); }
+        .menu-fila.peligro .menu-texto b { color: #fca5a5; }
+        .menu-fila.peligro .menu-icono { color: #fca5a5; background: rgba(248, 113, 113, 0.12); }
+
+        .menu-icono {
+            width: 38px; height: 38px; flex-shrink: 0; border-radius: 12px;
+            display: flex; align-items: center; justify-content: center;
+            background: rgba(139, 92, 246, 0.14); color: var(--morado-claro);
+        }
+        .menu-icono svg { width: 21px; height: 21px; }
+        /* Cada servicio con su color, que es como la gente los reconoce */
+        .menu-icono.wa { background: rgba(37, 211, 102, 0.14); color: #4ade80; }
+        .menu-icono.ig { background: rgba(225, 48, 108, 0.14); color: #f472b6; }
+
+        .menu-texto { flex: 1; min-width: 0; display: flex; flex-direction: column; gap: 2px; }
+        .menu-texto b { font-size: 13.5px; font-weight: 600; color: var(--texto); }
+        .menu-texto small {
+            font-size: 11px; color: var(--tenue); line-height: 1.4;
+            overflow: hidden; text-overflow: ellipsis;
+        }
+
+        /* La vista chica de Instagram: el logo dentro de un marco con el degradado
+           de la marca de Instagram, para que se lea de un vistazo qué es. */
+        .menu-ig-vista {
+            width: 46px; height: 46px; flex-shrink: 0; border-radius: 12px;
+            padding: 2px; overflow: hidden;
+            background: linear-gradient(135deg, #f9ce34, #ee2a7b 52%, #6228d7);
+        }
+        .menu-ig-vista img, .menu-ig-vista svg {
+            width: 100%; height: 100%; border-radius: 10px;
+            object-fit: cover; object-position: center; display: block;
+        }
+
+        .menu-separador { height: 7px; background: rgba(255,255,255,0.035); }
+
+        @media (prefers-reduced-motion: reduce) {
+            .menu-flotante, .menu-capa { animation: none; }
+            .menu-boton span { transition: none; }
+        }
+
         .hidden { display: none !important; }
 
         .screen {
@@ -839,6 +940,17 @@
         .cliente-acciones { display: flex; gap: 8px; margin-top: 11px; flex-wrap: wrap; }
 
         .mensaje-error { color: #fca5a5; font-size: 11px; min-height: 14px; margin-top: 4px; }
+        /* Un enlace de texto, sin peso de botón: es una salida de emergencia, no
+           algo que la mayoría vaya a tocar. */
+        .enlace-suave {
+            background: none; border: 0; cursor: pointer; padding: 10px 4px 2px;
+            font-family: inherit; font-size: 12px; color: var(--morado-claro);
+            text-decoration: underline; text-underline-offset: 3px; opacity: 0.85;
+        }
+        .enlace-suave:active { opacity: 1; }
+        .nota-fina {
+            font-size: 11px; color: var(--muy-tenue); line-height: 1.6; margin-top: 14px;
+        }
         .vacio-nota { font-size: 12.5px; color: var(--muy-tenue); padding: 26px 0; text-align: left; line-height: 1.6; }
     
         /* =================================================================
@@ -902,14 +1014,106 @@
 
     <div class="app-container">
         <div class="marca-header">
-            <img data-logo="1" alt="CarWashExpress" class="marca-logo" onerror="usarLogoDeRespaldo(this)">
+            <div class="marca-fila">
+                <img data-logo="1" alt="CarWashExpress" class="marca-logo" onerror="usarLogoDeRespaldo(this)">
+                <!-- MARCA DE VERSIÓN. Chiquita y discreta, pero suficiente para que
+                     Tristán confirme de un vistazo si el archivo que abrió es el
+                     nuevo. Ya pasó dos veces que probó una copia vieja y no entendía
+                     por qué "no se notaba el cambio". -->
+                <div class="marca-version" id="marca-version">v—</div>
+                <!-- El botón del menú. Va a la DERECHA, del lado contrario al logo:
+                     así la barra queda equilibrada y el pulgar lo alcanza sin tapar
+                     la marca. -->
+                <button class="menu-boton" id="btn-menu" onclick="alternarMenu(event)"
+                        aria-label="Abrir menú" aria-expanded="false" aria-haspopup="true">
+                    <span></span><span></span><span></span>
+                </button>
+            </div>
             <div class="marca-nombre">Car Wash Express</div>
-            <!-- MARCA DE VERSIÓN. Chiquita y discreta, pero suficiente para que
-                 Tristán confirme de un vistazo si el archivo que abrió es el
-                 nuevo. Ya pasó dos veces que probó una copia vieja y no entendía
-                 por qué "no se notaba el cambio". -->
-            <div class="marca-version" id="marca-version">v—</div>
         </div>
+
+        <!-- MENÚ RÁPIDO.
+             La capa de atrás existe para poder cerrarlo tocando fuera, que es lo que
+             cualquiera intenta primero. Sin ella habría que atinarle otra vez al
+             botón. -->
+        <div class="menu-capa hidden" id="menu-capa" onclick="cerrarMenu()"></div>
+        <nav class="menu-flotante hidden" id="menu-flotante" aria-label="Menú rápido">
+
+            <a class="menu-fila" id="menu-whatsapp" target="_blank" rel="noopener">
+                <span class="menu-icono wa" aria-hidden="true">
+                    <svg viewBox="0 0 24 24" fill="currentColor">
+                        <path d="M12.04 2C6.58 2 2.13 6.45 2.13 11.91c0 1.75.46 3.45 1.32 4.95L2 22l5.25-1.38a9.9 9.9 0 0 0 4.79 1.22h.01c5.46 0 9.91-4.45 9.91-9.91C21.96 6.45 17.5 2 12.04 2Zm5.8 14.03c-.24.68-1.2 1.26-1.97 1.42-.52.11-1.21.2-3.52-.76-2.95-1.22-4.85-4.22-5-4.42-.14-.2-1.19-1.58-1.19-3.02 0-1.43.75-2.13 1.02-2.42.27-.29.58-.36.78-.36l.56.01c.18.01.42-.07.66.5.24.59.83 2.02.9 2.17.07.15.12.32.02.51-.09.2-.14.32-.28.49l-.42.49c-.14.14-.28.3-.12.58.16.29.71 1.17 1.52 1.9 1.05.93 1.93 1.22 2.21 1.36.27.15.43.12.59-.07.16-.2.68-.79.86-1.07.18-.27.36-.22.61-.13.24.09 1.55.73 1.82.86.27.14.44.2.51.32.07.12.07.68-.17 1.36Z"/>
+                    </svg>
+                </span>
+                <span class="menu-texto">
+                    <b>Escríbenos por WhatsApp</b>
+                    <small>625 100 9755 · te contestamos personal</small>
+                </span>
+            </a>
+
+            <!-- Instagram: la vista chica con el logo real de la marca dentro.
+                 No es un recuadro con las publicaciones de verdad a propósito: eso
+                 necesita el script de Instagram, que no carga sin internet y que
+                 además vigila a quien lo ve. Esto pesa cero y hace lo mismo: lleva
+                 al perfil de un toque. -->
+            <a class="menu-fila" id="menu-instagram" target="_blank" rel="noopener">
+                <span class="menu-icono ig" aria-hidden="true">
+                    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.9">
+                        <rect x="3" y="3" width="18" height="18" rx="5.4"/>
+                        <circle cx="12" cy="12" r="4.1"/>
+                        <circle cx="17.2" cy="6.8" r="1.15" fill="currentColor" stroke="none"/>
+                    </svg>
+                </span>
+                <span class="menu-texto">
+                    <b>Míranos en Instagram</b>
+                    <small id="menu-ig-usuario">@carwashexpress</small>
+                </span>
+                <span class="menu-ig-vista" aria-hidden="true">
+                    <img data-logo="1" alt="" onerror="usarLogoDeRespaldo(this)">
+                </span>
+            </a>
+
+            <div class="menu-separador" id="menu-separador"></div>
+
+            <button class="menu-fila solo-con-sesion" onclick="desdeElMenu(abrirEditorPersonaje)">
+                <span class="menu-icono mo" aria-hidden="true">
+                    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.9"
+                         stroke-linecap="round" stroke-linejoin="round">
+                        <circle cx="12" cy="8.2" r="3.9"/>
+                        <path d="M4.6 20.2c0-3.6 3.3-6.2 7.4-6.2s7.4 2.6 7.4 6.2"/>
+                    </svg>
+                </span>
+                <span class="menu-texto">
+                    <b>Mi personaje</b>
+                    <small>Cámbiale el peinado, la ropa y todo lo demás</small>
+                </span>
+            </button>
+
+            <button class="menu-fila solo-con-sesion" onclick="desdeElMenu(abrirCambioDeContrasena)">
+                <span class="menu-icono ll" aria-hidden="true">
+                    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.9"
+                         stroke-linecap="round" stroke-linejoin="round">
+                        <rect x="4.4" y="10.3" width="15.2" height="9.6" rx="2.4"/>
+                        <path d="M8.2 10.3V7.6a3.8 3.8 0 0 1 7.6 0v2.7"/>
+                    </svg>
+                </span>
+                <span class="menu-texto">
+                    <b>Cambiar mi contraseña</b>
+                    <small>Las veces que quieras</small>
+                </span>
+            </button>
+
+            <button class="menu-fila peligro solo-con-sesion" onclick="desdeElMenu(cerrarSesion)">
+                <span class="menu-icono sa" aria-hidden="true">
+                    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.9"
+                         stroke-linecap="round" stroke-linejoin="round">
+                        <path d="M14.6 16.4v2.1a2 2 0 0 1-2 2H6.4a2 2 0 0 1-2-2V5.5a2 2 0 0 1 2-2h6.2a2 2 0 0 1 2 2v2.1"/>
+                        <path d="M18.4 12H9.2M15.6 8.8 18.8 12l-3.2 3.2"/>
+                    </svg>
+                </span>
+                <span class="menu-texto"><b>Cerrar sesión</b></span>
+            </button>
+        </nav>
 
         <!-- PANTALLA 0A: LOGIN (TELÉFONO) -->
         <div class="screen" id="screen-login-phone">
@@ -942,6 +1146,57 @@
             <div class="action-buttons-group">
                 <button class="btn-premium" id="btn-iniciar-sesion" onclick="iniciarSesionTelefono()">Iniciar Sesión</button>
                 <button class="btn-premium secundario" onclick="mostrarPantalla('screen-registro')">Crear Cuenta Nueva</button>
+                <!-- No hay recuperación automática, y el motivo es de raíz: el login
+                     convierte el teléfono en un correo FALSO, y a un correo falso
+                     Firebase no le puede mandar el mensaje de "restablecer". Así que
+                     el camino real es que le escriba a Tristán — y aquí el mensaje ya
+                     va escrito con su número, para que él la reponga en un minuto. -->
+                <button class="enlace-suave" onclick="pedirAyudaConContrasena()">
+                    Olvidé mi contraseña
+                </button>
+            </div>
+        </div>
+
+        <!-- PANTALLA: CAMBIAR CONTRASEÑA -->
+        <div class="screen hidden" id="screen-password">
+            <div class="text-group">
+                <h2 class="titulo">Cambiar<span class="cursiva">contraseña</span></h2>
+                <p class="subtitulo">Puedes cambiarla cuantas veces quieras.</p>
+            </div>
+
+            <div class="menu-content-holder">
+                <div class="card-panel">
+                    <div class="form-container">
+                        <div class="form-group">
+                            <label>Tu contraseña de ahora</label>
+                            <input type="password" id="pass-actual" class="form-input" placeholder="La que usas hoy">
+                        </div>
+                        <div class="form-group">
+                            <label>Contraseña nueva (mínimo 6)</label>
+                            <input type="password" id="pass-nueva" class="form-input" placeholder="La nueva">
+                        </div>
+                        <div class="form-group">
+                            <label>Escríbela otra vez</label>
+                            <input type="password" id="pass-repetir" class="form-input" placeholder="Para no equivocarte">
+                        </div>
+                        <p id="pass-error" class="mensaje-error"></p>
+                        <!-- ⚠️ Esta nota va DENTRO del panel a propósito:
+                             .menu-content-holder es flex EN FILA, así que como
+                             hermana del panel se colocaba a un lado de los campos
+                             en vez de debajo, y el formulario quedaba aplastado
+                             contra la mitad izquierda de la pantalla. -->
+                        <p class="nota-fina">
+                            Te pedimos la de ahora porque es lo que comprueba que eres tú.
+                            Si alguien tomara tu teléfono desbloqueado, sin esto podría
+                            cambiarte la contraseña y dejarte fuera de tu cuenta.
+                        </p>
+                    </div>
+                </div>
+            </div>
+
+            <div class="action-buttons-group">
+                <button class="btn-premium" id="btn-guardar-pass" onclick="guardarContrasenaNueva()">Guardar</button>
+                <button class="btn-premium secundario" onclick="mostrarPantalla('screen-welcome', true)">Cancelar</button>
             </div>
         </div>
 
@@ -1656,6 +1911,12 @@ Cera rápida protectora
         // número para que le aparezca la agenda del día.
         // =====================================================================
         const ADMIN_TELEFONO = "6251009755";
+
+        // ⚠️ CONFIRMAR CON TRISTÁN. En el CLAUDE.md el usuario de Instagram aparece
+        // cortado ("car_washex..."), así que éste es el más probable, no el
+        // confirmado. Si está mal, el botón lleva a un perfil que no existe — que es
+        // peor que no tener botón. Se cambia AQUÍ y en ningún otro lado.
+        const INSTAGRAM_USUARIO = "car_washexpress";
         function esAdministrador() {
             return !!(usuarioActual && usuarioActual.email === telefonoAPseudoEmail(ADMIN_TELEFONO));
         }
@@ -2685,8 +2946,15 @@ Cera rápida protectora
         // tiene que esperar la respuesta con .then() o con await.
         // =====================================================================
 
-        function mostrarAviso(texto) {
-            dibujarCajaAviso(texto, [{ etiqueta: "Entendido", clase: "btn-premium", valor: true }]);
+        // `accion` es opcional: { etiqueta, enlace }. Sirve para que un aviso pueda
+        // OFRECER LA SALIDA, no sólo explicar el problema — un mensaje que dice
+        // "escríbenos por WhatsApp" y te deja ahí parado es media ayuda.
+        function mostrarAviso(texto, accion) {
+            const botones = [];
+            if (accion) botones.push({ etiqueta: accion.etiqueta, clase: "btn-premium", enlace: accion.enlace });
+            botones.push({ etiqueta: accion ? "Cerrar" : "Entendido",
+                           clase: accion ? "btn-premium secundario" : "btn-premium", valor: true });
+            dibujarCajaAviso(texto, botones);
             return avisoPendiente;
         }
 
@@ -2708,10 +2976,22 @@ Cera rápida protectora
             document.getElementById('aviso-texto').textContent = texto;
             zona.innerHTML = "";
             botones.forEach(b => {
-                const btn = document.createElement('button');
+                // Los que llevan a otro lado tienen que ser un enlace de verdad: un
+                // <button> que abre WhatsApp con JavaScript lo bloquea el navegador
+                // por ser una ventana emergente que el usuario no pidió.
+                const btn = document.createElement(b.enlace ? 'a' : 'button');
                 btn.className = b.clase;
                 btn.textContent = b.etiqueta;
-                btn.onclick = () => cerrarAvisoCon(b.valor);
+                if (b.enlace) {
+                    btn.href = b.enlace;
+                    btn.target = "_blank";
+                    btn.rel = "noopener";
+                    btn.style.textAlign = "center";
+                    btn.style.textDecoration = "none";
+                    btn.onclick = () => cerrarAvisoCon(true);
+                } else {
+                    btn.onclick = () => cerrarAvisoCon(b.valor);
+                }
                 zona.appendChild(btn);
             });
 
@@ -2756,7 +3036,7 @@ Cera rápida protectora
 
         // La versión del archivo. Sirve para que Tristán confirme de un vistazo si
         // el que abrió es el nuevo — ya pasó dos veces que probaba una copia vieja.
-        const VERSION_APP = '2026.08.16c';
+        const VERSION_APP = '2026.08.16d';
 
         function pintarVersion() {
             const el = document.getElementById('marca-version');
@@ -3110,6 +3390,146 @@ Cera rápida protectora
                 return false;
             }
             return true;
+        }
+
+        // ── EL MENÚ RÁPIDO ─────────────────────────────────────────────────────
+        let menuAbierto = false;
+
+        function alternarMenu(evento) {
+            if (evento) evento.stopPropagation();
+            menuAbierto ? cerrarMenu() : abrirMenu();
+        }
+
+        function abrirMenu() {
+            // Las filas que necesitan cuenta se esconden si no hay sesión: en la
+            // pantalla de login, "Mi personaje" no lleva a ningún lado.
+            const conSesion = !!usuarioActual;
+            document.querySelectorAll('.solo-con-sesion').forEach(el => {
+                el.classList.toggle('hidden', !conSesion);
+            });
+            document.getElementById('menu-separador').classList.toggle('hidden', !conSesion);
+
+            document.getElementById('menu-whatsapp').href =
+                'https://wa.me/52' + ADMIN_TELEFONO;
+            document.getElementById('menu-instagram').href =
+                'https://instagram.com/' + INSTAGRAM_USUARIO;
+            document.getElementById('menu-ig-usuario').textContent = '@' + INSTAGRAM_USUARIO;
+
+            document.getElementById('menu-capa').classList.remove('hidden');
+            document.getElementById('menu-flotante').classList.remove('hidden');
+            document.getElementById('btn-menu').classList.add('abierto');
+            document.getElementById('btn-menu').setAttribute('aria-expanded', 'true');
+            document.getElementById('btn-menu').setAttribute('aria-label', 'Cerrar menú');
+            menuAbierto = true;
+        }
+
+        function cerrarMenu() {
+            document.getElementById('menu-capa').classList.add('hidden');
+            document.getElementById('menu-flotante').classList.add('hidden');
+            document.getElementById('btn-menu').classList.remove('abierto');
+            document.getElementById('btn-menu').setAttribute('aria-expanded', 'false');
+            document.getElementById('btn-menu').setAttribute('aria-label', 'Abrir menú');
+            menuAbierto = false;
+        }
+
+        // Cualquier cosa que se toque en el menú lo cierra primero. Sin esto, el
+        // menú se quedaría abierto encima de la pantalla a la que acaba de llevar.
+        function desdeElMenu(accion) {
+            cerrarMenu();
+            accion();
+        }
+
+        document.addEventListener('keydown', e => {
+            if (e.key === 'Escape' && menuAbierto) cerrarMenu();
+        });
+
+        // ── CAMBIAR LA CONTRASEÑA ──────────────────────────────────────────────
+        function abrirCambioDeContrasena() {
+            ['pass-actual', 'pass-nueva', 'pass-repetir'].forEach(id => {
+                document.getElementById(id).value = "";
+            });
+            document.getElementById('pass-error').textContent = "";
+            mostrarPantalla('screen-password');
+        }
+
+        function guardarContrasenaNueva() {
+            const errorEl = document.getElementById('pass-error');
+            errorEl.textContent = "";
+
+            const actual = document.getElementById('pass-actual').value;
+            const nueva = document.getElementById('pass-nueva').value;
+            const repetir = document.getElementById('pass-repetir').value;
+
+            if (!actual) { errorEl.textContent = "Escribe tu contraseña de ahora."; return; }
+            if (nueva.length < 6) { errorEl.textContent = "La nueva debe tener al menos 6 caracteres."; return; }
+            if (nueva !== repetir) { errorEl.textContent = "Las dos contraseñas nuevas no son iguales."; return; }
+            if (nueva === actual) { errorEl.textContent = "La nueva es igual a la de ahora. Escribe una distinta."; return; }
+            if (!usuarioActual) { errorEl.textContent = "Tu sesión se cerró. Vuelve a entrar."; return; }
+            if (!hayConexionParaEntrar(errorEl)) return;
+
+            const btn = document.getElementById('btn-guardar-pass');
+            const etiquetaOriginal = btn.textContent;
+            btn.disabled = true;
+            btn.textContent = "Guardando...";
+            const destrabar = () => { btn.disabled = false; btn.textContent = etiquetaOriginal; };
+
+            // DOS PASOS, y el primero no es opcional: Firebase EXIGE que la sesión sea
+            // reciente para cambiar la contraseña (si no, tira 'requires-recent-login').
+            // Volver a autenticar con la contraseña de ahora cumple ese requisito y de
+            // paso comprueba que quien la está cambiando es de verdad el dueño.
+            try {
+                const credencial = firebase.auth.EmailAuthProvider.credential(usuarioActual.email, actual);
+                conTiempoLimite(
+                    usuarioActual.reauthenticateWithCredential(credencial)
+                        .then(() => usuarioActual.updatePassword(nueva)),
+                    ESPERA_MAXIMA_LOGIN
+                )
+                    .then(() => {
+                        destrabar();
+                        mostrarPantalla('screen-welcome', true);
+                        mostrarAviso("Listo, tu contraseña quedó cambiada.\n\n"
+                                   + "La vas a necesitar la próxima vez que entres, así que "
+                                   + "guárdala en un lugar seguro.");
+                    })
+                    .catch(error => {
+                        console.error("Error cambiando la contraseña:", error);
+                        destrabar();
+                        errorEl.textContent = (error && error.code === 'auth/wrong-password')
+                            ? "Esa no es tu contraseña de ahora. Vuelve a intentar."
+                            : motivoDeFirebase(error);
+                    });
+            } catch (e) {
+                destrabar();
+                errorEl.textContent = "No se pudo cambiar la contraseña. Revisa tu conexión.";
+            }
+        }
+
+        // ── OLVIDÉ MI CONTRASEÑA ───────────────────────────────────────────────
+        //
+        // NO hay recuperación automática, y no es un descuido: el login convierte el
+        // teléfono en un correo FALSO (6251234567@carwashexpress.local), y a un
+        // correo que no existe Firebase no le puede mandar el mensaje de
+        // "restablecer contraseña". Es la consecuencia directa de la decisión —
+        // correcta, por costo — de no pagar SMS.
+        //
+        // Lo que sí se puede hacer sin servidor: dejarle el mensaje escrito con su
+        // número, para que Tristán se la reponga desde la consola en un minuto.
+        function pedirAyudaConContrasena() {
+            const tel = String(document.getElementById('input-login-telefono').value || "").replace(/\D/g, "");
+            const conNumero = /^\d{10}$/.test(tel)
+                ? ` Mi número es ${tel}.`
+                : "";
+            const texto = `Hola, olvidé mi contraseña de la app de CarWashExpress.${conNumero}`
+                        + ` ¿Me ayudan a reponerla?`;
+            const enlace = `https://wa.me/52${ADMIN_TELEFONO}?text=${encodeURIComponent(texto)}`;
+
+            mostrarAviso(
+                "No podemos mandarte un correo para reponerla, porque tu cuenta usa "
+                + "tu teléfono y no un correo.\n\n"
+                + "Escríbenos por WhatsApp y te la reponemos en un momento. "
+                + "El mensaje ya va escrito, sólo toca enviar.",
+                { etiqueta: "Escribir por WhatsApp", enlace: enlace }
+            );
         }
 
         function cerrarSesion() {
