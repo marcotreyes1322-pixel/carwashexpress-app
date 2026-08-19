@@ -1926,6 +1926,17 @@ Cera rápida protectora
                                 <span class="slider"></span>
                             </label>
                         </div>
+                        <div class="extra-row" id="row-ceraliquida">
+                            <div class="extra-info">
+                                <div class="extra-title">Cera Líquida</div>
+                                <div class="extra-sub">Brillo rápido</div>
+                                <div class="extra-price">+$100 MXN</div>
+                            </div>
+                            <label class="switch">
+                                <input type="checkbox" id="chk-ceraliquida" onchange="toggleExtra('ceraliquida')">
+                                <span class="slider"></span>
+                            </label>
+                        </div>
                         <div class="extra-row" id="row-asientos">
                             <div class="extra-info">
                                 <div class="extra-title">Rejuvenecimiento de Asientos</div>
@@ -2320,11 +2331,14 @@ Cera rápida protectora
         // Este objeto es el ÚNICO lugar donde se listan los extras: de aquí salen los
         // nombres del resumen y de aquí se limpian los interruptores al cambiar de servicio.
         const EXTRAS = {
-            faros:    { nombre: 'Pulido de Faros',              precio: 200 },
-            cera:     { nombre: 'Cera Cerámica en Pasta',       precio: 650 },
-            asientos: { nombre: 'Rejuvenecimiento de Asientos', precio: 200 },
-            cajuela:  { nombre: 'Aspirado de Cajuela o 3ª Fila',precio: 80  },
-            vapor:    { nombre: 'Máquina de Vapor',             precio: 80  }
+            faros:       { nombre: 'Pulido de Faros',              precio: 200 },
+            cera:        { nombre: 'Cera Cerámica en Pasta',       precio: 650 },
+            // Agosto 2026: Tristán confirmó $100. Estaba en sus materiales pero
+            // nunca había existido en la app, así que no se podía vender desde aquí.
+            ceraliquida: { nombre: 'Cera Líquida',                 precio: 100 },
+            asientos:    { nombre: 'Rejuvenecimiento de Asientos', precio: 200 },
+            cajuela:     { nombre: 'Aspirado de Cajuela o 3ª Fila',precio: 80  },
+            vapor:       { nombre: 'Máquina de Vapor',             precio: 80  }
         };
 
         // --- ESTADO DE AUTENTICACIÓN ---
@@ -3413,7 +3427,7 @@ Cera rápida protectora
 
         // La versión del archivo. Sirve para que Tristán confirme de un vistazo si
         // el que abrió es el nuevo — ya pasó dos veces que probaba una copia vieja.
-        const VERSION_APP = '2026.08.16j';
+        const VERSION_APP = '2026.08.16k';
 
         function pintarVersion() {
             const el = document.getElementById('marca-version');
