@@ -15,7 +15,7 @@
    error clásico de las PWA y es justo el problema que ya nos pasó a mano.
    ===================================================================== */
 
-const VERSION = 'cwe-2026.08.16h';
+const VERSION = 'cwe-2026.08.16i';
 
 // Lo mínimo para que la app abra sin red. Las librerías (Mapbox, Firebase,
 // Three.js) NO se guardan a propósito: pesan 2 MB, cambian por su cuenta, y
@@ -25,7 +25,11 @@ const ARCHIVOS = [
   './index.html',
   './manifest.json',
   './icono-192.png',
-  './icono-512.png'
+  './icono-512.png',
+  // El fondo del login va aquí porque es la PRIMERA pantalla que se ve. Las
+  // fotos de trabajos NO: se guardan solas al pasar por la red y están más
+  // abajo, así que no vale la pena retrasar la instalación por ellas.
+  './fondo-login.jpg'
 ];
 
 self.addEventListener('install', evento => {

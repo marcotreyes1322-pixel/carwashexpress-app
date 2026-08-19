@@ -93,8 +93,17 @@
 
         * { box-sizing: border-box; margin: 0; padding: 0; }
 
+        /* En una tablet la app queda como una tarjeta de 412px en medio de una
+           pantalla mucho más ancha, y con el fondo NEGRO PLANO se veía flotando
+           en un vacío. Un resplandor morado suave hace que el margen se lea
+           como parte del diseño y no como espacio sobrante. En un teléfono la
+           app cubre todo y esto no se ve. */
         body {
             background-color: #000; color: var(--blanco);
+            background-image:
+                radial-gradient(90% 55% at 50% 0%, rgba(139,92,246,0.20), transparent 68%),
+                radial-gradient(75% 45% at 50% 100%, rgba(232,121,201,0.11), transparent 66%);
+            background-attachment: fixed;
             display: flex; justify-content: center; align-items: center;
             min-height: 100vh; font-family: var(--sans); overflow: hidden;
             -webkit-font-smoothing: antialiased;
@@ -1030,6 +1039,88 @@
             background: linear-gradient(180deg, rgba(9,9,11,0) 0%, var(--negro) 38%);
         }
 
+        /* ══ LOGIN CON FOTO DE FONDO ═════════════════════════════════════════
+           La foto es una de las de Tristán: en dos segundos el cliente entiende
+           qué es esto, y de paso se llena el hueco muerto que había en medio. */
+        .login-hero {
+            position: relative; padding: 0;
+            justify-content: flex-end;   /* el formulario vive abajo, al alcance del pulgar */
+        }
+        .hero-foto {
+            position: absolute; inset: 0; z-index: 0;
+            background: #0d0a12 url('fondo-login.jpg') center / cover no-repeat;
+        }
+        /* El velo NO es opcional: sobre la foto cruda no se lee ni un renglón.
+           Va oscuro abajo (donde están los campos) y más claro arriba, para que
+           la foto se siga viendo. */
+        .hero-foto::after {
+            content: ""; position: absolute; inset: 0;
+            background:
+                linear-gradient(180deg,
+                    rgba(9,9,11,0.62) 0%,
+                    rgba(9,9,11,0.42) 26%,
+                    rgba(11,9,16,0.88) 62%,
+                    rgba(9,9,11,0.98) 100%),
+                radial-gradient(120% 60% at 50% 8%, rgba(139,92,246,0.22), transparent 70%);
+        }
+
+        /* El encabezado flota ENCIMA de la foto en el login. El botón del menú
+           sigue ahí — es donde un cliente que todavía no tiene cuenta encuentra
+           el WhatsApp, o sea justo cuando más lo necesita. */
+        .app-container.en-login .marca-header {
+            position: absolute; top: 0; left: 0; right: 0; z-index: 20;
+        }
+        .app-container.en-login .marca-nombre { display: none; }
+
+        .hero-arriba {
+            position: relative; z-index: 1;
+            display: flex; flex-direction: column; align-items: center;
+            gap: 10px; padding: 78px 26px 0; text-align: center;
+            margin-bottom: auto;   /* empuja el panel hacia abajo */
+        }
+        .hero-logo {
+            width: min(92px, 12vh); height: min(92px, 12vh);
+            border-radius: 50%; overflow: hidden; flex-shrink: 0;
+            border: 1px solid rgba(255,255,255,0.14);
+            box-shadow: 0 8px 26px rgba(0,0,0,0.5);
+        }
+        .hero-titulo {
+            font-family: var(--serif); font-weight: 300;
+            font-size: clamp(34px, 9vw, 44px); line-height: 1.0;
+            color: var(--blanco); margin: 4px 0 0;
+            text-shadow: 0 2px 18px rgba(0,0,0,0.55);
+        }
+        .hero-titulo .cursiva {
+            display: block; font-style: italic; color: var(--morado-claro);
+        }
+        .hero-lema {
+            font-size: 12.5px; line-height: 1.6; color: rgba(255,255,255,0.82);
+            margin: 2px 0 0; text-shadow: 0 1px 10px rgba(0,0,0,0.6);
+        }
+        .hero-lema b { color: var(--blanco); font-weight: 600; }
+
+        /* El formulario sobre un panel de cristal: separa lo que se toca de la
+           foto, sin taparla del todo. */
+        .hero-panel {
+            position: relative; z-index: 1;
+            display: flex; flex-direction: column; gap: 4px;
+            margin: 0 14px 14px; padding: 20px 18px 16px;
+            border-radius: 22px;
+            background: rgba(15, 10, 22, 0.72);
+            border: 1px solid rgba(196,181,253,0.16);
+            box-shadow: 0 -6px 40px rgba(0,0,0,0.45);
+        }
+        @supports (backdrop-filter: blur(10px)) {
+            .hero-panel { backdrop-filter: blur(14px); background: rgba(15, 10, 22, 0.56); }
+        }
+        .hero-panel .btn-premium { margin-top: 10px; }
+        .hero-panel .btn-premium.secundario { margin-top: 8px; }
+
+        .hero-pie {
+            display: flex; align-items: center; justify-content: center;
+            gap: 8px; flex-wrap: wrap; margin-top: 4px;
+        }
+
         /* ── Tu próxima cita, en la bienvenida ──────────────────────────────── */
         .proxima-cita {
             width: 100%; display: flex; flex-direction: column; align-items: flex-start;
@@ -1114,7 +1205,10 @@
         </symbol>
     </svg>
 
-    <div class="app-container">
+    <!-- Arranca con "en-login" porque la pantalla de login es la que se ve
+         primero, antes de que corra mostrarPantalla(). Sin esto, el encabezado
+         aparecía un instante con su franja negra y luego saltaba. -->
+    <div class="app-container en-login">
         <div class="marca-header">
             <div class="marca-fila">
                 <img data-logo="1" alt="CarWashExpress" class="marca-logo" onerror="usarLogoDeRespaldo(this)">
@@ -1219,45 +1313,50 @@
             </button>
         </nav>
 
-        <!-- PANTALLA 0A: LOGIN (TELÉFONO) -->
-        <div class="screen" id="screen-login-phone">
-            <div class="logo-container" style="flex: 0.6;">
-                <div class="logo-frame">
+        <!-- PANTALLA 0A: LOGIN (TELÉFONO)
+             REDISEÑADA (agosto 2026). Antes era logo + título + dos campos + un
+             hueco enorme + botones: se veía sosa y, sobre todo, NO DECÍA A QUÉ
+             ENTRAS. Un cliente nuevo llegaba a un formulario pelón.
+             Ahora una foto real del trabajo ocupa el fondo: en dos segundos se
+             entiende qué es esto, y de paso desaparece el hueco muerto. -->
+        <div class="screen login-hero" id="screen-login-phone">
+            <div class="hero-foto" aria-hidden="true"></div>
+
+            <div class="hero-arriba">
+                <div class="hero-logo">
                     <img data-logo="1" alt="CarWashExpress" class="logo-img" onerror="usarLogoDeRespaldo(this)">
                 </div>
-            </div>
-            <div class="text-group">
-                <h1 class="titulo">Bienvenido<span class="cursiva">de vuelta</span></h1>
-                <p class="subtitulo">Entra con tu teléfono para agendar tu lavado.</p>
+                <h1 class="hero-titulo">Tu auto<span class="cursiva">impecable</span></h1>
+                <p class="hero-lema">Lavado y detallado <b>a domicilio</b>,<br>en Cuauhtémoc.</p>
             </div>
 
-            <div class="menu-content-holder" style="flex: 0.5;">
-                <div class="card-panel">
-                    <div class="form-container">
-                        <div class="form-group">
-                            <label>Número de Teléfono (10 dígitos)</label>
-                            <input type="tel" id="input-login-telefono" class="form-input" placeholder="Ej. 6251234567" maxlength="10">
-                        </div>
-                        <div class="form-group">
-                            <label>Contraseña</label>
-                            <input type="password" id="input-login-password" class="form-input" placeholder="Tu contraseña">
-                        </div>
-                        <p id="login-phone-error" class="mensaje-error"></p>
-                    </div>
+            <div class="hero-panel">
+                <div class="form-group">
+                    <label>Teléfono (10 dígitos)</label>
+                    <input type="tel" id="input-login-telefono" class="form-input"
+                           placeholder="Ej. 6251234567" maxlength="10" inputmode="numeric" autocomplete="tel">
                 </div>
-            </div>
+                <div class="form-group">
+                    <label>Contraseña</label>
+                    <input type="password" id="input-login-password" class="form-input"
+                           placeholder="Tu contraseña" autocomplete="current-password">
+                </div>
+                <p id="login-phone-error" class="mensaje-error"></p>
 
-            <div class="action-buttons-group">
-                <button class="btn-premium" id="btn-iniciar-sesion" onclick="iniciarSesionTelefono()">Iniciar Sesión</button>
-                <button class="btn-premium secundario" onclick="mostrarPantalla('screen-registro')">Crear Cuenta Nueva</button>
-                <!-- No hay recuperación automática, y el motivo es de raíz: el login
-                     convierte el teléfono en un correo FALSO, y a un correo falso
-                     Firebase no le puede mandar el mensaje de "restablecer". Así que
-                     el camino real es que le escriba a Tristán — y aquí el mensaje ya
-                     va escrito con su número, para que él la reponga en un minuto. -->
-                <button class="enlace-suave" onclick="pedirAyudaConContrasena()">
-                    Olvidé mi contraseña
-                </button>
+                <button class="btn-premium" id="btn-iniciar-sesion" onclick="iniciarSesionTelefono()">Entrar</button>
+
+                <button class="btn-premium secundario" onclick="mostrarPantalla('screen-registro')">Crear una cuenta</button>
+
+                <div class="hero-pie">
+                    <!-- No hay recuperación automática, y el motivo es de raíz: el
+                         login convierte el teléfono en un correo FALSO, y a un correo
+                         falso Firebase no le puede mandar el mensaje de "restablecer".
+                         El camino real es que le escriba a Tristán — y aquí el mensaje
+                         ya va escrito con su número, para que él la reponga. -->
+                    <button class="enlace-suave" onclick="pedirAyudaConContrasena()">
+                        Olvidé mi contraseña
+                    </button>
+                </div>
             </div>
         </div>
 
@@ -3198,7 +3297,7 @@ Cera rápida protectora
 
         // La versión del archivo. Sirve para que Tristán confirme de un vistazo si
         // el que abrió es el nuevo — ya pasó dos veces que probaba una copia vieja.
-        const VERSION_APP = '2026.08.16h';
+        const VERSION_APP = '2026.08.16i';
 
         function pintarVersion() {
             const el = document.getElementById('marca-version');
@@ -3390,6 +3489,14 @@ Cera rápida protectora
                 nueva.classList.add(comoRegreso ? 'entra-regresando' : 'entra-avanzando');
             }
             nueva.scrollTop = 0;
+
+            // En el login la foto tiene que cubrir TAMBIÉN el encabezado. Como el
+            // encabezado es hermano de las pantallas (no hijo), la foto no puede
+            // salirse a taparlo: lo que se hace es sacar el encabezado del flujo y
+            // dejarlo flotando encima. Sin esto quedaba una franja negra arriba de
+            // la foto y se veía cortada.
+            document.querySelector('.app-container')
+                .classList.toggle('en-login', idPantalla === 'screen-login-phone');
         }
 
         // Regresar a la pantalla anterior. Lo usa el gesto de deslizar.
