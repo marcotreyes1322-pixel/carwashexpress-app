@@ -302,6 +302,21 @@
             .menu-boton span { transition: none; }
         }
 
+        /* ── CIFRAS TABULARES ────────────────────────────────────────────────
+           `tabular-nums` hace que todos los dígitos midan LO MISMO. Sin esto el
+           1 es más angosto que el 8, y una columna de precios u horas queda
+           desalineada — que es justo lo que delata un formulario improvisado.
+           Se aplica a lo que es número: precios, totales, folios, fechas, horas
+           y los días del calendario. NO al texto corrido, donde no hace falta. */
+        .fila-precio, .resumen-row strong, .resumen-total strong, .resumen-extra strong,
+        .cita-admin-hora, .cita-admin-total, .admin-resumen, .cita-item-card strong,
+        .proxima-cuando, .mosaico-dato, .marca-version, .time-slot, .cal-dia,
+        .total-vivo, .total-vivo-detalle, .total-vivo-linea, .cliente-dato,
+        #conf-folio, #conf-fecha, #conf-hora, .admin-fecha {
+            font-variant-numeric: tabular-nums;
+            font-feature-settings: "tnum" 1;
+        }
+
         .hidden { display: none !important; }
 
         .screen {
@@ -387,13 +402,69 @@
            pie, y en una tarjeta apaisada el recorte le cortaba el auto. */
         .feed-foto { width: 100%; height: 210px; object-fit: cover; display: block;
                      background: #17111f; }
-        /* Antes/después: dos fotos partidas por una línea de neón */
-        .feed-antes-despues { display: flex; height: 210px; position: relative; }
-        .feed-antes-despues img { width: 50%; height: 100%; object-fit: cover; display: block; }
-        .feed-antes-despues::after {
-            content: ""; position: absolute; top: 0; bottom: 0; left: 50%; width: 2px;
-            background: linear-gradient(180deg, transparent, var(--magenta), transparent);
+        /* ── COMPARADOR ANTES / DESPUÉS ──────────────────────────────────────
+           Antes eran dos fotos a medias, una junto a la otra: se veía la mitad
+           de cada una y no se comparaba nada. Ahora las dos ocupan la tarjeta
+           completa, una encima de la otra, y el dedo mueve la línea que las
+           separa — que es como de verdad se aprecia el cambio.
+
+           El recorte se hace con clip-path y NO con un ancho: al achicar el
+           contenedor la foto de adentro se estiraría, y las dos dejarían de
+           coincidir justo en la línea, que es lo único que importa aquí. */
+        .comparador {
+            position: relative; height: 210px; overflow: hidden;
+            background: #17111f; touch-action: pan-y;
         }
+        .comparador img {
+            position: absolute; inset: 0; width: 100%; height: 100%;
+            object-fit: cover; display: block; user-select: none; -webkit-user-drag: none;
+        }
+        .cmp-recorte {
+            position: absolute; inset: 0;
+            clip-path: inset(0 calc(100% - var(--cmp-pos, 50%)) 0 0);
+        }
+        .cmp-linea {
+            position: absolute; top: 0; bottom: 0; left: var(--cmp-pos, 50%);
+            width: 2px; margin-left: -1px; pointer-events: none;
+            background: linear-gradient(180deg, transparent, var(--magenta) 18%,
+                                        var(--magenta) 82%, transparent);
+            box-shadow: 0 0 10px rgba(232,121,201,0.65);
+        }
+        .cmp-tirador {
+            position: absolute; top: 50%; left: 50%; transform: translate(-50%, -50%);
+            width: 28px; height: 28px; border-radius: 50%;
+            background: rgba(15,10,22,0.88); border: 1.5px solid var(--magenta);
+            box-shadow: 0 2px 10px rgba(0,0,0,0.5);
+        }
+        /* Las dos flechitas del tirador, dibujadas con bordes: cero imágenes. */
+        .cmp-tirador::before, .cmp-tirador::after {
+            content: ""; position: absolute; top: 50%; width: 0; height: 0;
+            border-top: 4px solid transparent; border-bottom: 4px solid transparent;
+            transform: translateY(-50%);
+        }
+        .cmp-tirador::before { left: 5px;  border-right: 5px solid var(--magenta); }
+        .cmp-tirador::after  { right: 5px; border-left:  5px solid var(--magenta); }
+
+        .cmp-etiqueta {
+            position: absolute; bottom: 8px; z-index: 2; pointer-events: none;
+            font-size: 8.5px; letter-spacing: 0.14em; text-transform: uppercase;
+            padding: 3px 7px; border-radius: 999px; color: #fff;
+            background: rgba(9,9,11,0.62); backdrop-filter: blur(4px);
+        }
+        .cmp-etiqueta.izq { left: 8px; }
+        .cmp-etiqueta.der { right: 8px; }
+
+        /* Un <input type="range"> invisible encima: da el arrastre con el dedo y
+           además el manejo con teclado, gratis y sin escribir nada de eso. */
+        .cmp-rango {
+            position: absolute; inset: 0; z-index: 3; width: 100%; height: 100%;
+            margin: 0; opacity: 0; cursor: ew-resize; -webkit-appearance: none; appearance: none;
+            background: transparent;
+        }
+        .cmp-rango::-webkit-slider-thumb { -webkit-appearance: none; width: 44px; height: 210px; }
+        .cmp-rango::-moz-range-thumb { width: 44px; height: 210px; border: 0; background: transparent; }
+        .cmp-rango:focus-visible + .cmp-etiqueta,
+        .comparador:focus-within .cmp-linea { box-shadow: 0 0 0 2px var(--morado-claro); }
         .feed-etiqueta {
             position: absolute; top: 8px; left: 8px; font-size: 8px; letter-spacing: .14em;
             text-transform: uppercase; padding: 4px 8px; border-radius: 999px;
@@ -559,6 +630,43 @@
            Bajado a 0.34: sigue integrándolo con el fondo negro sin apagarlo. */
         .hud-overlay { position: absolute; inset: 0; pointer-events: none; border-radius: 17px;
                        box-shadow: inset 0 0 34px rgba(10, 10, 10, 0.34); z-index: 25; }
+
+        /* ── HOJA INFERIOR SOBRE EL MAPA ─────────────────────────────────────
+           El sector y el botón dejan de ir DEBAJO del mapa y pasan a flotar
+           encima. Así el mapa ocupa el alto completo (es el elemento principal
+           de esta pantalla) y el cliente lee dónde está sin bajar la vista. */
+        .mapa-grande { height: 68vh; max-height: 620px; }
+        .hoja-mapa {
+            position: absolute; left: 0; right: 0; bottom: 0; z-index: 30;
+            display: flex; flex-direction: column; align-items: stretch; gap: 3px;
+            padding: 8px 18px 16px; text-align: left;
+            border-top: 1px solid rgba(196,181,253,0.20);
+            border-radius: 20px 20px 17px 17px;
+            background: rgba(11, 8, 17, 0.90);
+        }
+        /* El desenfoque va detrás de un @supports: donde no exista, el panel se
+           queda SÓLIDO. Un panel semitransparente sin desenfoque deja el mapa
+           encimado con el texto y no se lee nada. */
+        @supports (backdrop-filter: blur(12px)) {
+            .hoja-mapa { background: rgba(11, 8, 17, 0.62); backdrop-filter: blur(12px); }
+        }
+        /* El asa no hace nada: es la señal de "esto es un panel", que es lo que
+           hace que se lea como app y no como texto encima de una imagen. */
+        .hoja-asa {
+            width: 38px; height: 4px; border-radius: 999px; margin: 0 auto 8px;
+            background: rgba(255,255,255,0.22);
+        }
+        .hoja-sector {
+            font-family: var(--serif); font-weight: 400; font-size: 26px;
+            color: var(--blanco); margin: 4px 0 0; line-height: 1.15; min-height: 30px;
+        }
+        .hoja-nota {
+            font-size: 12px; color: var(--tenue); line-height: 1.55;
+            margin: 4px 0 0; min-height: 18px;
+        }
+        .hoja-mapa .btn-premium { margin-top: 12px; }
+        /* La pista se sube: abajo chocaba con la hoja. */
+        .mapa-grande .map-pista { bottom: auto; top: 12px; }
 
         /* --- CITAS AGENDADAS --- */
         .citas-lista-container { width: 100%; display: flex; flex-direction: column; max-height: 380px; overflow-y: auto; }
@@ -1555,20 +1663,23 @@
                 <p id="radar-status" class="subtitulo">Buscando dónde estás...</p>
             </div>
 
-            <div class="map-viewport">
+            <!-- El mapa deja de ser una cajita con texto debajo y pasa a ser el
+                 protagonista: la información del sector flota ENCIMA, como una
+                 hoja inferior. Así el mapa se ve del alto completo y el cliente
+                 no tiene que bajar la vista para leer dónde está. -->
+            <div class="map-viewport mapa-grande">
                 <div id="map"></div>
                 <div class="hud-overlay"></div>
                 <div class="map-pista">Arrastra y gira el mapa · toca al personaje</div>
-            </div>
 
-            <div class="text-group" style="margin: 14px 0 0 0;">
-                <div class="etiqueta">Sector detectado</div>
-                <h3 id="sector-detected" class="titulo" style="font-size: 26px; margin-top: 8px; min-height: 30px;">Buscando...</h3>
-                <p id="sector-message" class="subtitulo" style="min-height: 34px;"></p>
-            </div>
-
-            <div class="action-buttons-group">
-                <button class="btn-premium" id="btn-confirm-sector" style="display:none;" onclick="irAServicios()">Confirmar y ver servicios</button>
+                <div class="hoja-mapa">
+                    <div class="hoja-asa" aria-hidden="true"></div>
+                    <div class="etiqueta">Sector detectado</div>
+                    <h3 id="sector-detected" class="hoja-sector">Buscando...</h3>
+                    <p id="sector-message" class="hoja-nota"></p>
+                    <button class="btn-premium" id="btn-confirm-sector" style="display:none;"
+                            onclick="irAServicios()">Confirmar y ver servicios</button>
+                </div>
             </div>
         </div>
 
@@ -2029,6 +2140,11 @@ Cera rápida protectora
             </div>
 
             <div class="action-buttons-group">
+                <!-- Mandarle la confirmación a Tristán por WhatsApp. Va como <a> de
+                     verdad y no como botón con JavaScript: una ventana que abre
+                     sola, sin que el dedo la haya pedido, la bloquea el navegador. -->
+                <a class="btn-premium" id="conf-whatsapp" target="_blank" rel="noopener"
+                   style="text-align:center; text-decoration:none;">Enviar confirmación a WhatsApp</a>
                 <button class="btn-premium secundario" onclick="salirDeConfirmacion()">Volver al menú</button>
             </div>
         </div>
@@ -3297,7 +3413,7 @@ Cera rápida protectora
 
         // La versión del archivo. Sirve para que Tristán confirme de un vistazo si
         // el que abrió es el nuevo — ya pasó dos veces que probaba una copia vieja.
-        const VERSION_APP = '2026.08.16i';
+        const VERSION_APP = '2026.08.16j';
 
         function pintarVersion() {
             const el = document.getElementById('marca-version');
@@ -3331,26 +3447,72 @@ Cera rápida protectora
         // a quien lo lee, y el daño sería a la reputación del negocio.
         const CUANTAS_FOTOS_BUSCAR = 12;
 
+        // Los PARES antes/después van primero (orden positivo): son los que más
+        // venden, porque enseñan el cambio y no sólo el resultado.
+        const CUANTOS_PARES_BUSCAR = 6;
+
+        // Se PREGUNTA por cada foto antes de pintar nada.
+        //
+        // Antes se pintaban las 18 candidatas y la que no existiera se quitaba sola
+        // con su onerror. Eso tenía un defecto: las fotos van con loading="lazy", o
+        // sea que una tarjeta que está fuera de la vista NO intenta cargar su
+        // imagen — así que su onerror nunca se dispara y la tarjeta se queda ahí
+        // hasta que el cliente la alcanza con el dedo, y entonces desaparece
+        // enfrente de él. Con los pares antes/después eso se volvió muy visible:
+        // hoy no hay ninguno subido, así que el carrusel arrancaba con 6 tarjetas
+        // fantasma.
+        //
+        // Preguntar con `new Image()` no está sujeto a loading="lazy" y no dibuja
+        // nada: sólo pide el archivo. Lo que existe se pinta; lo que no, ni aparece.
+        function existeLaFoto(url) {
+            return new Promise(resolve => {
+                const img = new Image();
+                img.onload  = () => resolve(true);
+                img.onerror = () => resolve(false);
+                img.src = url;
+            });
+        }
+
         function fotosDeTrabajos() {
-            const lista = {};
-            for (let i = 1; i <= CUANTAS_FOTOS_BUSCAR; i++) {
-                lista['trabajo' + i] = { foto: 'trabajos/' + i + '.jpg', orden: -i };
+            // Los PARES antes/después van primero (orden positivo): son los que más
+            // venden, porque enseñan el cambio y no sólo el resultado.
+            const pares = [];
+            for (let i = 1; i <= CUANTOS_PARES_BUSCAR; i++) {
+                pares.push(Promise.all([
+                    existeLaFoto('trabajos/' + i + '-antes.jpg'),
+                    existeLaFoto('trabajos/' + i + '-despues.jpg')
+                ]).then(([a, d]) => (a && d) ? ['par' + i, {
+                    antes:   'trabajos/' + i + '-antes.jpg',
+                    despues: 'trabajos/' + i + '-despues.jpg',
+                    orden:   100 - i
+                }] : null));
+                // Ojo: se exigen LAS DOS. Media comparación no es una comparación.
             }
-            return lista;
+            const sueltas = [];
+            for (let i = 1; i <= CUANTAS_FOTOS_BUSCAR; i++) {
+                sueltas.push(existeLaFoto('trabajos/' + i + '.jpg')
+                    .then(hay => hay ? ['trabajo' + i, { foto: 'trabajos/' + i + '.jpg', orden: -i }] : null));
+            }
+            return Promise.all(pares.concat(sueltas)).then(resultados => {
+                const lista = {};
+                resultados.forEach(r => { if (r) lista[r[0]] = r[1]; });
+                return lista;
+            });
         }
 
         function cargarFeedDeResenas() {
             const bloque = document.getElementById('feed-bloque');
             if (!bloque) return;
 
-            // Las fotos se pintan de inmediato: son archivos del propio sitio y no
-            // dependen de Firebase. Si además hay reseñas, se agregan encima.
-            pintarFeed(fotosDeTrabajos());
-
-            if (!baseLista()) return;
-            conTiempoLimite(firebase.database().ref('resenas').once('value'), 8000)
-                .then(snap => pintarFeed(Object.assign({}, fotosDeTrabajos(), snap.val() || {})))
-                .catch(() => { /* Sin reseñas quedan las fotos: no se estorba al cliente */ });
+            // Las fotos son archivos del propio sitio y no dependen de Firebase.
+            // Si además hay reseñas cargadas, se agregan encima.
+            fotosDeTrabajos().then(fotos => {
+                pintarFeed(fotos);
+                if (!baseLista()) return;
+                conTiempoLimite(firebase.database().ref('resenas').once('value'), 8000)
+                    .then(snap => pintarFeed(Object.assign({}, fotos, snap.val() || {})))
+                    .catch(() => { /* Sin reseñas quedan las fotos: no se estorba al cliente */ });
+            });
         }
 
         // VISTA PREVIA DEL FEED, SÓLO PARA TRISTÁN.
@@ -3409,12 +3571,21 @@ Cera rápida protectora
             carrusel.innerHTML = lista.map(r => {
                 const estrellas = Math.max(0, Math.min(5, Math.round(Number(r.estrellas) || 0)));
                 const imagen = (r.antes && r.despues)
-                    ? `<div class="feed-antes-despues">
-                           <img src="${esc(r.antes)}" alt="Antes" loading="lazy">
-                           <img src="${esc(r.despues)}" alt="Después" loading="lazy">
+                    ? `<div class="comparador" data-comparador>
+                           <img class="cmp-despues" src="${esc(r.despues)}" alt="Después" loading="lazy"
+                                onerror="quitarTarjetaSinFoto(this)">
+                           <div class="cmp-recorte"><img src="${esc(r.antes)}" alt="Antes" loading="lazy"
+                                onerror="quitarTarjetaSinFoto(this)"></div>
+                           <div class="cmp-linea"><span class="cmp-tirador" aria-hidden="true"></span></div>
+                           <span class="cmp-etiqueta izq">Antes</span>
+                           <span class="cmp-etiqueta der">Después</span>
+                           <input class="cmp-rango" type="range" min="0" max="100" value="50"
+                                  aria-label="Comparar antes y después">
                        </div>`
                     : (r.foto ? `<img class="feed-foto" src="${esc(r.foto)}" alt="Trabajo terminado"
                                       loading="lazy" onerror="quitarTarjetaSinFoto(this)">` : '');
+                // El antes/después ya no son dos fotos lado a lado: ahora es un
+                // control deslizante que se arrastra con el dedo. Ver montarComparadores().
                 // El cuerpo SÓLO se dibuja si hay algo que poner. Una tarjeta que
                 // es nada más la foto dejaba una franja oscura vacía abajo, y se
                 // veía como si le faltara cargar algo.
@@ -3433,10 +3604,32 @@ Cera rápida protectora
             }).join('');
 
             bloque.classList.remove('hidden');
+            montarComparadores(carrusel);
             // Puede que TODAS las tarjetas sean fotos que todavía no existen. En ese
             // caso el bloque se queda vacío y hay que volver a esconderlo — si no,
             // quedaría un encabezado "Trabajos recientes" sobre la nada.
             revisarSiElFeedQuedoVacio();
+        }
+
+        // Conecta cada comparador antes/después con su control deslizante.
+        function montarComparadores(zona) {
+            zona.querySelectorAll('[data-comparador]').forEach(caja => {
+                const rango = caja.querySelector('.cmp-rango');
+                if (!rango || rango.dataset.listo) return;
+                rango.dataset.listo = '1';
+
+                const mover = () => caja.style.setProperty('--cmp-pos', rango.value + '%');
+                rango.addEventListener('input', mover);
+                mover();
+
+                // ⚠️ El comparador vive DENTRO del carrusel, que se desplaza de
+                // lado. Sin esto, arrastrar la línea también arrastraba el
+                // carrusel y la tarjeta se iba de lado mientras el cliente
+                // intentaba comparar. Se corta el gesto sólo aquí.
+                ['touchstart', 'touchmove', 'pointerdown'].forEach(evento => {
+                    rango.addEventListener(evento, e => e.stopPropagation(), { passive: true });
+                });
+            });
         }
 
         // Una foto que no está en el repositorio se lleva su tarjeta completa. Así
@@ -7462,9 +7655,60 @@ Cera rápida protectora
             }
 
             document.getElementById('conf-total').textContent = "$" + orden.total + " MXN";
+            document.getElementById('conf-whatsapp').href = enlaceDeConfirmacion(orden);
 
             limpiarFormularioDatos();
             mostrarPantalla('screen-confirmacion');
+        }
+
+        // Arma el mensaje de confirmación que el cliente le manda a Tristán.
+        //
+        // Lleva a propósito las tres cosas que hacen que un servicio se caiga
+        // estando ya en la puerta: la DIRECCIÓN (con coordenadas, que es lo único
+        // que no se puede malinterpretar), la REFERENCIA del domicilio, y la TOMA
+        // DE CORRIENTE. Sin luz no se puede lavar y el viaje se pierde.
+        function enlaceDeConfirmacion(orden) {
+            const lineas = [
+                "Hola, confirmo mi cita en CarWashExpress",
+                "",
+                "Folio: " + (orden.idLocal || "—"),
+                "Servicio: " + (orden.paquete || "—")
+                    + (orden.tamanoVehiculo ? " (" + orden.tamanoVehiculo + ")" : ""),
+                "Auto: " + (orden.auto || "—"),
+                "Fecha: " + formatearFechaLegible(orden.agendaDia),
+                "Hora: " + (orden.agendaHora || "—")
+            ];
+
+            const extras = Object.keys(orden.extras || {})
+                .map(id => EXTRAS[id] ? EXTRAS[id].nombre : id);
+            if (extras.length) lineas.push("Extras: " + extras.join(", "));
+
+            lineas.push("Total: $" + orden.total + " MXN");
+            lineas.push("");
+
+            // La ubicación: el sector se entiende, pero las coordenadas son las que
+            // de verdad llevan a la puerta. Se mandan las dos.
+            lineas.push("Ubicación: " + (orden.coordenadas || "—"));
+            if (orden.referencia) lineas.push("Referencia: " + orden.referencia);
+            if (orden.lat != null && orden.lon != null) {
+                lineas.push("Mapa: https://www.google.com/maps/search/?api=1&query="
+                            + orden.lat + "," + orden.lon);
+            }
+            if (orden.ubicacionAproximada) {
+                lineas.push("(No pude dar mi ubicación exacta, se las confirmo)");
+            }
+
+            if (orden.tomaCorriente === 'taller') {
+                lineas.push("Toma de corriente: no aplica, el auto va a su taller");
+            } else if (orden.tomaCorriente === 'si') {
+                lineas.push("Toma de corriente: SÍ tengo, a menos de "
+                            + METROS_MAXIMOS_CORRIENTE + " metros");
+            } else {
+                lineas.push("Toma de corriente: NO estoy seguro, ¿me confirman?");
+            }
+
+            return "https://wa.me/52" + ADMIN_TELEFONO
+                 + "?text=" + encodeURIComponent(lineas.join("\n"));
         }
 
         function filaResumen(etiqueta, valor, esExtra) {
