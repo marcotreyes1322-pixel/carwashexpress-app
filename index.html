@@ -635,7 +635,39 @@
            El sector y el botón dejan de ir DEBAJO del mapa y pasan a flotar
            encima. Así el mapa ocupa el alto completo (es el elemento principal
            de esta pantalla) y el cliente lee dónde está sin bajar la vista. */
-        .mapa-grande { height: 68vh; max-height: 620px; }
+        /* El mapa se queda con TODO lo que sobre de la pantalla, en vez de pedir
+           un alto fijo. Con un alto fijo el flex se lo recortaba: pedía 76vh y
+           terminaba dibujándose al 60%. Con flex:1 crece hasta donde llegue y
+           nunca desborda, sea cual sea el alto del teléfono. */
+        .mapa-grande { flex: 1 1 auto; height: auto; min-height: 300px; max-height: 720px; }
+        /* En esta pantalla el título va compacto: cada línea que ocupa es una
+           línea que le quita al mapa, y el mapa es el protagonista aquí. */
+        #screen-satellite .titulo { font-size: 34px; line-height: 1.02; }
+        #screen-satellite .text-group { margin-bottom: 10px; }
+        .hoja-estado { font-size: 11px; color: rgba(255,255,255,0.62); margin-bottom: 6px; }
+
+        /* La mira del ajuste manual: fija en el centro del mapa. El anillo marca
+           el punto exacto y el tallo lo ancla al suelo, para que se lea a qué
+           parte del terreno apunta y no quede flotando en el aire. */
+        .mira-ajuste {
+            position: absolute; left: 50%; top: 50%; z-index: 35;
+            transform: translate(-50%, -100%); pointer-events: none;
+            display: flex; flex-direction: column; align-items: center;
+        }
+        .mira-anillo {
+            width: 26px; height: 26px; border-radius: 50%;
+            border: 3px solid #fff; background: rgba(139,92,246,0.55);
+            box-shadow: 0 0 0 2px rgba(0,0,0,0.45), 0 4px 14px rgba(0,0,0,0.55);
+        }
+        .mira-tallo {
+            width: 2px; height: 16px; background: #fff;
+            box-shadow: 0 0 0 1px rgba(0,0,0,0.45);
+        }
+        .mira-ajuste::after {
+            content: ""; position: absolute; bottom: -4px; left: 50%;
+            transform: translateX(-50%); width: 12px; height: 5px; border-radius: 50%;
+            background: rgba(0,0,0,0.45);
+        }
         .hoja-mapa {
             position: absolute; left: 0; right: 0; bottom: 0; z-index: 30;
             display: flex; flex-direction: column; align-items: stretch; gap: 3px;
@@ -742,13 +774,35 @@
         .cal-dia.vacio { visibility: hidden; }
         .cal-dia:disabled { color: rgba(255,255,255,0.16); cursor: not-allowed; }
         .cal-dia.seleccionado { background: var(--morado); border-color: var(--morado); font-weight: 700; }
-        /* Puntito de disponibilidad debajo del número */
-        .pt { width: 4px; height: 4px; border-radius: 50%; display: inline-block; }
+        /* Disponibilidad debajo del número: UN PUNTO POR HORARIO LIBRE.
+           Antes era un solo punto de 4px que cambiaba de color. Dos problemas:
+           a 4px no se ve en una tablet, y un color solo no distingue "quedan 3"
+           de "queda 1". Contando puntos se entiende sin leyenda y sin leer nada. */
+        .pt-fila { display: flex; gap: 2px; height: 5px; align-items: center; }
+        .pt { width: 5px; height: 5px; border-radius: 50%; display: inline-block; }
         .pt.libre { background: #86efac; }
         .pt.medio { background: #fbbf24; }
-        .pt.lleno { background: #fca5a5; }
-        .cal-dia.seleccionado .pt { background: #fff; }
-        .cal-dia:disabled .pt { display: none; }
+        .pt.lleno { background: #fca5a5; box-shadow: 0 0 5px rgba(252,165,165,0.7); }
+        .cal-dia.seleccionado .pt { background: #fff; box-shadow: none; }
+        .cal-dia:disabled .pt-fila { display: none; }
+        /* "Guardar mi contraseña" — casilla propia, porque la del sistema no se
+           puede pintar y sale gris de Android en medio del panel de cristal. */
+        .recordar { display: flex; gap: 10px; align-items: flex-start; margin-top: 4px;
+                    cursor: pointer; text-align: left; }
+        .recordar input { position: absolute; opacity: 0; width: 0; height: 0; }
+        .recordar-caja { flex-shrink: 0; width: 20px; height: 20px; border-radius: 6px;
+                         border: 1.5px solid rgba(255,255,255,0.30); margin-top: 1px;
+                         transition: 0.15s; position: relative; }
+        .recordar input:checked + .recordar-caja {
+            background: var(--morado); border-color: var(--morado); }
+        .recordar input:checked + .recordar-caja::after {
+            content: ""; position: absolute; left: 6px; top: 2px; width: 5px; height: 10px;
+            border: solid #fff; border-width: 0 2px 2px 0; transform: rotate(45deg); }
+        .recordar input:focus-visible + .recordar-caja { outline: 2px solid var(--morado); outline-offset: 2px; }
+        .recordar-texto { font-size: 12px; color: rgba(255,255,255,0.72); line-height: 1.45; }
+        .recordar-texto b { display: block; font-weight: 400; font-size: 10.5px;
+                            color: rgba(255,255,255,0.45); margin-top: 2px; }
+
         .cal-leyenda { display: flex; gap: 14px; justify-content: center; margin-top: 12px;
                        font-size: 9.5px; color: var(--muy-tenue); flex-wrap: wrap; }
         .cal-leyenda span { display: flex; align-items: center; gap: 5px; }
@@ -854,6 +908,7 @@
         }
         .chip.morado { border-color: var(--morado); color: var(--morado-claro); }
         .aviso-aprox { font-size: 11px; color: #fca5a5; margin-top: 8px; line-height: 1.5; }
+        .aviso-ok { font-size: 11px; color: #86efac; margin-top: 8px; line-height: 1.5; }
         /* Aviso de recordatorios pendientes para mañana. Va arriba de la lista del
            día y sólo aparece parado en HOY, porque ahí sí es una tarea del día. */
         .aviso-recordatorios {
@@ -1449,6 +1504,14 @@
                     <input type="password" id="input-login-password" class="form-input"
                            placeholder="Tu contraseña" autocomplete="current-password">
                 </div>
+                <label class="recordar">
+                    <input type="checkbox" id="chk-recordar" onchange="alternarRecordar()">
+                    <span class="recordar-caja"></span>
+                    <span class="recordar-texto">Guardar mi contraseña en este teléfono
+                        <b>Sólo si el teléfono es tuyo: quien lo agarre podrá entrar a tu cuenta.</b>
+                    </span>
+                </label>
+
                 <p id="login-phone-error" class="mensaje-error"></p>
 
                 <button class="btn-premium" id="btn-iniciar-sesion" onclick="iniciarSesionTelefono()">Entrar</button>
@@ -1658,9 +1721,12 @@
 
         <!-- PANTALLA 2: ENFOQUE SATELITAL -->
         <div class="screen hidden" id="screen-satellite" style="justify-content: space-between;">
+            <!-- El subtítulo se fue DENTRO de la hoja del mapa: decía casi lo
+                 mismo que el panel de abajo ("Ubicación encontrada" arriba,
+                 "Sector detectado" abajo), y esas dos líneas repetidas le
+                 estaban quitando alto al mapa, que es lo que importa aquí. -->
             <div class="text-group">
                 <h2 class="titulo">Tu<span class="cursiva">ubicación</span></h2>
-                <p id="radar-status" class="subtitulo">Buscando dónde estás...</p>
             </div>
 
             <!-- El mapa deja de ser una cajita con texto debajo y pasa a ser el
@@ -1670,15 +1736,38 @@
             <div class="map-viewport mapa-grande">
                 <div id="map"></div>
                 <div class="hud-overlay"></div>
-                <div class="map-pista">Arrastra y gira el mapa · toca al personaje</div>
+                <div class="map-pista" id="map-pista">Arrastra y gira el mapa · toca al personaje</div>
+
+                <!-- La mira del ajuste manual. Va FIJA en el centro y lo que se
+                     mueve es el mapa: si el cliente tuviera que picarle a un punto,
+                     su propio dedo taparía justo el lugar que quiere marcar. -->
+                <div class="mira-ajuste hidden" id="mira-ajuste" aria-hidden="true">
+                    <span class="mira-anillo"></span>
+                    <span class="mira-tallo"></span>
+                </div>
 
                 <div class="hoja-mapa">
                     <div class="hoja-asa" aria-hidden="true"></div>
-                    <div class="etiqueta">Sector detectado</div>
-                    <h3 id="sector-detected" class="hoja-sector">Buscando...</h3>
-                    <p id="sector-message" class="hoja-nota"></p>
-                    <button class="btn-premium" id="btn-confirm-sector" style="display:none;"
-                            onclick="irAServicios()">Confirmar y ver servicios</button>
+
+                    <div id="hoja-normal">
+                        <p id="radar-status" class="hoja-estado">Buscando dónde estás...</p>
+                        <div class="etiqueta">Sector detectado</div>
+                        <h3 id="sector-detected" class="hoja-sector">Buscando...</h3>
+                        <p id="sector-message" class="hoja-nota"></p>
+                        <button class="enlace-suave" id="btn-ajustar-ubicacion"
+                                onclick="activarAjusteManual()">📍 No es aquí · marcarla yo</button>
+                        <button class="btn-premium" id="btn-confirm-sector" style="display:none;"
+                                onclick="irAServicios()">Confirmar y ver servicios</button>
+                    </div>
+
+                    <div id="hoja-ajuste" class="hidden">
+                        <div class="etiqueta">Marca tu domicilio</div>
+                        <h3 class="hoja-sector">Mueve el mapa</h3>
+                        <p class="hoja-nota">Arrastra hasta que la mira quede sobre tu casa.
+                           Puedes acercar con dos dedos.</p>
+                        <button class="btn-premium" onclick="confirmarAjusteManual()">Aquí es</button>
+                        <button class="enlace-suave" onclick="cancelarAjusteManual()">Cancelar</button>
+                    </div>
                 </div>
             </div>
         </div>
@@ -1937,6 +2026,17 @@ Cera rápida protectora
                                 <span class="slider"></span>
                             </label>
                         </div>
+                        <div class="extra-row" id="row-rines">
+                            <div class="extra-info">
+                                <div class="extra-title">Descontaminación de Rines</div>
+                                <div class="extra-sub">Saca el polvo de freno incrustado</div>
+                                <div class="extra-price">+$400 MXN</div>
+                            </div>
+                            <label class="switch">
+                                <input type="checkbox" id="chk-rines" onchange="toggleExtra('rines')">
+                                <span class="slider"></span>
+                            </label>
+                        </div>
                         <div class="extra-row" id="row-asientos">
                             <div class="extra-info">
                                 <div class="extra-title">Rejuvenecimiento de Asientos</div>
@@ -2010,9 +2110,8 @@ Cera rápida protectora
                                 </div>
                                 <div class="cal-grid" id="cal-grid"></div>
                                 <div class="cal-leyenda">
-                                    <span><i class="pt libre"></i>Con lugar</span>
-                                    <span><i class="pt medio"></i>Casi lleno</span>
-                                    <span><i class="pt lleno"></i>Sin lugar</span>
+                                    <span><i class="pt libre"></i><i class="pt libre"></i><i class="pt libre"></i>Cada punto es un horario libre</span>
+                                    <span><i class="pt lleno"></i>Último horario</span>
                                 </div>
                             </div>
                         </div>
@@ -2336,6 +2435,11 @@ Cera rápida protectora
             // Agosto 2026: Tristán confirmó $100. Estaba en sus materiales pero
             // nunca había existido en la app, así que no se podía vender desde aquí.
             ceraliquida: { nombre: 'Cera Líquida',                 precio: 100 },
+            // Agosto 2026: Tristán confirmó $400. La descontaminación de VIDRIOS
+            // ($400/$600) todavía no entra: falta que él diga qué separa un
+            // precio del otro (¿tamaño del auto? ¿parabrisas vs todos los
+            // cristales?). Meterla adivinando sería cobrarle mal a alguien.
+            rines:       { nombre: 'Descontaminación de Rines',    precio: 400 },
             asientos:    { nombre: 'Rejuvenecimiento de Asientos', precio: 200 },
             cajuela:     { nombre: 'Aspirado de Cajuela o 3ª Fila',precio: 80  },
             vapor:       { nombre: 'Máquina de Vapor',             precio: 80  }
@@ -2492,6 +2596,7 @@ Cera rápida protectora
             document.querySelectorAll('img[data-logo]').forEach(img => { img.src = LOGO_DATA_URI; });
 
             pintarPreciosDeExtras();
+            rellenarAccesoGuardado();
 
             try {
                 // Firebase viene en varios archivos que se bajan por separado. Antes
@@ -3427,7 +3532,7 @@ Cera rápida protectora
 
         // La versión del archivo. Sirve para que Tristán confirme de un vistazo si
         // el que abrió es el nuevo — ya pasó dos veces que probaba una copia vieja.
-        const VERSION_APP = '2026.08.16k';
+        const VERSION_APP = '2026.08.20a';
 
         function pintarVersion() {
             const el = document.getElementById('marca-version');
@@ -3882,6 +3987,7 @@ Cera rápida protectora
                 )
                     .then((cred) => {
                         destrabar();
+                        guardarAccesoSiLoPidio(telefonoRaw, password);
                         // No esperamos a que Firebase avise por su cuenta: entramos ya.
                         // (entrarComoUsuario es inofensivo si se llama dos veces.)
                         entrarComoUsuario(cred && cred.user ? cred.user : firebase.auth().currentUser);
@@ -3904,6 +4010,58 @@ Cera rápida protectora
                 destrabar();
                 errorEl.textContent = "No se pudo conectar con el servidor. Cierra la app y vuelve a abrirla.";
             }
+        }
+
+        // =====================================================================
+        // 🔑 "GUARDAR MI CONTRASEÑA EN ESTE TELÉFONO"
+        //
+        // Por qué existe: la cuenta usa un correo FALSO armado con el teléfono
+        // (625…@carwashexpress.local), así que Firebase no puede mandar un
+        // mensaje de "restablecer contraseña" — no hay a dónde mandarlo. Quien
+        // la olvida queda fuera hasta que Tristán se la repone a mano. Guardarla
+        // en el teléfono es lo que evita que eso pase.
+        //
+        // ⚠️ EL COSTO, DICHO CLARO: la contraseña queda escrita en el
+        // almacenamiento del navegador de ese teléfono. Quien agarre el teléfono
+        // desbloqueado puede entrar a la cuenta. Por eso:
+        //   · viene APAGADO de fábrica — el cliente tiene que prenderlo a propósito;
+        //   · la propia casilla lo advierte en pantalla;
+        //   · se borra en cuanto lo apaga.
+        // Para el teléfono personal de un cliente el trato vale la pena. Para la
+        // tablet del negocio (la de administrador), NO conviene prenderlo.
+        // =====================================================================
+        const LLAVE_ACCESO_GUARDADO = 'cwe-acceso';
+
+        function alternarRecordar() {
+            if (!document.getElementById('chk-recordar').checked) olvidarAccesoGuardado();
+        }
+
+        function guardarAccesoSiLoPidio(telefono, password) {
+            const chk = document.getElementById('chk-recordar');
+            if (!chk || !chk.checked) { olvidarAccesoGuardado(); return; }
+            try {
+                localStorage.setItem(LLAVE_ACCESO_GUARDADO, JSON.stringify({ telefono, password }));
+            } catch (e) {
+                // Modo privado o almacenamiento lleno: no es motivo para frenar
+                // a nadie, ya inició sesión. Simplemente no se guarda.
+                console.warn("No se pudo guardar el acceso:", e);
+            }
+        }
+
+        function olvidarAccesoGuardado() {
+            try { localStorage.removeItem(LLAVE_ACCESO_GUARDADO); } catch (e) {}
+        }
+
+        function rellenarAccesoGuardado() {
+            let datos = null;
+            try { datos = JSON.parse(localStorage.getItem(LLAVE_ACCESO_GUARDADO) || 'null'); } catch (e) {}
+            if (!datos || !datos.telefono) return;
+            const tel = document.getElementById('input-login-telefono');
+            const pass = document.getElementById('input-login-password');
+            const chk = document.getElementById('chk-recordar');
+            if (tel) tel.value = datos.telefono;
+            if (pass) pass.value = datos.password || "";
+            if (chk) chk.checked = true;
         }
 
         // Si no hay internet, decirlo YA en vez de dejar al cliente esperando 20 segundos.
@@ -4077,8 +4235,13 @@ Cera rápida protectora
             pintarAvatarEnBienvenida();
             document.getElementById('input-login-telefono').value = "";
             document.getElementById('input-login-password').value = "";
+            document.getElementById('chk-recordar').checked = false;
             limpiarCotizacion();
             actualizarAccesoAdmin();
+            // Si el cliente pidió que se le guardara, se le vuelven a llenar los
+            // campos: es justo para lo que la prendió. Cerrar sesión no es lo
+            // mismo que decir "olvídame" — para eso está apagar la casilla.
+            rellenarAccesoGuardado();
             mostrarPantalla('screen-login-phone');
         }
 
@@ -4099,6 +4262,7 @@ Cera rápida protectora
             ubicacionLat = null;
             ubicacionLon = null;
             ubicacionEsAproximada = true;
+            ubicacionEsManual = false;
             motivoUbicacionAproximada = "";
             ubicacionPrecargada = null;
             apagarMapa();
@@ -4272,6 +4436,72 @@ Cera rápida protectora
             } catch (err) {
                 document.getElementById('radar-status').innerText = "Error al inicializar el mapa: " + err.message;
             }
+        }
+
+        // =====================================================================
+        // 📍 AJUSTAR LA UBICACIÓN A MANO
+        //
+        // Por qué hacía falta: el GPS puede caer a media cuadra, a la casa del
+        // vecino, o directamente al centro de Cuauhtémoc cuando el navegador no
+        // entrega la posición. Cualquiera de esas tres cosas manda a Tristán a
+        // la puerta equivocada y le tumba el servicio con el viaje ya hecho.
+        //
+        // Cómo funciona: la mira se queda FIJA en el centro de la pantalla y el
+        // que se mueve es el mapa. Es lo contrario a picarle a un punto — con el
+        // dedo encima uno no ve dónde está marcando — y es como lo hacen las
+        // apps de viajes y de entrega, así que el cliente ya sabe usarlo.
+        // =====================================================================
+        let ubicacionEsManual = false;      // la marcó el cliente con la mira
+        let ubicacionAntesDeAjustar = null; // para poder cancelar sin perder nada
+
+        function activarAjusteManual() {
+            if (!map) {
+                mostrarAviso("El mapa no cargó", "Sin el mapa no se puede marcar la ubicación a mano. Revisa tu internet y vuelve a entrar.");
+                return;
+            }
+            ubicacionAntesDeAjustar = { lat: ubicacionLat, lon: ubicacionLon,
+                                        aprox: ubicacionEsAproximada, manual: ubicacionEsManual };
+            document.getElementById('mira-ajuste').classList.remove('hidden');
+            document.getElementById('hoja-normal').classList.add('hidden');
+            document.getElementById('hoja-ajuste').classList.remove('hidden');
+            document.getElementById('map-pista').textContent = "Mueve el mapa · la mira marca el punto";
+
+            // La cámara se endereza y se acerca: en perspectiva inclinada es muy
+            // difícil saber sobre qué techo cae la mira.
+            map.easeTo({ center: [ubicacionLon, ubicacionLat], zoom: 18, pitch: 0, bearing: 0, duration: 700 });
+        }
+
+        function cancelarAjusteManual() {
+            const a = ubicacionAntesDeAjustar;
+            salirDelAjuste();
+            if (!a) return;
+            ubicacionLat = a.lat; ubicacionLon = a.lon;
+            ubicacionEsAproximada = a.aprox; ubicacionEsManual = a.manual;
+            map.easeTo({ center: [a.lon, a.lat], zoom: 16.5, pitch: 55, bearing: -10, duration: 700 });
+        }
+
+        function confirmarAjusteManual() {
+            const centro = map.getCenter();
+            ubicacionLat = centro.lat;
+            ubicacionLon = centro.lng;
+            // El cliente la señaló él mismo: eso ya NO es una ubicación aproximada,
+            // es mejor que el GPS. Se marca aparte para que en la agenda Tristán
+            // sepa de dónde salió el punto.
+            ubicacionEsAproximada = false;
+            ubicacionEsManual = true;
+
+            salirDelAjuste();
+            colocarPersonaje(ubicacionLat, ubicacionLon);
+            calcularSectorCuauhtemoc(ubicacionLat, ubicacionLon);
+            document.getElementById('radar-status').innerText = "Ubicación marcada por ti.";
+            map.easeTo({ center: [ubicacionLon, ubicacionLat], zoom: 16.5, pitch: 55, bearing: -10, duration: 700 });
+        }
+
+        function salirDelAjuste() {
+            document.getElementById('mira-ajuste').classList.add('hidden');
+            document.getElementById('hoja-normal').classList.remove('hidden');
+            document.getElementById('hoja-ajuste').classList.add('hidden');
+            document.getElementById('map-pista').textContent = "Arrastra y gira el mapa · toca al personaje";
         }
 
         // =====================================================================
@@ -6945,9 +7175,21 @@ Cera rápida protectora
 
                 if (elegible && disponibilidadCargada) {
                     const libres = franjasLibresEn(fechaISO);
-                    const punto = document.createElement('i');
-                    punto.className = "pt " + (libres === totalFranjas ? "libre" : libres > 1 ? "medio" : "lleno");
-                    boton.appendChild(punto);
+                    // Un punto por horario libre, y el color avisa cuando se está
+                    // acabando. Los cortes de antes decían que un día con 3 de 4
+                    // franjas libres estaba "Casi lleno" — o sea que un día casi
+                    // vacío se pintaba de amarillo, y con la agenda floja TODOS
+                    // los días salían amarillos: el color dejaba de decir nada.
+                    const clase = libres >= 3 ? "libre" : libres === 2 ? "medio" : "lleno";
+                    const fila = document.createElement('span');
+                    fila.className = "pt-fila";
+                    for (let k = 0; k < libres; k++) {
+                        const punto = document.createElement('i');
+                        punto.className = "pt " + clase;
+                        fila.appendChild(punto);
+                    }
+                    boton.title = libres === 1 ? "Queda 1 horario" : "Quedan " + libres + " horarios";
+                    boton.appendChild(fila);
                 }
 
                 if (fechaISO === fechaSeleccionada) boton.classList.add('seleccionado');
@@ -7526,6 +7768,9 @@ Cera rápida protectora
                 lat: ubicacionLat,
                 lon: ubicacionLon,
                 ubicacionAproximada: ubicacionEsAproximada,
+                // El cliente la señaló con la mira: es más confiable que el GPS,
+                // y en la agenda vale la pena distinguirlo.
+                ubicacionManual: ubicacionEsManual,
                 cargoEnvio: recargoGasolina,
                 agendaDia: fechaSeleccionada,
                 agendaHora: horaSeleccionada,
@@ -8083,6 +8328,7 @@ Cera rápida protectora
                         <div><span class="campo">Folio:</span> ${esc(cita.idLocal || '—')}</div>
                     </div>
                     ${cita.ubicacionAproximada ? `<div class="aviso-aprox">⚠️ Este cliente no dio permiso de ubicación. La dirección es aproximada (centro de Cuauhtémoc) — confírmasela antes de salir.</div>` : ''}
+                    ${cita.ubicacionManual ? `<div class="aviso-ok">📍 El cliente marcó su domicilio a mano en el mapa.</div>` : ''}
                     ${cita.tomaCorriente === 'nose' ? `<div class="aviso-aprox">🔌 El cliente NO está seguro de tener corriente cerca. Háblale antes de salir: sin luz no se puede lavar.</div>` : ''}
                     <div class="cita-admin-acciones"></div>
                 `;
