@@ -1314,19 +1314,44 @@
             position: relative; padding: 0;
             justify-content: flex-end;   /* el formulario vive abajo, al alcance del pulgar */
         }
-        /* La foto de fondo CAMBIA en cada apertura (ver elegirFondoDelLogin).
-           Aquí va la primera como respaldo: si el JavaScript no alcanzara a
-           correr, la pantalla igual se ve con foto y no con un negro plano. */
+        /* La foto de fondo va cambiando sola mientras el cliente está en el
+           login (ver arrancarCarruselDelLogin). Aquí queda la primera como
+           respaldo: si el JavaScript no alcanzara a correr, la pantalla igual
+           se ve con foto y no con un negro plano. */
         .hero-foto {
-            position: absolute; inset: 0; z-index: 0;
+            position: absolute; inset: 0; z-index: 0; overflow: hidden;
             background: #0d0a12 url('fondos/1.jpg') center / cover no-repeat;
-            transition: opacity 0.5s ease;
         }
+        /* Dos capas encimadas: mientras una sale por arriba, la otra entra
+           desde abajo. Con una sola capa no se puede cruzar una foto con otra. */
+        .hero-capa {
+            position: absolute; inset: 0; z-index: 0;
+            background-size: cover; background-position: center;
+        }
+        /* La que entra sube desde abajo. La que sale sube MENOS y se desvanece:
+           que las dos no viajen a la misma velocidad es lo que hace que el
+           cambio se sienta con profundidad en vez de un empujón plano. */
+        @keyframes fondoEntra {
+            from { transform: translateY(100%); }
+            to   { transform: translateY(0); }
+        }
+        @keyframes fondoSale {
+            from { transform: translateY(0);     opacity: 1; }
+            to   { transform: translateY(-16%);  opacity: 0; }
+        }
+        .hero-capa.entrando { z-index: 1; animation: fondoEntra 1.25s cubic-bezier(0.22, 1, 0.30, 1) both; }
+        .hero-capa.saliendo { z-index: 0; animation: fondoSale  1.25s cubic-bezier(0.22, 1, 0.30, 1) both; }
+        @media (prefers-reduced-motion: reduce) {
+            .hero-capa.entrando, .hero-capa.saliendo { animation: none; }
+            .hero-capa.saliendo { opacity: 0; }
+        }
+
         /* El velo NO es opcional: sobre la foto cruda no se lee ni un renglón.
            Va oscuro abajo (donde están los campos) y más claro arriba, para que
-           la foto se siga viendo. */
+           la foto se siga viendo. Va ENCIMA de las dos capas (z-index 2), si no
+           la foto que entra se le montaría al texto durante el cambio. */
         .hero-foto::after {
-            content: ""; position: absolute; inset: 0;
+            content: ""; position: absolute; inset: 0; z-index: 2;
             background:
                 linear-gradient(180deg,
                     rgba(9,9,11,0.62) 0%,
@@ -1604,7 +1629,10 @@
              Ahora una foto real del trabajo ocupa el fondo: en dos segundos se
              entiende qué es esto, y de paso desaparece el hueco muerto. -->
         <div class="screen login-hero" id="screen-login-phone">
-            <div class="hero-foto" aria-hidden="true"></div>
+            <div class="hero-foto" aria-hidden="true">
+                <i class="hero-capa" id="hero-capa-a"></i>
+                <i class="hero-capa" id="hero-capa-b"></i>
+            </div>
 
             <div class="hero-arriba">
                 <div class="hero-logo">
@@ -2801,7 +2829,9 @@ Cera rápida protectora
 
             pintarPreciosDeExtras();
             rellenarAccesoGuardado();
-            elegirFondoDelLogin();
+            // El login es la primera pantalla y se ve antes de que corra
+            // mostrarPantalla(), así que el carrusel se arranca aquí.
+            arrancarCarruselDelLogin();
 
             try {
                 // Firebase viene en varios archivos que se bajan por separado. Antes
@@ -3749,7 +3779,7 @@ Cera rápida protectora
 
         // La versión del archivo. Sirve para que Tristán confirme de un vistazo si
         // el que abrió es el nuevo — ya pasó dos veces que probaba una copia vieja.
-        const VERSION_APP = '2026.08.21a';
+        const VERSION_APP = '2026.08.21b';
 
         function pintarVersion() {
             const el = document.getElementById('marca-version');
@@ -4031,8 +4061,12 @@ Cera rápida protectora
             // salirse a taparlo: lo que se hace es sacar el encabezado del flujo y
             // dejarlo flotando encima. Sin esto quedaba una franja negra arriba de
             // la foto y se veía cortada.
-            document.querySelector('.app-container')
-                .classList.toggle('en-login', idPantalla === 'screen-login-phone');
+            const enLogin = idPantalla === 'screen-login-phone';
+            document.querySelector('.app-container').classList.toggle('en-login', enLogin);
+
+            // El carrusel de fondos sólo corre mientras el login se ve. Dejarlo
+            // corriendo por detrás sería bajar fotos y animar para nadie.
+            if (enLogin) arrancarCarruselDelLogin(); else detenerCarruselDelLogin();
         }
 
         // Regresar a la pantalla anterior. Lo usa el gesto de deslizar.
@@ -4289,33 +4323,92 @@ Cera rápida protectora
         }
 
         // =====================================================================
-        // 🖼️ EL FONDO DEL LOGIN CAMBIA EN CADA APERTURA
+        // 🖼️ EL FONDO DEL LOGIN VA CAMBIANDO SOLO
         //
-        // Son fotos de trabajos reales de Tristán. La gracia es que el cliente
-        // que entra seguido no vea siempre la misma pantalla.
+        // Son fotos de trabajos reales de Tristán. Cada una entra deslizándose
+        // desde abajo mientras la anterior sube y se desvanece.
         //
-        // Detalle que importa: NO se cambia la foto de golpe. Primero se pide
-        // aparte con `new Image()` y sólo cuando ya cargó se pone. Si se pusiera
-        // directo, con internet flojo se vería el fondo negro un momento y luego
-        // aparecería la foto de un brinco — peor que no cambiarla.
+        // Tres decisiones que valen la pena anotar:
         //
-        // La 1 es la que viene puesta en el CSS y la que guarda el service
-        // worker, así que si toca ésa no se baja nada.
+        // 1. LA FOTO SE BAJA ANTES DE ENSEÑARLA. Se pide aparte con `new Image()`
+        //    y sólo cuando ya cargó se hace el cambio. Si se pusiera directo,
+        //    con internet flojo entraría una capa vacía y se vería un hueco
+        //    negro deslizándose — peor que no cambiar nada.
+        //
+        // 2. SÓLO CORRE MIENTRAS SE VE EL LOGIN. Al salir de esa pantalla se
+        //    apaga. Un carrusel corriendo por detrás mientras el cliente llena
+        //    sus datos es batería tirada, y ya nos pasó con el mapa: seguía
+        //    dibujando 60 veces por segundo con la pantalla oculta y calentaba
+        //    la tablet.
+        //
+        // 3. LAS FOTOS SE BAJAN DE UNA EN UNA, no las seis al arrancar. La 1 es
+        //    la del CSS y la que guarda el service worker, así que la primera
+        //    pantalla no cuesta ninguna descarga.
         // =====================================================================
         const CUANTOS_FONDOS = 6;
+        const MS_ENTRE_FONDOS = 7000;   // suficiente para verla sin que maree
+        const MS_DESLIZADO    = 1250;   // igual que la animación del CSS
 
-        function elegirFondoDelLogin() {
-            const caja = document.querySelector('.hero-foto');
-            if (!caja) return;
-            const n = 1 + Math.floor(Math.random() * CUANTOS_FONDOS);
-            if (n === 1) return;   // ya es la del CSS
+        let ordenDeFondos = [];
+        let fondoActual = 0;
+        let relojDeFondos = null;
+        let capaVisible = 'a';
 
-            const url = 'fondos/' + n + '.jpg';
+        function arrancarCarruselDelLogin() {
+            if (relojDeFondos) return;                      // ya está corriendo
+            const capaA = document.getElementById('hero-capa-a');
+            if (!capaA) return;
+
+            if (!ordenDeFondos.length) {
+                // Orden revuelto para que no salgan siempre en la misma
+                // secuencia, pero empezando por la 1: es la única que ya está
+                // guardada, así que la primera pantalla no baja nada.
+                const resto = [];
+                for (let i = 2; i <= CUANTOS_FONDOS; i++) resto.push(i);
+                for (let i = resto.length - 1; i > 0; i--) {
+                    const j = Math.floor(Math.random() * (i + 1));
+                    [resto[i], resto[j]] = [resto[j], resto[i]];
+                }
+                ordenDeFondos = [1].concat(resto);
+                capaA.style.backgroundImage = "url('fondos/1.jpg')";
+                capaVisible = 'a';
+                fondoActual = 0;
+            }
+
+            relojDeFondos = setInterval(pasarAlSiguienteFondo, MS_ENTRE_FONDOS);
+        }
+
+        function detenerCarruselDelLogin() {
+            if (relojDeFondos) { clearInterval(relojDeFondos); relojDeFondos = null; }
+        }
+
+        function pasarAlSiguienteFondo() {
+            // Si el login dejó de verse (o la pestaña está en segundo plano),
+            // no tiene sentido gastar en bajar y animar una foto que nadie ve.
+            const pantalla = document.getElementById('screen-login-phone');
+            if (!pantalla || pantalla.classList.contains('hidden') || document.hidden) return;
+
+            const siguiente = (fondoActual + 1) % ordenDeFondos.length;
+            const url = 'fondos/' + ordenDeFondos[siguiente] + '.jpg';
+
             const prueba = new Image();
             prueba.onload = () => {
-                caja.style.backgroundImage = "url('" + url + "')";
+                const sale  = document.getElementById('hero-capa-' + capaVisible);
+                const entra = document.getElementById('hero-capa-' + (capaVisible === 'a' ? 'b' : 'a'));
+                if (!sale || !entra) return;
+
+                entra.style.backgroundImage = "url('" + url + "')";
+                entra.classList.remove('saliendo'); sale.classList.remove('entrando');
+                // Se reinicia la animación: sin esto, la segunda vuelta no
+                // vuelve a animar porque la clase ya estaba puesta.
+                void entra.offsetWidth;
+                entra.classList.add('entrando');
+                sale.classList.add('saliendo');
+
+                capaVisible = (capaVisible === 'a' ? 'b' : 'a');
+                fondoActual = siguiente;
             };
-            // Si esa foto no está, se queda la del CSS y nadie se entera.
+            // Si esa foto no está, se queda la de ahora y nadie se entera.
             prueba.src = url;
         }
 
