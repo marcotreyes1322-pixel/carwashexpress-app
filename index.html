@@ -2330,25 +2330,11 @@ Cera rápida protectora
                             </p>
                         </div>
 
-                        <!-- CÓMO VA A PAGAR. Ojo: esto NO cobra nada — sólo avisa
-                             para llevar cambio o mandar los datos de la cuenta.
-                             No hay opción de tarjeta porque no hay terminal, y
-                             ofrecerla sería prometer algo que no se puede cumplir
-                             cuando ya se está en la puerta del cliente. -->
-                        <div class="form-group">
-                            <label>¿Cómo vas a pagar?</label>
-                            <div class="size-grid" style="margin-top: 8px;">
-                                <div class="size-option" id="pago-efectivo" onclick="seleccionarFormaDePago('efectivo', 'pago-efectivo')">
-                                    <span class="size-name">Efectivo</span><span class="size-price">al terminar</span>
-                                </div>
-                                <div class="size-option" id="pago-transferencia" onclick="seleccionarFormaDePago('transferencia', 'pago-transferencia')">
-                                    <span class="size-name">Transferencia</span><span class="size-price">te pasamos los datos</span>
-                                </div>
-                            </div>
-                            <p class="vehiculo-hint hidden" id="aviso-efectivo">
-                                Llevamos cambio, pero si puedes traerlo exacto nos ayudas.
-                            </p>
-                        </div>
+                        <!-- La pregunta de "¿cómo vas a pagar?" se QUITÓ a petición
+                             de Tristán (agosto 2026): efectivo o transferencia le da
+                             igual y lo acuerda en persona sin problema. Era un paso
+                             más en el camino de agendar que no le resolvía nada, y
+                             el camino ya es largo. -->
 
                         <!-- Sólo aplica al Lavado Básico: exterior o interior por separado cuestan el 70% -->
                         <div class="form-group hidden" id="grupo-tipo-lavado">
@@ -2543,10 +2529,6 @@ Cera rápida protectora
         let tomaCorriente = "";
         const METROS_MAXIMOS_CORRIENTE = 40;
 
-        // Cómo dice el cliente que va a pagar: "" = no ha contestado | efectivo | transferencia.
-        // NO hay tarjeta porque no hay terminal (Tristán, agosto 2026): ofrecerla
-        // sería prometer algo que no se puede cumplir estando ya en su puerta.
-        let formaDePago = "";
 
         // =====================================================================
         // 🧍 EL PERSONAJE — APAGADO POR AHORA (agosto 2026, decisión de Tristán)
@@ -3762,7 +3744,7 @@ Cera rápida protectora
 
         // La versión del archivo. Sirve para que Tristán confirme de un vistazo si
         // el que abrió es el nuevo — ya pasó dos veces que probaba una copia vieja.
-        const VERSION_APP = '2026.08.20c';
+        const VERSION_APP = '2026.08.20d';
 
         function pintarVersion() {
             const el = document.getElementById('marca-version');
@@ -4514,7 +4496,6 @@ Cera rápida protectora
             servicioSeleccionado = "";
             tipoDetallado = "";
             tomaCorriente = "";
-            formaDePago = "";
             precioBase = 0;
             resetearExtras();
             fechaSeleccionada = "";
@@ -7325,15 +7306,6 @@ Cera rápida protectora
             document.getElementById('aviso-sin-luz').classList.toggle('hidden', valor !== 'nose');
         }
 
-        // Cómo va a pagar el cliente. IMPORTANTE: esto NO cobra nada, sólo lo
-        // avisa. Cobrar de verdad dentro de la app necesitaría una pasarela de
-        // pago con comisión por venta, que es justo lo que Tristán quiere evitar.
-        function seleccionarFormaDePago(valor, btnId) {
-            formaDePago = valor;
-            ['pago-efectivo', 'pago-transferencia'].forEach(id => document.getElementById(id).classList.remove('selected'));
-            document.getElementById(btnId).classList.add('selected');
-            document.getElementById('aviso-efectivo').classList.toggle('hidden', valor !== 'efectivo');
-        }
 
         // El requisito de corriente sólo aplica a lo que se hace EN CASA DEL CLIENTE.
         // Los detallados se hacen en el taller, donde la luz es nuestra.
@@ -7516,28 +7488,82 @@ Cera rápida protectora
             cargarDisponibilidadDelMes();
         }
 
-        // Se lee el índice 'agenda' COMPLETO una sola vez. Es un nodo chiquito (sólo
-        // marcas de hueco ocupado, sin datos de clientes), así que sale más barato que
-        // pedir día por día mientras el cliente navega por el calendario.
+        // ¿Está conectada la base de datos AHORA MISMO?
+        //
+        // `.info/connected` es un nodo especial que lleva el propio SDK en el
+        // teléfono: no viaja a internet y no lo tocan las Reglas. Sirve para
+        // separar dos cosas que antes se confundían en un solo mensaje de
+        // "conexión lenta": que el teléfono no haya podido conectarse a la base,
+        // y que sí esté conectado pero la consulta tarde. Son problemas
+        // distintos y el cliente merece saber cuál le tocó.
+        function baseConectada() {
+            try {
+                const snap = firebase.database().ref('.info/connected');
+                return snap.once('value').then(s => s.val() === true).catch(() => false);
+            } catch (e) { return Promise.resolve(false); }
+        }
+
+        // Se lee SÓLO el mes que se está viendo, no la agenda completa.
+        //
+        // Antes se pedía el nodo `agenda` entero. Eso crece para siempre — cada
+        // hueco apartado desde el primer día del negocio — y con el tiempo la
+        // consulta se vuelve más pesada de lo que hace falta, hasta pasarse del
+        // tiempo límite en un internet flojo. Con `orderByKey()` acotado al mes
+        // se piden 30 llaves en vez de todas (no necesita índice: las llaves ya
+        // vienen ordenadas, y son fechas AAAA-MM-DD, que ordenan solas).
         function cargarDisponibilidadDelMes() {
             pintarCalendario();   // se pinta de inmediato aunque no haya llegado el dato
             if (!baseLista()) { pintarAviso("Sin conexión: no se puede confirmar la disponibilidad.", true); return; }
 
-            firebase.database().ref('agenda').once('value')
+            const anio = mesCalendario.getFullYear();
+            const mes = String(mesCalendario.getMonth() + 1).padStart(2, '0');
+            const desde = anio + '-' + mes + '-01';
+            const hasta = anio + '-' + mes + '-32';   // '32' va después de cualquier día real
+
+            pintarAviso("Consultando los días disponibles...");
+
+            conTiempoLimite(
+                firebase.database().ref('agenda').orderByKey().startAt(desde).endAt(hasta).once('value'),
+                12000
+            )
                 .then(snap => {
                     const todo = snap.val() || {};
-                    ocupacionPorFecha = {};
+                    // Se conserva lo que ya se sabía de otros meses: el cliente
+                    // puede ir y venir con las flechas sin perder lo cargado.
                     Object.entries(todo).forEach(([fecha, horas]) => {
                         ocupacionPorFecha[fecha] = Object.keys(horas || {});
                     });
                     disponibilidadCargada = true;
                     pintarCalendario();
+                    pintarAviso("");
                     if (fechaSeleccionada) cargarDisponibilidad(fechaSeleccionada);
                 })
                 .catch(err => {
                     console.error("Error leyendo la disponibilidad:", err);
-                    pintarAviso("No pudimos consultar los días disponibles. Revisa tu conexión.", true);
+                    explicarFalloDeAgenda(err, "No pudimos ver qué días tienen lugar.");
                 });
+        }
+
+        // Un mensaje que diga QUÉ pasó, en vez de un "revisa tu internet" que no
+        // ayuda ni a Tristán ni al cliente a saber dónde está el problema.
+        function explicarFalloDeAgenda(err, encabezado) {
+            const codigo = (err && (err.code || err.message)) ? String(err.code || err.message) : "";
+
+            if (/permission|denied/i.test(codigo)) {
+                pintarAviso(encabezado + " El servidor no nos dejó consultar la agenda "
+                    + "(permisos). Avísanos por WhatsApp: es algo que arreglamos nosotros, no tú.", true);
+                return;
+            }
+
+            baseConectada().then(conectada => {
+                if (conectada) {
+                    pintarAviso(encabezado + " El servidor tardó demasiado en contestar. "
+                        + "Vuelve a intentar en un momento.", true);
+                } else {
+                    pintarAviso(encabezado + " Tu teléfono no logró conectarse a nuestra base de datos. "
+                        + "Revisa tu internet y vuelve a entrar." + (codigo ? " (" + codigo + ")" : ""), true);
+                }
+            });
         }
 
         // Cuántas franjas quedan libres ese día (descontando las que ya pasaron)
@@ -7565,7 +7591,9 @@ Cera rápida protectora
 
         function cambiarMesCalendario(delta) {
             mesCalendario.setMonth(mesCalendario.getMonth() + delta);
-            pintarCalendario();
+            // Ahora que se lee mes por mes, hay que pedir el del mes nuevo: si no,
+            // los días de ese mes se pintarían sin puntitos.
+            cargarDisponibilidadDelMes();
         }
 
         function pintarCalendario() {
@@ -7702,19 +7730,8 @@ Cera rápida protectora
 
             pintarAviso("Consultando horarios disponibles...");
 
-            // Si la consulta se queda colgada (internet lento), avisamos en vez de
-            // dejar al cliente esperando sin saber qué pasa.
-            let yaRespondio = false;
-            const tiempoLimite = setTimeout(() => {
-                if (!yaRespondio) {
-                    pintarAviso("No pudimos confirmar los horarios (conexión lenta). Revisa tu internet antes de reservar.", true);
-                }
-            }, 8000);
-
-            firebase.database().ref('agenda/' + fecha).once('value')
+            conTiempoLimite(firebase.database().ref('agenda/' + fecha).once('value'), 12000)
                 .then(snap => {
-                    yaRespondio = true;
-                    clearTimeout(tiempoLimite);
                     const ocupados = snap.val() || {};
                     let libres = 0;
 
@@ -7741,10 +7758,8 @@ Cera rápida protectora
                     }
                 })
                 .catch(error => {
-                    yaRespondio = true;
-                    clearTimeout(tiempoLimite);
                     console.error("Error leyendo la agenda:", error);
-                    pintarAviso("No pudimos consultar los horarios ocupados. Intenta de nuevo.", true);
+                    explicarFalloDeAgenda(error, "No pudimos ver qué horarios están libres.");
                 });
         }
 
@@ -8170,11 +8185,6 @@ Cera rápida protectora
                     + "La necesitamos para la aspiradora y la hidrolavadora. Si no estás seguro, elige esa opción y lo revisamos contigo.");
                 return;
             }
-            if (!formaDePago) {
-                mostrarAviso("⚠️ Dinos cómo vas a pagar.\n\n"
-                    + "Es sólo para llevar cambio o pasarte los datos de la cuenta. No se cobra nada desde la app.");
-                return;
-            }
             // Segunda barrera: si el cliente se quedó un rato en esta pantalla, la hora
             // que eligió pudo haber pasado mientras llenaba sus datos.
             if (horaYaPaso(fechaSeleccionada, horaSeleccionada)) {
@@ -8198,7 +8208,6 @@ Cera rápida protectora
                 referencia: document.getElementById('input-referencia').value.trim(),
                 // "si" | "nose" | "taller" (los detallados no necesitan su corriente)
                 tomaCorriente: servicioNecesitaCorrienteDelCliente() ? tomaCorriente : 'taller',
-                formaDePago: formaDePago,
                 coordenadas: sectorNombre,
                 lat: ubicacionLat,
                 lon: ubicacionLon,
@@ -8403,11 +8412,6 @@ Cera rápida protectora
                 lineas.push("Toma de corriente: NO estoy seguro, ¿me confirman?");
             }
 
-            if (orden.formaDePago) {
-                lineas.push("Voy a pagar con: " + (orden.formaDePago === 'transferencia'
-                    ? "transferencia (pásenme los datos)" : "efectivo"));
-            }
-
             return "https://wa.me/52" + ADMIN_TELEFONO
                  + "?text=" + encodeURIComponent(lineas.join("\n"));
         }
@@ -8437,7 +8441,6 @@ Cera rápida protectora
             tamanoVehiculoSeleccionado = "";
             tamanoElegidoAMano = false;
             tomaCorriente = "";
-            formaDePago = "";
             ['luz-si', 'luz-nose'].forEach(id => document.getElementById(id).classList.remove('selected'));
             document.getElementById('aviso-sin-luz').classList.add('hidden');
             seleccionarTipoLavado('completo', 'tipo-completo');
@@ -8768,7 +8771,6 @@ Cera rápida protectora
                         ${extras.length ? `<div><span class="campo">Extras:</span> ${esc(extras.join(' · '))}</div>` : ''}
                         <div><span class="campo">Sector:</span> ${esc(cita.coordenadas || '—')}</div>
                         ${cita.referencia ? `<div><span class="campo">Referencia:</span> ${esc(cita.referencia)}</div>` : ''}
-                        <div><span class="campo">Paga con:</span> ${esc(cita.formaDePago === 'transferencia' ? 'Transferencia' : cita.formaDePago === 'efectivo' ? 'Efectivo — lleva cambio' : '—')}</div>
                         <div><span class="campo">Folio:</span> ${esc(cita.idLocal || '—')}</div>
                     </div>
                     ${cita.ubicacionAproximada ? `<div class="aviso-aprox">⚠️ Este cliente no dio permiso de ubicación. La dirección es aproximada (centro de Cuauhtémoc) — confírmasela antes de salir.</div>` : ''}
