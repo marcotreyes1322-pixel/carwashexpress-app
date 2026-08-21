@@ -1314,9 +1314,13 @@
             position: relative; padding: 0;
             justify-content: flex-end;   /* el formulario vive abajo, al alcance del pulgar */
         }
+        /* La foto de fondo CAMBIA en cada apertura (ver elegirFondoDelLogin).
+           Aquí va la primera como respaldo: si el JavaScript no alcanzara a
+           correr, la pantalla igual se ve con foto y no con un negro plano. */
         .hero-foto {
             position: absolute; inset: 0; z-index: 0;
-            background: #0d0a12 url('fondo-login.jpg') center / cover no-repeat;
+            background: #0d0a12 url('fondos/1.jpg') center / cover no-repeat;
+            transition: opacity 0.5s ease;
         }
         /* El velo NO es opcional: sobre la foto cruda no se lee ni un renglón.
            Va oscuro abajo (donde están los campos) y más claro arriba, para que
@@ -2797,6 +2801,7 @@ Cera rápida protectora
 
             pintarPreciosDeExtras();
             rellenarAccesoGuardado();
+            elegirFondoDelLogin();
 
             try {
                 // Firebase viene en varios archivos que se bajan por separado. Antes
@@ -3744,7 +3749,7 @@ Cera rápida protectora
 
         // La versión del archivo. Sirve para que Tristán confirme de un vistazo si
         // el que abrió es el nuevo — ya pasó dos veces que probaba una copia vieja.
-        const VERSION_APP = '2026.08.20d';
+        const VERSION_APP = '2026.08.21a';
 
         function pintarVersion() {
             const el = document.getElementById('marca-version');
@@ -3868,6 +3873,13 @@ Cera rápida protectora
             const yaEstaba = bloque.dataset.ejemplo === '1';
             if (yaEstaba) {
                 bloque.dataset.ejemplo = '';
+                // Las tarjetas de ejemplo se borran YA, no cuando termine de
+                // volver a cargar: buscar las fotos tarda un momento, y en ese
+                // rato se quedaban en pantalla unas reseñas inventadas que ya
+                // se habían apagado. Y hay que quitar 'es-ejemplo', que antes
+                // se ponía y nunca se quitaba.
+                document.getElementById('feed-carrusel').innerHTML = "";
+                bloque.classList.remove('es-ejemplo');
                 bloque.classList.add('hidden');
                 cargarFeedDeResenas();
                 return;
@@ -4274,6 +4286,37 @@ Cera rápida protectora
             if (tel) tel.value = datos.telefono;
             if (pass) pass.value = datos.password || "";
             if (chk) chk.checked = true;
+        }
+
+        // =====================================================================
+        // 🖼️ EL FONDO DEL LOGIN CAMBIA EN CADA APERTURA
+        //
+        // Son fotos de trabajos reales de Tristán. La gracia es que el cliente
+        // que entra seguido no vea siempre la misma pantalla.
+        //
+        // Detalle que importa: NO se cambia la foto de golpe. Primero se pide
+        // aparte con `new Image()` y sólo cuando ya cargó se pone. Si se pusiera
+        // directo, con internet flojo se vería el fondo negro un momento y luego
+        // aparecería la foto de un brinco — peor que no cambiarla.
+        //
+        // La 1 es la que viene puesta en el CSS y la que guarda el service
+        // worker, así que si toca ésa no se baja nada.
+        // =====================================================================
+        const CUANTOS_FONDOS = 6;
+
+        function elegirFondoDelLogin() {
+            const caja = document.querySelector('.hero-foto');
+            if (!caja) return;
+            const n = 1 + Math.floor(Math.random() * CUANTOS_FONDOS);
+            if (n === 1) return;   // ya es la del CSS
+
+            const url = 'fondos/' + n + '.jpg';
+            const prueba = new Image();
+            prueba.onload = () => {
+                caja.style.backgroundImage = "url('" + url + "')";
+            };
+            // Si esa foto no está, se queda la del CSS y nadie se entera.
+            prueba.src = url;
         }
 
         // Si no hay internet, decirlo YA en vez de dejar al cliente esperando 20 segundos.
