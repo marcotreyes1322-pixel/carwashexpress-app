@@ -975,6 +975,35 @@
             100% { transform: translateY(0) scale(1); opacity: 1; }
         }
         .marcador-personaje.cayendo { animation: aterrizar 1.1s cubic-bezier(.4,.02,.2,1) both; }
+
+        /* El marcador de la marca, el que se usa con el personaje apagado.
+           Gota morada con el logo dentro: la punta de abajo cae en el punto
+           exacto, que es lo que un círculo suelto no puede señalar. */
+        .marcador-marca {
+            width: 46px; height: 56px; position: relative;
+            background: linear-gradient(160deg, var(--morado), #6d3ff0);
+            border-radius: 50% 50% 50% 50% / 46% 46% 60% 60%;
+            border: 2px solid rgba(255,255,255,0.92);
+            box-shadow: 0 8px 18px rgba(0,0,0,0.55), 0 0 22px rgba(139,92,246,0.55);
+            display: flex; align-items: center; justify-content: center;
+        }
+        .marcador-marca::after {
+            content: ""; position: absolute; bottom: -7px; left: 50%;
+            transform: translateX(-50%) rotate(45deg);
+            width: 14px; height: 14px; background: #6d3ff0;
+            border-right: 2px solid rgba(255,255,255,0.92);
+            border-bottom: 2px solid rgba(255,255,255,0.92);
+            border-bottom-right-radius: 3px;
+        }
+        .marcador-marca img {
+            width: 30px; height: 30px; border-radius: 50%;
+            position: relative; z-index: 1; margin-top: -3px;
+        }
+        .marcador-marca.cayendo { animation: aterrizar 1.1s cubic-bezier(.4,.02,.2,1) both; }
+        @media (prefers-reduced-motion: reduce) { .marcador-marca.cayendo { animation: none; } }
+
+        .saludo-simple { font-family: var(--serif); font-size: 26px; color: var(--blanco);
+                         text-align: left; width: 100%; margin: 2px 0 4px; }
         /* La sombrita que aparece al tocar el piso */
         @keyframes sombraAterrizaje {
             0%, 60% { transform: scale(0.2); opacity: 0; }
@@ -1436,7 +1465,8 @@
 
             <div class="menu-separador" id="menu-separador"></div>
 
-            <button class="menu-fila solo-con-sesion" onclick="desdeElMenu(abrirEditorPersonaje)">
+            <button class="menu-fila solo-con-sesion solo-con-personaje" id="menu-personaje"
+                    onclick="desdeElMenu(abrirEditorPersonaje)">
                 <span class="menu-icono mo" aria-hidden="true">
                     <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.9"
                          stroke-linecap="round" stroke-linejoin="round">
@@ -1625,8 +1655,10 @@
                 <p class="subtitulo">Lavado, detallado y membresías mensuales.<br>A domicilio, en Cuauhtémoc.</p>
             </div>
 
-            <!-- El personaje del cliente lo saluda por su nombre -->
-            <div class="card-panel sin-linea" style="padding: 0;">
+            <!-- El personaje del cliente lo saluda por su nombre.
+                 Agosto 2026: apagado con PERSONAJE_ACTIVO mientras se decide
+                 qué hacer con él. El bloque completo se esconde solo. -->
+            <div class="card-panel sin-linea" style="padding: 0;" id="bloque-avatar">
                 <div class="avatar-saludo">
                     <div class="avatar-hueco" id="avatar-bienvenida"></div>
                     <div>
@@ -1635,6 +1667,8 @@
                     </div>
                 </div>
             </div>
+            <!-- Con el personaje apagado, el saludo se queda pero sin muñeco -->
+            <div class="saludo-simple hidden" id="saludo-simple">Hola</div>
 
             <!-- TU PRÓXIMA CITA.
                  Aquí había un hueco de casi un tercio de la pantalla — el mejor
@@ -1758,6 +1792,8 @@
                                 onclick="activarAjusteManual()">📍 No es aquí · marcarla yo</button>
                         <button class="btn-premium" id="btn-confirm-sector" style="display:none;"
                                 onclick="irAServicios()">Confirmar y ver servicios</button>
+                        <a class="btn-premium hidden" id="btn-lejos-whatsapp"
+                           target="_blank" rel="noopener">Escribirnos por WhatsApp</a>
                     </div>
 
                     <div id="hoja-ajuste" class="hidden">
@@ -2070,6 +2106,17 @@ Cera rápida protectora
                                 <span class="slider"></span>
                             </label>
                         </div>
+                        <div class="extra-row" id="row-bedliner">
+                            <div class="extra-info">
+                                <div class="extra-title">Aplicación de Bedliner</div>
+                                <div class="extra-sub">Para la caja de tu camioneta</div>
+                                <div class="extra-price">Te cotizamos</div>
+                            </div>
+                            <label class="switch">
+                                <input type="checkbox" id="chk-bedliner" onchange="toggleExtra('bedliner')">
+                                <span class="slider"></span>
+                            </label>
+                        </div>
                     </div>
                 </div>
             </div>
@@ -2193,6 +2240,26 @@ Cera rápida protectora
                             </div>
                             <p class="vehiculo-hint hidden" id="aviso-sin-luz">
                                 Sin problema: te hablamos antes de salir para confirmarlo contigo.
+                            </p>
+                        </div>
+
+                        <!-- CÓMO VA A PAGAR. Ojo: esto NO cobra nada — sólo avisa
+                             para llevar cambio o mandar los datos de la cuenta.
+                             No hay opción de tarjeta porque no hay terminal, y
+                             ofrecerla sería prometer algo que no se puede cumplir
+                             cuando ya se está en la puerta del cliente. -->
+                        <div class="form-group">
+                            <label>¿Cómo vas a pagar?</label>
+                            <div class="size-grid" style="margin-top: 8px;">
+                                <div class="size-option" id="pago-efectivo" onclick="seleccionarFormaDePago('efectivo', 'pago-efectivo')">
+                                    <span class="size-name">Efectivo</span><span class="size-price">al terminar</span>
+                                </div>
+                                <div class="size-option" id="pago-transferencia" onclick="seleccionarFormaDePago('transferencia', 'pago-transferencia')">
+                                    <span class="size-name">Transferencia</span><span class="size-price">te pasamos los datos</span>
+                                </div>
+                            </div>
+                            <p class="vehiculo-hint hidden" id="aviso-efectivo">
+                                Llevamos cambio, pero si puedes traerlo exacto nos ayudas.
                             </p>
                         </div>
 
@@ -2389,6 +2456,65 @@ Cera rápida protectora
         let tomaCorriente = "";
         const METROS_MAXIMOS_CORRIENTE = 40;
 
+        // Cómo dice el cliente que va a pagar: "" = no ha contestado | efectivo | transferencia.
+        // NO hay tarjeta porque no hay terminal (Tristán, agosto 2026): ofrecerla
+        // sería prometer algo que no se puede cumplir estando ya en su puerta.
+        let formaDePago = "";
+
+        // =====================================================================
+        // 🧍 EL PERSONAJE — APAGADO POR AHORA (agosto 2026, decisión de Tristán)
+        //
+        // "No sé si esperemos un poco más y quitamos por el momento el personaje."
+        //
+        // Se apaga desde AQUÍ y nada más. Todo el código del muñeco (el dibujo
+        // 2D, el modelo 3D, los 8 gestos, el editor de 8 rasgos) sigue en el
+        // archivo sin tocar: poner `true` lo devuelve tal como estaba, sin
+        // rehacer nada. Se prefirió esto a borrarlo porque son ~1,900 líneas de
+        // trabajo y la decisión es "por el momento", no "nunca".
+        //
+        // Mientras está apagado:
+        //   · en el mapa va un marcador de la marca, con la MISMA caída del cielo;
+        //   · en la bienvenida queda el saludo por su nombre, sin muñeco;
+        //   · la entrada "Mi personaje" del menú se esconde.
+        // =====================================================================
+        const PERSONAJE_ACTIVO = false;
+
+        // =====================================================================
+        // 🚚 EL CARGO POR TRASLADO — POR DISTANCIA, NO POR ZONAS
+        //
+        // Antes eran 4 reglas de latitud/longitud escritas a mano, y tenían dos
+        // agujeros medidos: un cliente podía estar a 30 km al oriente o al sur y
+        // pagar $0, mientras que alguien a 1.1 km al norte pagaba $90. Además
+        // las tres zonas de pago llegaban a 21 km con tarifa plana, así que
+        // alguien a 21 km pagaba lo mismo que alguien a 1.1 km.
+        //
+        // El cargo por traslado ES gasolina, y la gasolina es distancia. Con una
+        // fórmula desde la base no hay límites que mantener ni zonas que
+        // adivinar, y es correcta en cualquier punto — también cuando la ciudad
+        // crezca.
+        //
+        // ⚠️ DOS NÚMEROS QUE TRISTÁN DEBE CONFIRMAR:
+        //   · BASE_LAT/BASE_LON está en el centro de Cuauhtémoc. Si salen de su
+        //     domicilio o del taller, hay que corregirlo aquí: todo se mide
+        //     desde ese punto.
+        //   · La tarifa se calibró contra lo que él ya cobraba (sus zonas de
+        //     $50/$65/$90), así que a ~8 km da los mismos $90 de antes.
+        // =====================================================================
+        const BASE_LAT = 28.4053, BASE_LON = -106.8664;  // centro de Cuauhtémoc
+        // OJO: estos kilómetros son los QUE RECORRE EL CARRO, no los de línea
+        // recta. Al primer intento se puso 3 y el radio real quedó en 2.3 km —
+        // más chico que Cuauhtémoc, así que a media ciudad le habría empezado a
+        // cobrar traslado. Con 5 km de carro, el radio libre es de ~3.8 km y la
+        // ciudad entra completa, que es como se cobra hoy.
+        const KM_SIN_CARGO   = 5;    // toda la ciudad entra aquí: traslado incluido
+        const CARGO_SALIDA   = 30;   // lo que cuesta salir de la ciudad, pase lo que pase
+        const CARGO_POR_KM   = 10;   // por cada km de más
+        const REDONDEO_CARGO = 5;    // los cobros terminan en 0 o en 5, no en $63
+        const KM_MAXIMO      = 35;   // más lejos que esto se cotiza por WhatsApp
+        // La distancia en línea recta se queda corta: por calle siempre se
+        // maneja más. Este factor la acerca a los kilómetros reales del carro.
+        const FACTOR_CARRETERA = 1.3;
+
         // Catálogo armado con la flotilla real de clientes frecuentes de Tristán.
         // Sirve para adivinar el tamaño a partir de lo que el cliente escriba.
         // Si un modelo no está aquí, el cliente simplemente elige el tamaño a mano.
@@ -2442,7 +2568,12 @@ Cera rápida protectora
             rines:       { nombre: 'Descontaminación de Rines',    precio: 400 },
             asientos:    { nombre: 'Rejuvenecimiento de Asientos', precio: 200 },
             cajuela:     { nombre: 'Aspirado de Cajuela o 3ª Fila',precio: 80  },
-            vapor:       { nombre: 'Máquina de Vapor',             precio: 80  }
+            vapor:       { nombre: 'Máquina de Vapor',             precio: 80  },
+            // Agosto 2026: el bedliner NO tiene precio fijo — Tristán lo cotiza
+            // caso por caso, porque depende de la caja. Se marca `cotiza: true`:
+            // suma $0 al total y en vez de un precio dice "Te cotizamos". Así se
+            // puede pedir desde la app sin prometerle un número a nadie.
+            bedliner:    { nombre: 'Aplicación de Bedliner', precio: 0, cotiza: true }
         };
 
         // --- ESTADO DE AUTENTICACIÓN ---
@@ -3369,15 +3500,27 @@ Cera rápida protectora
         }
 
         function pintarAvatarEnBienvenida(nombre) {
+            const saludo = nombre
+                ? "Hola, " + String(nombre).trim().split(/\s+/)[0]
+                : null;
+
+            // Con el personaje apagado se esconde el muñeco y queda sólo el
+            // saludo. Todo el código del personaje sigue aquí intacto: prender
+            // PERSONAJE_ACTIVO lo devuelve tal como estaba.
+            document.getElementById('bloque-avatar').classList.toggle('hidden', !PERSONAJE_ACTIVO);
+            document.getElementById('saludo-simple').classList.toggle('hidden', PERSONAJE_ACTIVO);
+
+            if (!PERSONAJE_ACTIVO) {
+                if (saludo) document.getElementById('saludo-simple').textContent = saludo;
+                return;
+            }
+
             const hueco = document.getElementById('avatar-bienvenida');
             if (hueco) {
                 hueco.innerHTML = dibujarAvatar(avatarUsuario);
                 hueco.onclick = abrirEditorPersonaje;
             }
-            if (nombre) {
-                const primerNombre = String(nombre).trim().split(/\s+/)[0];
-                document.getElementById('saludo-nombre').textContent = "Hola, " + primerNombre;
-            }
+            if (saludo) document.getElementById('saludo-nombre').textContent = saludo;
         }
 
         // Lo primero que quiere saber alguien que ya agendó es cuándo le toca. Se lee
@@ -3532,7 +3675,7 @@ Cera rápida protectora
 
         // La versión del archivo. Sirve para que Tristán confirme de un vistazo si
         // el que abrió es el nuevo — ya pasó dos veces que probaba una copia vieja.
-        const VERSION_APP = '2026.08.20a';
+        const VERSION_APP = '2026.08.20b';
 
         function pintarVersion() {
             const el = document.getElementById('marca-version');
@@ -4092,6 +4235,10 @@ Cera rápida protectora
             document.querySelectorAll('.solo-con-sesion').forEach(el => {
                 el.classList.toggle('hidden', !conSesion);
             });
+            // Con el personaje apagado, su entrada del menú no lleva a nada útil.
+            document.querySelectorAll('.solo-con-personaje').forEach(el => {
+                if (!PERSONAJE_ACTIVO) el.classList.add('hidden');
+            });
             document.getElementById('menu-separador').classList.toggle('hidden', !conSesion);
 
             document.getElementById('menu-whatsapp').href =
@@ -4252,6 +4399,7 @@ Cera rápida protectora
             servicioSeleccionado = "";
             tipoDetallado = "";
             tomaCorriente = "";
+            formaDePago = "";
             precioBase = 0;
             resetearExtras();
             fechaSeleccionada = "";
@@ -4430,6 +4578,7 @@ Cera rápida protectora
                     document.getElementById('radar-status').innerText = ubicacionEsAproximada
                         ? "Ubicación aproximada."
                         : "Ubicación encontrada.";
+                    agregarEdificios3D();
                     colocarPersonaje(lat, lon);
                     calcularSectorCuauhtemoc(lat, lon);
                 });
@@ -5308,6 +5457,11 @@ Cera rápida protectora
 
         // Decide si el personaje va en 3D o en el marcador 2D de respaldo.
         function colocarPersonaje(lat, lon) {
+            // Con el personaje apagado va un marcador de la marca en su lugar,
+            // con la misma caída desde el cielo — ésa era la parte que sí
+            // gustaba, y no depende del muñeco.
+            if (!PERSONAJE_ACTIVO) { ponerMarcadorDeMarca(lat, lon); return; }
+
             const intentar3D = () => {
                 if (!map) return false;                     // se salió de la pantalla
                 if (yaHay3D) return true;                   // ya está puesto
@@ -6651,25 +6805,154 @@ Cera rápida protectora
                 .setLngLat([lon, lat]).addTo(map);
         }
 
+        // El marcador que se usa MIENTRAS el personaje está apagado: una gota
+        // de la marca con el logo dentro, cayendo del cielo igual que el muñeco.
+        function ponerMarcadorDeMarca(lat, lon) {
+            const contenedor = document.createElement('div');
+
+            const pin = document.createElement('div');
+            pin.className = "marcador-marca cayendo";
+            const img = document.createElement('img');
+            img.src = LOGO_DATA_URI;
+            img.alt = "Tu ubicación";
+            pin.appendChild(img);
+
+            const sombra = document.createElement('div');
+            sombra.className = "marcador-sombra";
+
+            contenedor.appendChild(pin);
+            contenedor.appendChild(sombra);
+
+            marcadorPersonaje = new mapboxgl.Marker({ element: contenedor, anchor: 'bottom' })
+                .setLngLat([lon, lat]).addTo(map);
+        }
+
         let marcadorPersonaje = null;
 
+        // =====================================================================
+        // 🏙️ LOS EDIFICIOS EN 3D
+        //
+        // Hasta ahora al mapa NO se le agregaba ninguna capa más que el
+        // personaje: era el mapa plano de Mapbox con un muñeco encima. Por eso
+        // se sentía vacío.
+        //
+        // Los edificios ya vienen DENTRO de los mosaicos que el mapa baja de
+        // todos modos (la capa 'building' del origen 'composite'): no se baja
+        // ningún archivo extra ni se paga nada aparte. Sólo hay que pedirle a
+        // Mapbox que los levante en vez de dibujarlos planos.
+        //
+        // Se meten DEBAJO del primer texto del mapa (símbolos), para que los
+        // nombres de las calles sigan encima y se puedan leer.
+        // =====================================================================
+        function agregarEdificios3D() {
+            if (!map) return;
+            try {
+                if (map.getLayer('edificios-3d')) return;
+
+                // Si el estilo no trae el origen 'composite' (un estilo hecho a
+                // mano puede no traerlo), no hay edificios que levantar y se
+                // sigue sin ellos: el mapa funciona igual.
+                const estilo = map.getStyle();
+                if (!estilo || !estilo.sources || !estilo.sources.composite) {
+                    console.warn("El estilo del mapa no trae edificios; se queda sin ellos.");
+                    return;
+                }
+
+                let antesDe;
+                for (const capa of estilo.layers) {
+                    if (capa.type === 'symbol' && capa.layout && capa.layout['text-field']) { antesDe = capa.id; break; }
+                }
+
+                map.addLayer({
+                    id: 'edificios-3d',
+                    source: 'composite',
+                    'source-layer': 'building',
+                    filter: ['==', 'extrude', 'true'],
+                    type: 'fill-extrusion',
+                    minzoom: 14,
+                    paint: {
+                        // Morado muy oscuro en vez de gris: el mapa es de la
+                        // marca, no de Mapbox. Los altos salen un poco más
+                        // claros para que se distingan unos de otros.
+                        'fill-extrusion-color': [
+                            'interpolate', ['linear'], ['get', 'height'],
+                            0, '#241b33',
+                            12, '#2f2444',
+                            40, '#3c2e57'
+                        ],
+                        // Los edificios CRECEN al acercarse en vez de aparecer
+                        // de golpe; de golpe se ve como un error de carga.
+                        'fill-extrusion-height': [
+                            'interpolate', ['linear'], ['zoom'],
+                            14, 0, 16.5, ['get', 'height']
+                        ],
+                        'fill-extrusion-base': [
+                            'interpolate', ['linear'], ['zoom'],
+                            14, 0, 16.5, ['get', 'min_height']
+                        ],
+                        'fill-extrusion-opacity': 0.92
+                    }
+                }, antesDe);
+            } catch (err) {
+                // Nunca vale la pena tumbar el flujo de agendar por un adorno.
+                console.warn("No se pudieron agregar los edificios 3D:", err);
+            }
+        }
+
+        // Distancia en línea recta entre dos puntos de la Tierra, en kilómetros.
+        // (Fórmula del semiverseno: la Tierra es redonda, así que restar grados
+        // no sirve — un grado de longitud mide distinto según la latitud.)
+        function kmEntre(lat1, lon1, lat2, lon2) {
+            const R = 6371;
+            const aRad = g => g * Math.PI / 180;
+            const dLat = aRad(lat2 - lat1), dLon = aRad(lon2 - lon1);
+            const a = Math.sin(dLat/2) ** 2 +
+                      Math.cos(aRad(lat1)) * Math.cos(aRad(lat2)) * Math.sin(dLon/2) ** 2;
+            return 2 * R * Math.asin(Math.sqrt(a));
+        }
+
+        // Cuántos kilómetros de carro hay hasta el cliente (ya con el factor de calle)
+        function kmHastaElCliente(lat, lon) {
+            return kmEntre(BASE_LAT, BASE_LON, lat, lon) * FACTOR_CARRETERA;
+        }
+
+        // El cobro por traslado, redondeado a $5 para que sea una cifra decible.
+        function cargoPorTraslado(km) {
+            if (km <= KM_SIN_CARGO) return 0;
+            const bruto = CARGO_SALIDA + (km - KM_SIN_CARGO) * CARGO_POR_KM;
+            return Math.round(bruto / REDONDEO_CARGO) * REDONDEO_CARGO;
+        }
+
+        // El nombre de la zona ya NO decide el precio: sólo sirve para que el
+        // cliente y Tristán se ubiquen, y para agrupar clientes en la agenda.
+        function nombreDeZona(lat, lon, km) {
+            if (km <= KM_SIN_CARGO) return "Dentro de la ciudad";
+            const rumbo = lat > BASE_LAT + 0.010 ? "al norte"
+                        : lat < BASE_LAT - 0.010 ? "al sur"
+                        : lon > BASE_LON + 0.010 ? "al oriente"
+                        : lon < BASE_LON - 0.010 ? "al poniente" : "en las afueras";
+            return "A " + km.toFixed(1) + " km " + rumbo;
+        }
+
         function calcularSectorCuauhtemoc(lat, lon) {
-            if (lat > 28.415) {
-                sectorNombre = "Campos Menonitas";
-                sectorMsg = "Estás fuera de la ciudad, así que se agregan $90 por el traslado.";
-                recargoGasolina = 90;
-            } else if (lat < 28.398 && lon > -106.85) {
-                sectorNombre = "Zona Oriente (Zapata / Tascate)";
-                sectorMsg = "Se agregan $65 por el traslado hasta tu zona.";
-                recargoGasolina = 65;
-            } else if (lon < -106.885) {
-                sectorNombre = "Zona Poniente (Huerta los Reyes)";
-                sectorMsg = "Se agregan $50 por el traslado hasta tu zona.";
-                recargoGasolina = 50;
-            } else {
-                sectorNombre = "Zona Centro";
-                sectorMsg = "Estás dentro de la ciudad: el traslado va incluido, sin costo extra.";
+            const km = kmHastaElCliente(lat, lon);
+            sectorNombre = nombreDeZona(lat, lon, km);
+
+            if (km > KM_MAXIMO) {
+                // Más lejos que esto no se cotiza solo: puede ser un GPS loco, y
+                // si es de verdad, ese viaje se platica antes de comprometerlo.
                 recargoGasolina = 0;
+                sectorNombre = "Fuera de nuestra zona";
+                sectorMsg = "Estás a unos " + Math.round(km) + " km de nosotros, más lejos de lo que "
+                          + "cubrimos normalmente. Escríbenos por WhatsApp al 625 100 9755"
+                          + " y lo vemos contigo antes de agendar.";
+            } else if (km <= KM_SIN_CARGO) {
+                recargoGasolina = 0;
+                sectorMsg = "Estás dentro de la ciudad: el traslado va incluido, sin costo extra.";
+            } else {
+                recargoGasolina = cargoPorTraslado(km);
+                sectorMsg = "Estás a unos " + km.toFixed(1) + " km, así que se agregan $"
+                          + recargoGasolina + " por la gasolina del traslado.";
             }
 
             document.getElementById('sector-detected').textContent = sectorNombre;
@@ -6679,7 +6962,19 @@ Cera rápida protectora
             document.getElementById('fuel-notice').textContent = recargoGasolina > 0
                 ? `${sectorNombre} · Traslado +$${recargoGasolina}`
                 : `${sectorNombre} · Sin cargo por traslado`;
-            document.getElementById('btn-confirm-sector').style.display = 'block';
+
+            // Más allá del máximo NO se deja agendar. Dejarlo pasar con $0 sería
+            // repetir exactamente el agujero que se acaba de cerrar: un viaje de
+            // 30 km cobrado como si fuera aquí a la vuelta.
+            const demasiadoLejos = km > KM_MAXIMO;
+            document.getElementById('btn-confirm-sector').style.display = demasiadoLejos ? 'none' : 'block';
+            const salida = document.getElementById('btn-lejos-whatsapp');
+            if (salida) {
+                salida.classList.toggle('hidden', !demasiadoLejos);
+                salida.href = "https://wa.me/52" + ADMIN_TELEFONO + "?text=" + encodeURIComponent(
+                    "Hola, quiero agendar un lavado pero la app dice que estoy fuera de su zona "
+                    + "(unos " + Math.round(km) + " km). ¿Me pueden ayudar?");
+            }
         }
 
         function irAServicios() {
@@ -6784,8 +7079,14 @@ Cera rápida protectora
                 const row = document.getElementById('row-' + id);
                 if (!row) return;
                 const precioEl = row.querySelector('.extra-price');
-                if (precioEl) precioEl.textContent = "+$" + extra.precio + " MXN";
+                if (precioEl) precioEl.textContent = etiquetaDePrecioExtra(extra);
             });
+        }
+
+        // Un extra que se cotiza no puede enseñar "+$0": daría a entender que va
+        // gratis, y ése es un malentendido que se descubre hasta el final.
+        function etiquetaDePrecioExtra(extra) {
+            return extra.cotiza ? "Te cotizamos" : "+$" + extra.precio + " MXN";
         }
 
         // Recorre el catálogo EXTRAS en vez de una lista escrita a mano, para que al
@@ -6909,6 +7210,16 @@ Cera rápida protectora
             document.getElementById('aviso-sin-luz').classList.toggle('hidden', valor !== 'nose');
         }
 
+        // Cómo va a pagar el cliente. IMPORTANTE: esto NO cobra nada, sólo lo
+        // avisa. Cobrar de verdad dentro de la app necesitaría una pasarela de
+        // pago con comisión por venta, que es justo lo que Tristán quiere evitar.
+        function seleccionarFormaDePago(valor, btnId) {
+            formaDePago = valor;
+            ['pago-efectivo', 'pago-transferencia'].forEach(id => document.getElementById(id).classList.remove('selected'));
+            document.getElementById(btnId).classList.add('selected');
+            document.getElementById('aviso-efectivo').classList.toggle('hidden', valor !== 'efectivo');
+        }
+
         // El requisito de corriente sólo aplica a lo que se hace EN CASA DEL CLIENTE.
         // Los detallados se hacen en el taller, donde la luz es nuestra.
         //
@@ -6981,9 +7292,12 @@ Cera rápida protectora
                 partes.push(`${servicioSeleccionado}: $${precioBase}`);
             }
             Object.entries(extrasSeleccionados).forEach(([id, precio]) => {
-                partes.push(`${EXTRAS[id] ? EXTRAS[id].nombre : id}: +$${precio}`);
+                const nombre = EXTRAS[id] ? EXTRAS[id].nombre : id;
+                partes.push(EXTRAS[id] && EXTRAS[id].cotiza
+                    ? `${nombre}: te cotizamos`
+                    : `${nombre}: +$${precio}`);
             });
-            if (recargoGasolina > 0) partes.push(`Traslado a ${sectorNombre}: +$${recargoGasolina}`);
+            if (recargoGasolina > 0) partes.push(`Traslado ${sectorNombre}: +$${recargoGasolina}`);
 
             monto.textContent = "$" + calcularTotal() + " MXN";
             detalle.textContent = partes.join("  ·  ");
@@ -7741,6 +8055,11 @@ Cera rápida protectora
                     + "La necesitamos para la aspiradora y la hidrolavadora. Si no estás seguro, elige esa opción y lo revisamos contigo.");
                 return;
             }
+            if (!formaDePago) {
+                mostrarAviso("⚠️ Dinos cómo vas a pagar.\n\n"
+                    + "Es sólo para llevar cambio o pasarte los datos de la cuenta. No se cobra nada desde la app.");
+                return;
+            }
             // Segunda barrera: si el cliente se quedó un rato en esta pantalla, la hora
             // que eligió pudo haber pasado mientras llenaba sus datos.
             if (horaYaPaso(fechaSeleccionada, horaSeleccionada)) {
@@ -7764,6 +8083,7 @@ Cera rápida protectora
                 referencia: document.getElementById('input-referencia').value.trim(),
                 // "si" | "nose" | "taller" (los detallados no necesitan su corriente)
                 tomaCorriente: servicioNecesitaCorrienteDelCliente() ? tomaCorriente : 'taller',
+                formaDePago: formaDePago,
                 coordenadas: sectorNombre,
                 lat: ubicacionLat,
                 lon: ubicacionLon,
@@ -7907,7 +8227,9 @@ Cera rápida protectora
             desglose.innerHTML = "";
             desglose.appendChild(filaResumen("Servicio base", "$" + orden.costoBase, true));
             Object.entries(orden.extras).forEach(([id, precio]) => {
-                desglose.appendChild(filaResumen(EXTRAS[id] ? EXTRAS[id].nombre : id, "+$" + precio, true));
+                const nombre = EXTRAS[id] ? EXTRAS[id].nombre : id;
+                const monto = (EXTRAS[id] && EXTRAS[id].cotiza) ? "Te cotizamos" : "+$" + precio;
+                desglose.appendChild(filaResumen(nombre, monto, true));
             });
             if (orden.cargoEnvio > 0) {
                 desglose.appendChild(filaResumen("Traslado a " + orden.coordenadas, "+$" + orden.cargoEnvio, true));
@@ -7966,6 +8288,11 @@ Cera rápida protectora
                 lineas.push("Toma de corriente: NO estoy seguro, ¿me confirman?");
             }
 
+            if (orden.formaDePago) {
+                lineas.push("Voy a pagar con: " + (orden.formaDePago === 'transferencia'
+                    ? "transferencia (pásenme los datos)" : "efectivo"));
+            }
+
             return "https://wa.me/52" + ADMIN_TELEFONO
                  + "?text=" + encodeURIComponent(lineas.join("\n"));
         }
@@ -7995,6 +8322,7 @@ Cera rápida protectora
             tamanoVehiculoSeleccionado = "";
             tamanoElegidoAMano = false;
             tomaCorriente = "";
+            formaDePago = "";
             ['luz-si', 'luz-nose'].forEach(id => document.getElementById(id).classList.remove('selected'));
             document.getElementById('aviso-sin-luz').classList.add('hidden');
             seleccionarTipoLavado('completo', 'tipo-completo');
@@ -8325,6 +8653,7 @@ Cera rápida protectora
                         ${extras.length ? `<div><span class="campo">Extras:</span> ${esc(extras.join(' · '))}</div>` : ''}
                         <div><span class="campo">Sector:</span> ${esc(cita.coordenadas || '—')}</div>
                         ${cita.referencia ? `<div><span class="campo">Referencia:</span> ${esc(cita.referencia)}</div>` : ''}
+                        <div><span class="campo">Paga con:</span> ${esc(cita.formaDePago === 'transferencia' ? 'Transferencia' : cita.formaDePago === 'efectivo' ? 'Efectivo — lleva cambio' : '—')}</div>
                         <div><span class="campo">Folio:</span> ${esc(cita.idLocal || '—')}</div>
                     </div>
                     ${cita.ubicacionAproximada ? `<div class="aviso-aprox">⚠️ Este cliente no dio permiso de ubicación. La dirección es aproximada (centro de Cuauhtémoc) — confírmasela antes de salir.</div>` : ''}
