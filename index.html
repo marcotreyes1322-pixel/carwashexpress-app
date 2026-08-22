@@ -2192,6 +2192,17 @@ Cera rápida protectora
                                 <span class="slider"></span>
                             </label>
                         </div>
+                        <div class="extra-row" id="row-vidrios">
+                            <div class="extra-info">
+                                <div class="extra-title">Descontaminación de Vidrios</div>
+                                <div class="extra-sub">Quita lo áspero del parabrisas y mejora la visión</div>
+                                <div class="extra-price">+$400 MXN</div>
+                            </div>
+                            <label class="switch">
+                                <input type="checkbox" id="chk-vidrios" onchange="toggleExtra('vidrios')">
+                                <span class="slider"></span>
+                            </label>
+                        </div>
                         <div class="extra-row" id="row-asientos">
                             <div class="extra-info">
                                 <div class="extra-title">Rejuvenecimiento de Asientos</div>
@@ -2667,6 +2678,12 @@ Cera rápida protectora
             // precio del otro (¿tamaño del auto? ¿parabrisas vs todos los
             // cristales?). Meterla adivinando sería cobrarle mal a alguien.
             rines:       { nombre: 'Descontaminación de Rines',    precio: 400 },
+            // Agosto 2026: es el ÚNICO extra cuyo precio depende del tamaño del
+            // auto ($400 chico y mediano, $600 grande). Ojo con el orden de las
+            // pantallas: el cliente elige los extras ANTES de decir de qué
+            // tamaño es su auto, así que en la lista se muestran los dos precios
+            // y el cobro se recalcula solo en cuanto elige el tamaño.
+            vidrios:     { nombre: 'Descontaminación de Vidrios',  precio: 400, precioGrande: 600 },
             asientos:    { nombre: 'Rejuvenecimiento de Asientos', precio: 200 },
             cajuela:     { nombre: 'Aspirado de Cajuela o 3ª Fila',precio: 80  },
             vapor:       { nombre: 'Máquina de Vapor',             precio: 80  },
@@ -3779,7 +3796,7 @@ Cera rápida protectora
 
         // La versión del archivo. Sirve para que Tristán confirme de un vistazo si
         // el que abrió es el nuevo — ya pasó dos veces que probaba una copia vieja.
-        const VERSION_APP = '2026.08.21b';
+        const VERSION_APP = '2026.08.21c';
 
         function pintarVersion() {
             const el = document.getElementById('marca-version');
@@ -7295,7 +7312,7 @@ Cera rápida protectora
             if (!checkbox || !EXTRAS[id]) return;
 
             if (checkbox.checked) {
-                extrasSeleccionados[id] = EXTRAS[id].precio;
+                extrasSeleccionados[id] = precioDeExtra(id);
                 row.classList.add('selected');
             } else {
                 delete extrasSeleccionados[id];
@@ -7317,8 +7334,33 @@ Cera rápida protectora
 
         // Un extra que se cotiza no puede enseñar "+$0": daría a entender que va
         // gratis, y ése es un malentendido que se descubre hasta el final.
+        //
+        // Y uno cuyo precio depende del tamaño tiene que enseñar LOS DOS, porque
+        // en esta pantalla todavía no sabemos de qué tamaño es el auto: el
+        // cliente lo dice más adelante. Enseñar sólo el barato sería prometerle
+        // un precio que a lo mejor no le toca.
         function etiquetaDePrecioExtra(extra) {
-            return extra.cotiza ? "Te cotizamos" : "+$" + extra.precio + " MXN";
+            if (extra.cotiza) return "Te cotizamos";
+            if (extra.precioGrande) return "+$" + extra.precio + " · $" + extra.precioGrande + " si es grande";
+            return "+$" + extra.precio + " MXN";
+        }
+
+        // Cuánto cuesta un extra para el auto que el cliente declaró.
+        function precioDeExtra(id) {
+            const extra = EXTRAS[id];
+            if (!extra) return 0;
+            if (extra.precioGrande && tamanoVehiculoSeleccionado === 'grande') return extra.precioGrande;
+            return extra.precio;
+        }
+
+        // Los extras que cambian de precio con el tamaño hay que volver a
+        // cotizarlos cuando el cliente elige o corrige el tamaño de su auto —
+        // que pasa DESPUÉS de haberlos elegido. Sin esto, quien marcara vidrios
+        // y luego dijera "grande" seguiría pagando los $400 del chico.
+        function recotizarExtrasPorTamano() {
+            Object.keys(extrasSeleccionados).forEach(id => {
+                if (EXTRAS[id] && EXTRAS[id].precioGrande) extrasSeleccionados[id] = precioDeExtra(id);
+            });
         }
 
         // Recorre el catálogo EXTRAS en vez de una lista escrita a mano, para que al
@@ -7476,6 +7518,7 @@ Cera rápida protectora
         //   · Detallado      → el tamaño define CUÁL de los dos precios del detallado aplica
         // Las Membresías traen precio cerrado y no se tocan.
         function aplicarPrecioPorTamano() {
+            recotizarExtrasPorTamano();
             if (servicioSeleccionado === 'Lavado Básico' && tamanoVehiculoSeleccionado) {
                 const completo = PRECIOS_POR_TAMANO[tamanoVehiculoSeleccionado];
                 precioBase = (tipoLavado === 'completo')
