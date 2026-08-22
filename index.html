@@ -791,23 +791,6 @@
                      padding: 16px 2px; border-bottom: 1px solid var(--linea); transition: 0.25s; }
         .extra-row.selected .extra-title { color: var(--morado-claro); }
 
-        /* La miniatura del extra. Ojo: hoy Tristán tiene foto de sólo algunos,
-           así que el hueco NO puede quedar vacío en los demás — una lista con
-           unos cuadros con foto y otros en blanco se lee como error de carga.
-           Sin foto queda un cuadro de la marca con la inicial del servicio, que
-           mantiene la fila alineada y se ve intencional. En cuanto suba una
-           foto llamada extras/{id}.jpg, aparece sola sin tocar código. */
-        .extra-foto {
-            width: 52px; height: 52px; flex-shrink: 0; border-radius: 12px;
-            background-size: cover; background-position: center;
-            border: 1px solid rgba(255,255,255,0.10);
-            display: flex; align-items: center; justify-content: center;
-            font-family: var(--serif); font-size: 20px; color: rgba(255,255,255,0.42);
-            background-color: #17131f;
-        }
-        .extra-foto.con-foto { color: transparent; border-color: rgba(139,92,246,0.35); }
-        .extra-row.selected .extra-foto { border-color: var(--morado); }
-
         .extra-info { text-align: left; flex: 1; }
         .extra-title { font-size: 14px; font-weight: 500; transition: 0.25s; }
         .extra-sub { font-size: 11px; color: var(--muy-tenue); margin-top: 3px; }
@@ -2167,7 +2150,6 @@ Cera rápida protectora
                 <div class="card-panel">
                     <div class="extras-container">
                         <div class="extra-row" id="row-faros">
-                            <div class="extra-foto" data-extra="faros" aria-hidden="true"></div>
                             <div class="extra-info">
                                 <div class="extra-title">Pulido de Faros</div>
                                 <div class="extra-sub">Oferta por tiempo limitado · El par</div>
@@ -2179,7 +2161,6 @@ Cera rápida protectora
                             </label>
                         </div>
                         <div class="extra-row" id="row-cera">
-                            <div class="extra-foto" data-extra="cera" aria-hidden="true"></div>
                             <div class="extra-info">
                                 <div class="extra-title">Cera Cerámica en Pasta</div>
                                 <div class="extra-sub">Protección de 6 meses</div>
@@ -2191,7 +2172,6 @@ Cera rápida protectora
                             </label>
                         </div>
                         <div class="extra-row" id="row-ceraliquida">
-                            <div class="extra-foto" data-extra="ceraliquida" aria-hidden="true"></div>
                             <div class="extra-info">
                                 <div class="extra-title">Cera Líquida</div>
                                 <div class="extra-sub">Brillo rápido</div>
@@ -2203,7 +2183,6 @@ Cera rápida protectora
                             </label>
                         </div>
                         <div class="extra-row" id="row-rines">
-                            <div class="extra-foto" data-extra="rines" aria-hidden="true"></div>
                             <div class="extra-info">
                                 <div class="extra-title">Descontaminación de Rines</div>
                                 <div class="extra-sub">Saca el polvo de freno incrustado</div>
@@ -2215,7 +2194,6 @@ Cera rápida protectora
                             </label>
                         </div>
                         <div class="extra-row" id="row-vidrios">
-                            <div class="extra-foto" data-extra="vidrios" aria-hidden="true"></div>
                             <div class="extra-info">
                                 <div class="extra-title">Descontaminación de Vidrios</div>
                                 <div class="extra-sub">Quita lo áspero del parabrisas y mejora la visión</div>
@@ -2227,7 +2205,6 @@ Cera rápida protectora
                             </label>
                         </div>
                         <div class="extra-row" id="row-asientos">
-                            <div class="extra-foto" data-extra="asientos" aria-hidden="true"></div>
                             <div class="extra-info">
                                 <div class="extra-title">Rejuvenecimiento de Asientos</div>
                                 <div class="extra-sub">Solo piel y cuero</div>
@@ -2239,7 +2216,6 @@ Cera rápida protectora
                             </label>
                         </div>
                         <div class="extra-row" id="row-cajuela">
-                            <div class="extra-foto" data-extra="cajuela" aria-hidden="true"></div>
                             <div class="extra-info">
                                 <div class="extra-title">Aspirado de Cajuela o 3ª Fila</div>
                                 <div class="extra-sub">Incluye hidratante para plásticos</div>
@@ -2251,7 +2227,6 @@ Cera rápida protectora
                             </label>
                         </div>
                         <div class="extra-row" id="row-vapor">
-                            <div class="extra-foto" data-extra="vapor" aria-hidden="true"></div>
                             <div class="extra-info">
                                 <div class="extra-title">Máquina de Vapor</div>
                                 <div class="extra-sub">Manchas difíciles</div>
@@ -2263,7 +2238,6 @@ Cera rápida protectora
                             </label>
                         </div>
                         <div class="extra-row" id="row-bedliner">
-                            <div class="extra-foto" data-extra="bedliner" aria-hidden="true"></div>
                             <div class="extra-info">
                                 <div class="extra-title">Aplicación de Bedliner</div>
                                 <div class="extra-sub">Para la caja de tu camioneta</div>
@@ -2872,7 +2846,6 @@ Cera rápida protectora
             document.querySelectorAll('img[data-logo]').forEach(img => { img.src = LOGO_DATA_URI; });
 
             pintarPreciosDeExtras();
-            pintarFotosDeExtras();
             rellenarAccesoGuardado();
             // El login es la primera pantalla y se ve antes de que corra
             // mostrarPantalla(), así que el carrusel se arranca aquí.
@@ -3824,7 +3797,7 @@ Cera rápida protectora
 
         // La versión del archivo. Sirve para que Tristán confirme de un vistazo si
         // el que abrió es el nuevo — ya pasó dos veces que probaba una copia vieja.
-        const VERSION_APP = '2026.08.21d';
+        const VERSION_APP = '2026.08.21e';
 
         function pintarVersion() {
             const el = document.getElementById('marca-version');
@@ -7375,25 +7348,6 @@ Cera rápida protectora
             if (extra.cotiza) return "Te cotizamos";
             if (extra.precioGrande) return "+$" + extra.precio + " · $" + extra.precioGrande + " si es grande";
             return "+$" + extra.precio + " MXN";
-        }
-
-        // Pone la foto de cada extra, si existe. Mismo criterio que el carrusel
-        // de trabajos: se PREGUNTA por el archivo antes de ponerlo, así el que
-        // falte no deja un cuadro roto — deja la inicial del servicio, que se ve
-        // intencional. Tristán sube extras/{id}.jpg y aparece solo.
-        function pintarFotosDeExtras() {
-            document.querySelectorAll('.extra-foto[data-extra]').forEach(caja => {
-                const id = caja.dataset.extra;
-                const extra = EXTRAS[id];
-                if (!extra) return;
-                caja.textContent = extra.nombre.trim().charAt(0).toUpperCase();
-                const url = 'extras/' + id + '.jpg';
-                existeLaFoto(url).then(hay => {
-                    if (!hay) return;
-                    caja.style.backgroundImage = "url('" + url + "')";
-                    caja.classList.add('con-foto');
-                });
-            });
         }
 
         // Cuánto cuesta un extra para el auto que el cliente declaró.
