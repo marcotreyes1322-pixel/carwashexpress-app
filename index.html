@@ -3963,7 +3963,7 @@ Cera rápida protectora
 
         // La versión del archivo. Sirve para que Tristán confirme de un vistazo si
         // el que abrió es el nuevo — ya pasó dos veces que probaba una copia vieja.
-        const VERSION_APP = '2026.08.21f';
+        const VERSION_APP = '2026.08.31a';
 
         function pintarVersion() {
             const el = document.getElementById('marca-version');
@@ -4271,6 +4271,19 @@ Cera rápida protectora
             if (!historialDePantallas.length) return false;
             mostrarPantalla(historialDePantallas.pop(), true);
             return true;
+        }
+
+        // Regresar un paso desde un BOTÓN de "atrás" del flujo de agendar.
+        //
+        // Por qué existe: el historial lo lleva mostrarPantalla(), y los botones
+        // de atrás no pueden limitarse a mostrar la pantalla anterior — tienen
+        // que SACARLA del historial. Si no, se iría llenando y el gesto de
+        // deslizar acabaría llevando a la misma pantalla en la que ya estás.
+        function volverA(idPantalla) {
+            if (historialDePantallas[historialDePantallas.length - 1] === idPantalla) {
+                historialDePantallas.pop();
+            }
+            mostrarPantalla(idPantalla, true);
         }
 
         // El dedo. Sólo cuenta un deslizado hacia la DERECHA, empezando cerca del
@@ -7407,8 +7420,7 @@ Cera rápida protectora
         }
 
         function irAServicios() {
-            document.getElementById('screen-satellite').classList.add('hidden');
-            document.getElementById('screen-services').classList.remove('hidden');
+            mostrarPantalla('screen-services');
             actualizarAccesoAdmin();
             apagarMapa();
         }
@@ -7455,18 +7467,15 @@ Cera rápida protectora
             resetearExtras();
             
             document.getElementById('btn-regresar-extras').setAttribute('onclick', 'regresarAServiciosDesdeExtras()');
-            document.getElementById('screen-services').classList.add('hidden');
-            document.getElementById('screen-extras').classList.remove('hidden');
+            mostrarPantalla('screen-extras');
         }
 
         function irAMembresiasMenu() {
-            document.getElementById('screen-services').classList.add('hidden');
-            document.getElementById('screen-membresias').classList.remove('hidden');
+            mostrarPantalla('screen-membresias');
         }
 
         function regresarAServiciosDesdeMembresias() {
-            document.getElementById('screen-membresias').classList.add('hidden');
-            document.getElementById('screen-services').classList.remove('hidden');
+            volverA('screen-services');
         }
 
         function seleccionarMembresia(nombrePlan, precio) {
@@ -7478,8 +7487,7 @@ Cera rápida protectora
             resetearExtras();
 
             document.getElementById('btn-regresar-extras').setAttribute('onclick', 'regresarAMembresiasDesdeExtras()');
-            document.getElementById('screen-membresias').classList.add('hidden');
-            document.getElementById('screen-extras').classList.remove('hidden');
+            mostrarPantalla('screen-extras');
         }
 
         // El precio se toma SIEMPRE del catálogo EXTRAS, nunca del HTML. Antes venía
@@ -7756,13 +7764,11 @@ Cera rápida protectora
         }
 
         function irADetalladosMenu() {
-            document.getElementById('screen-services').classList.add('hidden');
-            document.getElementById('screen-detallados').classList.remove('hidden');
+            mostrarPantalla('screen-detallados');
         }
 
         function regresarAServiciosDesdeDetallados() {
-            document.getElementById('screen-detallados').classList.add('hidden');
-            document.getElementById('screen-services').classList.remove('hidden');
+            volverA('screen-services');
         }
 
         // Abre o cierra la descripción de una fila, sin salir de la pantalla.
@@ -8143,17 +8149,15 @@ Cera rápida protectora
 
         function irAAgendaDesdeExtras() {
             salirDeModoReagenda();
-            document.getElementById('screen-extras').classList.add('hidden');
             document.getElementById('btn-regresar-agenda').setAttribute('onclick', 'regresarAExtrasDesdeAgenda()');
-            document.getElementById('screen-agenda').classList.remove('hidden');
+            mostrarPantalla('screen-agenda');
             abrirCalendario();
         }
 
         function avanzarAAgendaDesdeDetallado() {
             salirDeModoReagenda();
-            document.getElementById('screen-detallados').classList.add('hidden');
             document.getElementById('btn-regresar-agenda').setAttribute('onclick', 'regresarADetalladosMenu()');
-            document.getElementById('screen-agenda').classList.remove('hidden');
+            mostrarPantalla('screen-agenda');
             abrirCalendario();
         }
 
@@ -8162,8 +8166,7 @@ Cera rápida protectora
                 mostrarAviso("⚠️ Por favor selecciona un Día y una Hora para agendar tu servicio.");
                 return;
             }
-            document.getElementById('screen-agenda').classList.add('hidden');
-            document.getElementById('screen-form').classList.remove('hidden');
+            mostrarPantalla('screen-form');
 
             // El tipo de lavado (completo/exterior/interior) sólo tiene sentido en el
             // Lavado Básico: las Membresías y los Detallados ya traen su precio cerrado.
@@ -8190,33 +8193,27 @@ Cera rápida protectora
         }
 
         function regresarAExtrasDesdeAgenda() {
-            document.getElementById('screen-agenda').classList.add('hidden');
-            document.getElementById('screen-extras').classList.remove('hidden');
+            volverA('screen-extras');
         }
 
         function regresarAAgendaDesdeForm() {
-            document.getElementById('screen-form').classList.add('hidden');
-            document.getElementById('screen-agenda').classList.remove('hidden');
+            volverA('screen-agenda');
         }
 
         function regresarAServiciosDesdeExtras() {
-            document.getElementById('screen-extras').classList.add('hidden');
-            document.getElementById('screen-services').classList.remove('hidden');
+            volverA('screen-services');
         }
 
         function regresarAMembresiasDesdeExtras() {
-            document.getElementById('screen-extras').classList.add('hidden');
-            document.getElementById('screen-membresias').classList.remove('hidden');
+            volverA('screen-membresias');
         }
 
         function regresarADetalladosMenu() {
-            document.getElementById('screen-agenda').classList.add('hidden');
-            document.getElementById('screen-detallados').classList.remove('hidden');
+            volverA('screen-detallados');
         }
 
         function regresarAInicio() {
-            document.getElementById('screen-services').classList.add('hidden');
-            document.getElementById('screen-satellite').classList.remove('hidden');
+            volverA('screen-satellite');
             // El mapa se apagó al salir, así que hay que volver a dibujarlo con la
             // ubicación que ya teníamos (no se le vuelve a pedir permiso al cliente).
             if (ubicacionLat != null && ubicacionLon != null) {
@@ -8225,14 +8222,12 @@ Cera rápida protectora
         }
 
         function irAPantallaCitas() {
-            document.getElementById('screen-services').classList.add('hidden');
-            document.getElementById('screen-ver-citas').classList.remove('hidden');
+            mostrarPantalla('screen-ver-citas');
             renderizarCitas(); pintarProximaCita();
         }
 
         function regresarAMenuDesdeCitas() {
-            document.getElementById('screen-ver-citas').classList.add('hidden');
-            document.getElementById('screen-services').classList.remove('hidden');
+            volverA('screen-services');
         }
 
         // Ahora las citas se leen de Firebase Realtime Database, filtradas por el UID
@@ -8554,8 +8549,7 @@ Cera rápida protectora
             // que eligió pudo haber pasado mientras llenaba sus datos.
             if (horaYaPaso(fechaSeleccionada, horaSeleccionada)) {
                 mostrarAviso("⚠️ Ese horario ya pasó mientras llenabas tus datos.\n\nTe regresamos a la agenda para que elijas otro.");
-                document.getElementById('screen-form').classList.add('hidden');
-                document.getElementById('screen-agenda').classList.remove('hidden');
+                volverA('screen-agenda');
                 cargarDisponibilidad(fechaSeleccionada);
                 return;
             }
@@ -8648,8 +8642,7 @@ Cera rápida protectora
                         // Alguien más ganó el hueco entre que abrió la pantalla y confirmó
                         restaurarBoton();
                         mostrarAviso("😔 Alguien acaba de apartar ese horario.\n\nTe regresamos a la agenda para que elijas otro.");
-                        document.getElementById('screen-form').classList.add('hidden');
-                        document.getElementById('screen-agenda').classList.remove('hidden');
+                        volverA('screen-agenda');
                         cargarDisponibilidad(fechaSeleccionada);
                         return null;
                     }
