@@ -880,6 +880,128 @@
         .recordar-texto b { display: block; font-weight: 400; font-size: 10.5px;
                             color: rgba(255,255,255,0.45); margin-top: 2px; }
 
+        /* ── EL COMPROBANTE QUE SE IMPRIME ───────────────────────────────────
+           La "impresora" es la barra oscura de arriba; el papel sale de detrás
+           de ella. El truco es que el papel vive dentro de un contenedor con
+           overflow oculto que CRECE: así el ticket no aparece de golpe, se va
+           asomando como si lo estuvieran imprimiendo. */
+        .impresora { width: 100%; }
+        .impresora-cabeza {
+            background: linear-gradient(180deg, #17131f, #100d17);
+            border: 1px solid rgba(255,255,255,0.10);
+            border-radius: 16px 16px 6px 6px;
+            padding: 14px 16px 15px;
+            display: flex; flex-direction: column; gap: 5px; text-align: left;
+            position: relative; z-index: 2;
+        }
+        .impresora-marca {
+            font-size: 9.5px; letter-spacing: 0.22em; color: var(--morado-claro);
+        }
+        .impresora-estado {
+            font-size: 12.5px; color: rgba(255,255,255,0.72);
+            display: flex; align-items: center; gap: 8px;
+        }
+        /* El puntito que gira mientras "imprime" */
+        .impresora-estado::before {
+            content: ""; width: 11px; height: 11px; border-radius: 50%; flex-shrink: 0;
+            border: 1.6px solid rgba(255,255,255,0.22); border-top-color: var(--morado-claro);
+            animation: girar 0.7s linear infinite;
+        }
+        .impresora-estado.listo::before {
+            border-color: #4ade80; border-top-color: #4ade80;
+            background: #4ade80; animation: none;
+        }
+        .impresora-estado.listo { color: #86efac; }
+        @keyframes girar { to { transform: rotate(360deg); } }
+
+        /* La ranura por donde sale el papel */
+        .impresora-ranura {
+            height: 5px; margin: 0 10px; position: relative; z-index: 2;
+            background: #05040a; border-radius: 0 0 4px 4px;
+            box-shadow: inset 0 2px 4px rgba(0,0,0,0.9);
+        }
+
+        /* El papel. Se revela creciendo desde arriba. */
+        /* El alto al que crece se calcula en JavaScript, midiendo el papel de
+           verdad. Con un tope fijo el recorrido no cuadra: si se pone muy alto
+           el papel sale de golpe (el tope se alcanza en un instante) y si se
+           pone muy bajo, un ticket con muchos extras queda cortado.
+           La curva va LINEAL a propósito: una impresora saca el papel a
+           velocidad constante, no acelerando. */
+        .ticket {
+            position: relative; margin: 0 6px;
+            max-height: 0; overflow: hidden;
+            transition: max-height 1.15s linear;
+        }
+        .ticket-papel {
+            background: #f4f1ea; color: #24201c;
+            font-family: ui-monospace, "SF Mono", Menlo, Consolas, monospace;
+            padding: 18px 16px 14px; text-align: left;
+            box-shadow: 0 14px 30px rgba(0,0,0,0.55);
+        }
+        .ticket-logo { text-align: center; margin-bottom: 10px; }
+        .ticket-logo img { width: 40px; height: 40px; border-radius: 50%; }
+        .ticket-encabezado {
+            text-align: center; font-size: 10.5px; letter-spacing: 0.10em;
+            text-transform: uppercase; color: #6b635a; line-height: 1.7;
+        }
+        .ticket-encabezado b { color: #24201c; font-size: 13px; letter-spacing: 0.06em; }
+        .ticket-linea { border-top: 1px dashed #c3bbae; margin: 12px 0; }
+        .ticket-fila {
+            display: flex; justify-content: space-between; align-items: baseline; gap: 12px;
+            font-size: 11px; padding: 3px 0; color: #6b635a;
+        }
+        .ticket-fila b {
+            color: #24201c; font-weight: 600; text-align: right;
+            font-variant-numeric: tabular-nums;
+        }
+        .ticket-total {
+            font-size: 12px; letter-spacing: 0.06em; padding-top: 6px;
+        }
+        .ticket-total b { font-size: 17px; }
+        /* Rayas decorativas de ticket. No es un código que se pueda escanear. */
+        .ticket-rayas {
+            height: 38px; margin: 14px 0 6px;
+            background: repeating-linear-gradient(90deg,
+                #24201c 0 2px, transparent 2px 4px, #24201c 4px 5px, transparent 5px 9px,
+                #24201c 9px 12px, transparent 12px 14px);
+            opacity: 0.85;
+        }
+        .ticket-pie {
+            text-align: center; font-size: 9.5px; letter-spacing: 0.20em;
+            color: #6b635a; text-transform: uppercase;
+        }
+        .ticket-nota {
+            font-size: 9.5px; color: #7d766c; line-height: 1.6; margin-top: 12px;
+            text-align: center;
+        }
+        /* La orilla dentada, como papel cortado de la impresora */
+        .ticket-corte {
+            height: 10px; background: #f4f1ea;
+            -webkit-mask-image: linear-gradient(135deg, transparent 40%, #000 40%),
+                                linear-gradient(-135deg, transparent 40%, #000 40%);
+            mask-image: linear-gradient(135deg, transparent 40%, #000 40%),
+                        linear-gradient(-135deg, transparent 40%, #000 40%);
+            -webkit-mask-size: 12px 12px; mask-size: 12px 12px;
+            -webkit-mask-repeat: repeat-x; mask-repeat: repeat-x;
+            -webkit-mask-position: top; mask-position: top;
+            box-shadow: 0 14px 22px rgba(0,0,0,0.4);
+        }
+        /* El desglose de precios hereda el estilo de fila del ticket.
+           Los colores van al SPAN y al STRONG, no sólo a la fila: las reglas
+           del tema oscuro pintan esos hijos con su propio color claro, y sobre
+           el papel color hueso quedaban casi invisibles. */
+        #conf-desglose .resumen-row { display: flex; justify-content: space-between;
+            font-size: 11px; padding: 3px 0; border: 0; }
+        #conf-desglose .resumen-row span { color: #6b635a; }
+        #conf-desglose .resumen-row strong { color: #24201c; font-weight: 600;
+            font-variant-numeric: tabular-nums; }
+
+        @media (prefers-reduced-motion: reduce) {
+            .ticket { transition: none; }
+            .impresora-estado::before { animation: none; }
+        }
+
         .cal-leyenda { display: flex; gap: 14px; justify-content: center; margin-top: 12px;
                        font-size: 9.5px; color: var(--muy-tenue); flex-wrap: wrap; }
         .cal-leyenda span { display: flex; align-items: center; gap: 5px; }
@@ -2419,17 +2541,61 @@ Cera rápida protectora
                 <p class="subtitulo">Folio <span id="conf-folio">—</span></p>
             </div>
 
+            <!-- EL COMPROBANTE SE IMPRIME.
+                 La ranura de arriba es la "impresora": el papel sale de detrás
+                 de ella deslizándose hacia abajo, como un ticket de verdad.
+                 Todos los datos son los mismos de antes — lo que cambió es la
+                 forma, no lo que dice. -->
             <div class="menu-content-holder">
-                <div class="card-panel">
-                    <div class="resumen-row"><span>Servicio</span><strong id="conf-servicio">—</strong></div>
-                    <div class="resumen-row"><span>Fecha</span><strong id="conf-fecha">—</strong></div>
-                    <div class="resumen-row"><span>Hora</span><strong id="conf-hora">—</strong></div>
-                    <div class="resumen-row"><span>Vehículo</span><strong id="conf-auto">—</strong></div>
-                    <div class="resumen-row"><span>Sector</span><strong id="conf-sector">—</strong></div>
-                    <div class="resumen-row hidden" id="conf-fila-luz"><span>Toma de corriente</span><strong id="conf-luz">—</strong></div>
-                    <div id="conf-desglose"></div>
-                    <div class="resumen-row resumen-total"><span>Total a pagar</span><strong id="conf-total">—</strong></div>
-                    <p class="resumen-nota">Te esperamos. Si necesitas cambiar o cancelar tu cita, puedes hacerlo desde “Mis Citas Agendadas”.</p>
+                <div class="impresora">
+                    <div class="impresora-cabeza">
+                        <span class="impresora-marca">CAR WASH EXPRESS</span>
+                        <span class="impresora-estado" id="conf-estado">Imprimiendo tu comprobante…</span>
+                    </div>
+
+                    <div class="impresora-ranura" aria-hidden="true"></div>
+
+                    <div class="ticket" id="conf-ticket">
+                        <div class="ticket-papel">
+                            <div class="ticket-logo">
+                                <img data-logo="1" alt="" onerror="usarLogoDeRespaldo(this)">
+                            </div>
+                            <!-- El folio NO se repite aquí: ya está arriba en el
+                                 título y abajo debajo de las rayas. Al ponerlo
+                                 también aquí quedaban DOS elementos con el mismo
+                                 id "conf-folio", y getElementById sólo llena el
+                                 primero — el del ticket se quedaba en "—". -->
+                            <div class="ticket-encabezado">Comprobante de cita</div>
+
+                            <div class="ticket-linea" aria-hidden="true"></div>
+
+                            <div class="ticket-fila"><span>Servicio</span><b id="conf-servicio">—</b></div>
+                            <div class="ticket-fila"><span>Fecha</span><b id="conf-fecha">—</b></div>
+                            <div class="ticket-fila"><span>Hora</span><b id="conf-hora">—</b></div>
+                            <div class="ticket-fila"><span>Vehículo</span><b id="conf-auto">—</b></div>
+                            <div class="ticket-fila"><span>Sector</span><b id="conf-sector">—</b></div>
+                            <div class="ticket-fila hidden" id="conf-fila-luz"><span>Toma de corriente</span><b id="conf-luz">—</b></div>
+
+                            <div class="ticket-linea" aria-hidden="true"></div>
+
+                            <div id="conf-desglose"></div>
+
+                            <div class="ticket-linea" aria-hidden="true"></div>
+
+                            <div class="ticket-fila ticket-total"><span>TOTAL A PAGAR</span><b id="conf-total">—</b></div>
+
+                            <!-- Rayas decorativas, al estilo de un ticket. NO es un
+                                 código de barras de verdad: no hay nada que escanear
+                                 y fingir que sí sería mentirle al cliente. -->
+                            <div class="ticket-rayas" aria-hidden="true"></div>
+                            <div class="ticket-pie" id="conf-pie">—</div>
+
+                            <p class="ticket-nota">Te esperamos. Si necesitas cambiar o cancelar tu cita,
+                               puedes hacerlo desde “Mis citas”.</p>
+                        </div>
+                        <!-- La orilla dentada de abajo, como papel cortado -->
+                        <div class="ticket-corte" aria-hidden="true"></div>
+                    </div>
                 </div>
             </div>
 
@@ -3797,7 +3963,7 @@ Cera rápida protectora
 
         // La versión del archivo. Sirve para que Tristán confirme de un vistazo si
         // el que abrió es el nuevo — ya pasó dos veces que probaba una copia vieja.
-        const VERSION_APP = '2026.08.21e';
+        const VERSION_APP = '2026.08.21f';
 
         function pintarVersion() {
             const el = document.getElementById('marca-version');
@@ -3946,10 +4112,19 @@ Cera rápida protectora
             const carrusel = document.getElementById('feed-carrusel');
             if (!bloque || !carrusel) return;
 
-            const lista = Object.values(datos || {})
-                .filter(r => r && (r.texto || r.foto || r.despues))
-                .sort((a, b) => (b.orden || 0) - (a.orden || 0))
-                .slice(0, MAXIMO_EN_EL_FEED);
+            // LAS RESEÑAS VAN PRIMERO, SIEMPRE. Antes todo se ordenaba junto por
+            // "orden" y se cortaba en MAXIMO_EN_EL_FEED: como las fotos llevan
+            // orden = su número (hoy hasta 14) y una reseña recién subida suele
+            // venir sin orden (= 0), las 13 fotos llenaban solas los 12 lugares y
+            // CUALQUIER reseña de un cliente real quedaba fuera sin avisar.
+            // Es el mismo defecto que ya escondía las fotos nuevas, ahora al revés.
+            // Y una reseña escrita por un cliente vale más que una foto de más.
+            const todo = Object.values(datos || {})
+                .filter(r => r && (r.texto || r.foto || r.despues));
+            const porOrden = (a, b) => (b.orden || 0) - (a.orden || 0);
+            const resenas = todo.filter(r => r.texto).sort(porOrden);
+            const fotos   = todo.filter(r => !r.texto).sort(porOrden);
+            const lista = resenas.concat(fotos).slice(0, MAXIMO_EN_EL_FEED);
 
             if (!lista.length) { bloque.classList.add('hidden'); return; }
 
@@ -7350,6 +7525,12 @@ Cera rápida protectora
             return "+$" + extra.precio + " MXN";
         }
 
+        // "A 10.4 km al norte" metido a media frase queda con mayúscula suelta.
+        function minusculaInicial(texto) {
+            const t = String(texto || "");
+            return t ? t.charAt(0).toLowerCase() + t.slice(1) : t;
+        }
+
         // Cuánto cuesta un extra para el auto que el cliente declaró.
         function precioDeExtra(id) {
             const extra = EXTRAS[id];
@@ -7568,7 +7749,7 @@ Cera rápida protectora
                     ? `${nombre}: te cotizamos`
                     : `${nombre}: +$${precio}`);
             });
-            if (recargoGasolina > 0) partes.push(`Traslado ${sectorNombre}: +$${recargoGasolina}`);
+            if (recargoGasolina > 0) partes.push(`Traslado (${minusculaInicial(sectorNombre)}): +$${recargoGasolina}`);
 
             monto.textContent = "$" + calcularTotal() + " MXN";
             detalle.textContent = partes.join("  ·  ");
@@ -8540,14 +8721,70 @@ Cera rápida protectora
                 desglose.appendChild(filaResumen(nombre, monto, true));
             });
             if (orden.cargoEnvio > 0) {
-                desglose.appendChild(filaResumen("Traslado a " + orden.coordenadas, "+$" + orden.cargoEnvio, true));
+                desglose.appendChild(filaResumen("Traslado (" + minusculaInicial(orden.coordenadas) + ")", "+$" + orden.cargoEnvio, true));
             }
 
             document.getElementById('conf-total').textContent = "$" + orden.total + " MXN";
+            document.getElementById('conf-pie').textContent = orden.idLocal || "";
             document.getElementById('conf-whatsapp').href = enlaceDeConfirmacion(orden);
 
             limpiarFormularioDatos();
             mostrarPantalla('screen-confirmacion');
+            imprimirComprobante();
+        }
+
+        // Saca el comprobante deslizándose, como un ticket de impresora.
+        //
+        // Ojo con la honestidad: la cita YA quedó guardada antes de llegar aquí.
+        // Por eso el estado NO finge que se está procesando nada — dice que se
+        // está imprimiendo, que es literalmente lo que se ve pasar, y al terminar
+        // dice que quedó. Inventar un "apartando tu horario…" cuando el horario
+        // ya está apartado sería teatro, y el cliente merece que la pantalla le
+        // diga la verdad hasta en los detalles.
+        const DURA_LA_IMPRESION = 1250;
+
+        function imprimirComprobante() {
+            const ticket = document.getElementById('conf-ticket');
+            const estado = document.getElementById('conf-estado');
+            if (!ticket || !estado) return;
+
+            estado.classList.remove('listo');
+            estado.textContent = "Imprimiendo tu comprobante…";
+
+            if (animacionReducida()) {
+                ticket.style.maxHeight = 'none';
+                terminarImpresion(estado);
+                return;
+            }
+
+            // Se vuelve a cerrar y se fuerza el recálculo: sin esto, al agendar
+            // una segunda cita el papel ya estaría afuera y no volvería a salir.
+            ticket.style.transition = 'none';
+            ticket.style.maxHeight = '0px';
+            void ticket.offsetWidth;
+            ticket.style.transition = '';
+
+            // Se mide el papel de verdad para que el recorrido cuadre con su alto
+            const alto = ticket.scrollHeight;
+            requestAnimationFrame(() => { ticket.style.maxHeight = alto + 'px'; });
+
+            setTimeout(() => {
+                // Se suelta el tope: si el teléfono gira o cambia de tamaño, un
+                // máximo fijo dejaría el ticket cortado.
+                ticket.style.maxHeight = 'none';
+                terminarImpresion(estado);
+            }, DURA_LA_IMPRESION);
+        }
+
+        function terminarImpresion(estado) {
+            estado.classList.add('listo');
+            // Dice "comprobante listo", no "cita confirmada": eso ya lo dice el
+            // título de arriba, y repetirlo dos veces en la misma pantalla suena
+            // a que la app se está celebrando sola.
+            estado.textContent = "Comprobante listo";
+            // Un toque de vibración al terminar, donde el teléfono lo permita.
+            // Es la señal física de "listo" y no cuesta nada.
+            if (navigator.vibrate) { try { navigator.vibrate(18); } catch (e) {} }
         }
 
         // Arma el mensaje de confirmación que el cliente le manda a Tristán.
