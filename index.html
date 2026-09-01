@@ -3963,7 +3963,7 @@ Cera rápida protectora
 
         // La versión del archivo. Sirve para que Tristán confirme de un vistazo si
         // el que abrió es el nuevo — ya pasó dos veces que probaba una copia vieja.
-        const VERSION_APP = '2026.08.31a';
+        const VERSION_APP = '2026.08.31b';
 
         function pintarVersion() {
             const el = document.getElementById('marca-version');
@@ -4286,11 +4286,19 @@ Cera rápida protectora
             mostrarPantalla(idPantalla, true);
         }
 
-        // El dedo. Sólo cuenta un deslizado hacia la DERECHA, empezando cerca del
-        // borde izquierdo, largo y bastante horizontal — así no se confunde con
-        // desplazar la pantalla hacia abajo ni con mover el carrusel de reseñas.
-        const ANCHO_MINIMO_DEL_GESTO = 70;   // píxeles que hay que recorrer
-        const DESDE_EL_BORDE = 48;           // dónde puede empezar el dedo
+        // El dedo. Cuenta un deslizado hacia la DERECHA, largo y bastante
+        // horizontal — así no se confunde con desplazar la pantalla hacia abajo
+        // ni con mover el carrusel de reseñas.
+        //
+        // 🔴 POR QUÉ YA NO SE EXIGE EMPEZAR EN LA ORILLA (agosto 2026).
+        // Antes el dedo tenía que arrancar dentro de los primeros 48 px del
+        // borde izquierdo, que es la convención de Android. Pero EN iPHONE ESA
+        // FRANJA ES DE SAFARI: el sistema se queda el deslizado del borde para
+        // su propio "regresar" del navegador, así que la app ni se enteraba —
+        // no le llegaba el toque. Tristán lo probó en su iPhone y no pasaba nada.
+        // Ahora el gesto sirve empezando en CUALQUIER punto de la pantalla, y a
+        // cambio se pide un recorrido más largo para que no se dispare solo.
+        const ANCHO_MINIMO_DEL_GESTO = 90;   // píxeles que hay que recorrer
 
         function engancharGestoDeRegreso() {
             const app = document.querySelector('.app-container');
@@ -4299,10 +4307,10 @@ Cera rápida protectora
 
             app.addEventListener('touchstart', e => {
                 const t = e.touches[0];
-                // El mapa y los carruseles usan el dedo para lo suyo: ahí no
-                // estorbamos. Sin esto, arrastrar el mapa te sacaría de la pantalla.
-                sirve = !e.target.closest('#screen-satellite, .carrusel, .calendario, input, textarea')
-                        && t.clientX - app.getBoundingClientRect().left < DESDE_EL_BORDE;
+                // El mapa, los carruseles, el calendario y los campos de texto usan
+                // el dedo para lo suyo: ahí no estorbamos. Sin esto, arrastrar el
+                // mapa o mover el comparador te sacaría de la pantalla.
+                sirve = !e.target.closest('#screen-satellite, .carrusel, .calendario, input, textarea');
                 x0 = t.clientX; y0 = t.clientY;
             }, { passive: true });
 
