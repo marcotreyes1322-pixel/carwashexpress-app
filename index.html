@@ -147,13 +147,21 @@
         /* Al primer intento quedó en 8px al 28% de opacidad: técnicamente estaba
            ahí, pero en una tablet es invisible — o sea que no servía para nada.
            Con recuadro y más contraste se encuentra sin buscarla. */
+        /* La marca de versión la necesita Tristán para confirmar de un vistazo que
+           abrió la copia nueva — ya pasó dos veces que probaba una vieja. Pero como
+           píldora rellena y con borde competía con el logo en TODAS las pantallas,
+           incluida la de login que ve un cliente nuevo. Ahora es sólo texto tenue:
+           se encuentra si la buscas y no le quita protagonismo a la marca.
+           Si algún día no la alcanza a ver, se sube la opacidad aquí y ya. */
         .marca-version {
-            position: absolute; top: 16px; right: 16px;
-            font-size: 10px; font-weight: 500; letter-spacing: 0.10em;
-            color: var(--morado-claro); font-variant-numeric: tabular-nums;
-            padding: 4px 9px; border-radius: 999px;
-            background: rgba(139, 92, 246, 0.13);
-            border: 1px solid rgba(196, 181, 253, 0.28);
+            position: absolute; top: 20px; right: 74px;
+            font-size: 9.5px; font-weight: 500; letter-spacing: 0.08em;
+            color: var(--morado-claro); opacity: 0.55;
+            font-variant-numeric: tabular-nums;
+            /* En el login y en Crear cuenta va encima de una FOTO, y sobre una
+               zona clara un texto morado tenue desaparece. La sombra lo despega
+               del fondo sin necesidad de recuadro. */
+            text-shadow: 0 1px 3px rgba(0,0,0,0.85);
         }
         .marca-nombre {
             font-size: 10px; font-weight: 500; letter-spacing: 0.42em;
@@ -676,6 +684,9 @@
         .logo-frame { width: min(150px, 17vh); height: min(150px, 17vh);
                       border-radius: 50%; overflow: hidden;
                       display: flex; justify-content: center; align-items: center; background-color: #000; }
+        /* En la bienvenida el logo va más chico: ya hay otro logo en el encabezado,
+           y a 150px empujaba la próxima cita del cliente a media pantalla. */
+        #screen-welcome .logo-frame { width: min(104px, 12vh); height: min(104px, 12vh); }
         .logo-img { width: 100%; height: 100%; object-fit: cover; object-position: center; display: block; }
 
         /* --- MAPA --- */
@@ -1085,7 +1096,32 @@
             width: 40px; height: 40px; border-radius: 10px; font-size: 20px; cursor: pointer;
             flex-shrink: 0; line-height: 1; font-family: var(--sans);
         }
-        .admin-fecha { flex: 1; font-size: 19px; text-align: center; }
+        /* La caja lleva nuestra etiqueta visible y el <input type="date"> encima,
+           transparente: se toca en cualquier punto y abre el calendario del
+           teléfono, pero lo que se LEE es nuestro texto en español. */
+        .admin-fecha-caja {
+            position: relative; flex: 1; display: flex; flex-direction: column;
+            align-items: center; justify-content: center; gap: 1px; min-height: 46px;
+            padding-bottom: 4px; border-bottom: 1px solid var(--linea);
+        }
+        .admin-fecha-caja:focus-within { border-bottom-color: var(--morado); }
+        /* El día de la semana va arriba y chiquito, y la fecha abajo en serif.
+           En un solo renglón, "domingo, 16 de agosto de 2026" no cabe entre las
+           dos flechas y se partía en dos líneas desparejas. */
+        .admin-fecha-dia {
+            font-size: 9.5px; letter-spacing: 2.2px; text-transform: uppercase;
+            color: var(--morado-claro); font-weight: 600; line-height: 1;
+        }
+        .admin-fecha-texto {
+            font-family: var(--serif); font-size: 22px; color: var(--blanco);
+            text-align: center; line-height: 1.1; white-space: nowrap;
+            font-variant-numeric: tabular-nums; font-feature-settings: "tnum" 1;
+        }
+        .admin-fecha {
+            position: absolute; inset: 0; width: 100%; height: 100%;
+            opacity: 0; border: none; background: none; padding: 0;
+            -webkit-appearance: none; appearance: none;
+        }
         .admin-resumen { width: 100%; font-size: 11px; color: var(--muy-tenue); margin-top: 12px;
                          text-align: left; line-height: 1.6; }
         .admin-resumen .fuerte { color: var(--morado-claro); font-weight: 700; }
@@ -1484,6 +1520,34 @@
                 radial-gradient(120% 60% at 50% 8%, rgba(139,92,246,0.22), transparent 70%);
         }
 
+        /* Crear cuenta lleva UNA foto fija, no el carrusel. El carrusel es la
+           firma del login; repetirlo aquí le quitaría ese lugar, y además el
+           cliente pasa por esta pantalla una sola vez en su vida. */
+        /* Se eligió midiendo, no a ojo: de las seis, ésta es la MÁS PAREJA en la
+           franja donde va el título blanco (desviación 44.8 contra 70.5 de la que
+           tenía antes). Un fondo disparejo deja el logo sobre una ventana clara y
+           el título sobre la carrocería oscura, que es como se veía. Además es un
+           auto enjabonado: dice "lavado de autos" sin leer una palabra. No se usa
+           la 1 aunque sea la más oscura, porque ésa es la del login. */
+        .registro-hero .hero-foto {
+            background-image: url('fondos/3.jpg');
+        }
+        /* El velo va un punto más oscuro arriba que en el login: aquí la foto es
+           más clara, y ahí van el logo y la marca de versión. */
+        .registro-hero .hero-foto::after {
+            background:
+                linear-gradient(180deg,
+                    rgba(9,9,11,0.78) 0%,
+                    rgba(9,9,11,0.55) 26%,
+                    rgba(11,9,16,0.90) 62%,
+                    rgba(9,9,11,0.98) 100%),
+                radial-gradient(120% 60% at 50% 8%, rgba(139,92,246,0.22), transparent 70%);
+        }
+        /* En Crear cuenta el formulario es más alto (tres campos), así que la
+           parte de arriba se compacta para que todo quepa sin desplazarse. */
+        .registro-hero .hero-logo { width: 84px; height: 84px; }
+        .registro-hero .hero-titulo { font-size: 44px; }
+
         /* El encabezado flota ENCIMA de la foto en el login. El botón del menú
            sigue ahí — es donde un cliente que todavía no tiene cuenta encuentra
            el WhatsApp, o sea justo cuando más lo necesita. */
@@ -1523,6 +1587,12 @@
            foto, sin taparla del todo. */
         .hero-panel {
             position: relative; z-index: 1;
+            /* align-self: stretch para que el panel mida SIEMPRE el ancho de la
+               pantalla. Sin esto se encogía al ancho de su contenido, y como
+               Crear cuenta tiene textos más cortos que el login, su panel salía
+               74 px más angosto — dos pantallas seguidas con el mismo diseño
+               pero distinto ancho se lee como un error. */
+            align-self: stretch;
             display: flex; flex-direction: column; gap: 4px;
             margin: 0 14px 14px; padding: 20px 18px 16px;
             border-radius: 22px;
@@ -1853,35 +1923,40 @@
         </div>
 
         <!-- PANTALLA 0B: REGISTRO (TELÉFONO + CONTRASEÑA) -->
-        <div class="screen hidden" id="screen-registro">
-            <div class="text-group">
-                <h2 class="titulo">Crear<span class="cursiva">cuenta</span></h2>
-                <p class="subtitulo">Sólo necesitas tu teléfono. No pedimos correo ni tarjeta.</p>
-            </div>
+        <!-- Crear cuenta va con el MISMO diseño que el login: foto de un trabajo
+             real de fondo y el formulario sobre el panel de cristal. Antes era
+             un fondo negro plano con dos huecos enormes, así que pasar del login
+             a esta pantalla era un salto — y es JUSTO la que ve un cliente nuevo,
+             o sea la más importante para que el negocio crezca. -->
+        <div class="screen hidden login-hero registro-hero" id="screen-registro">
+            <div class="hero-foto" aria-hidden="true"></div>
 
-            <div class="menu-content-holder">
-                <div class="card-panel">
-                    <div class="form-container">
-                        <div class="form-group">
-                            <label>Nombre Completo</label>
-                            <input type="text" id="input-registro-nombre" class="form-input" placeholder="Ej. Juan Pérez">
-                        </div>
-                        <div class="form-group">
-                            <label>Número de Teléfono (10 dígitos)</label>
-                            <input type="tel" id="input-registro-telefono" class="form-input" placeholder="Ej. 6251234567" maxlength="10">
-                        </div>
-                        <div class="form-group">
-                            <label>Contraseña (mínimo 6 caracteres)</label>
-                            <input type="password" id="input-registro-password" class="form-input" placeholder="Crea una contraseña">
-                        </div>
-                        <p id="registro-error" class="mensaje-error"></p>
-                    </div>
+            <div class="hero-arriba">
+                <div class="hero-logo">
+                    <img data-logo="1" alt="CarWashExpress" class="logo-img" onerror="usarLogoDeRespaldo(this)">
                 </div>
+                <h1 class="hero-titulo">Crear<span class="cursiva">cuenta</span></h1>
+                <p class="hero-lema">Sólo tu teléfono. <b>Ni correo ni tarjeta.</b></p>
             </div>
 
-            <div class="action-buttons-group">
+            <div class="hero-panel">
+                <div class="form-group">
+                    <label>Nombre Completo</label>
+                    <input type="text" id="input-registro-nombre" class="form-input" placeholder="Ej. Juan Pérez" autocomplete="name">
+                </div>
+                <div class="form-group">
+                    <label>Número de Teléfono (10 dígitos)</label>
+                    <input type="tel" id="input-registro-telefono" class="form-input" placeholder="Ej. 6251234567" maxlength="10" inputmode="numeric" autocomplete="tel">
+                </div>
+                <div class="form-group">
+                    <label>Contraseña (mínimo 6 caracteres)</label>
+                    <input type="password" id="input-registro-password" class="form-input" placeholder="Crea una contraseña" autocomplete="new-password">
+                </div>
+
+                <p id="registro-error" class="mensaje-error"></p>
+
                 <button class="btn-premium" id="btn-registrarme" onclick="registrarTelefono()">Registrarme</button>
-                <button class="btn-premium secundario" onclick="mostrarPantalla('screen-login-phone')">Ya tengo cuenta</button>
+                <button class="btn-premium secundario" onclick="volverA('screen-login-phone')">Ya tengo cuenta</button>
             </div>
         </div>
 
@@ -1892,9 +1967,13 @@
                     <img data-logo="1" alt="CarWashExpress" class="logo-img" onerror="usarLogoDeRespaldo(this)">
                 </div>
             </div>
+            <!-- Sin el lema: el cliente que ve esta pantalla YA inició sesión, o sea
+                 que acaba de leer casi las mismas palabras en el login ("Lavado y
+                 detallado a domicilio, en Cuauhtémoc"). Repetírselo le empujaba su
+                 próxima cita hasta el 63% de la pantalla — medido. Lo que quiere ver
+                 aquí es cuándo le toca y el botón para agendar, no el anuncio otra vez. -->
             <div class="text-group centrado">
                 <h1 class="titulo">Tu auto<span class="cursiva">impecable</span></h1>
-                <p class="subtitulo">Lavado, detallado y membresías mensuales.<br>A domicilio, en Cuauhtémoc.</p>
             </div>
 
             <!-- El personaje del cliente lo saluda por su nombre.
@@ -2626,7 +2705,18 @@ Cera rápida protectora
             <!-- El navegador de fechas no tiene sentido en la vista de clientes -->
             <div class="admin-navegador" id="admin-navegador">
                 <button class="admin-flecha" onclick="moverDiaAdmin(-1)" aria-label="Anterior">‹</button>
-                <input type="date" id="admin-fecha" class="calendar-input admin-fecha" onchange="cargarAgendaAdmin()">
+                <!-- El <input type="date"> sigue ahí porque es el que abre el
+                     calendario del teléfono para saltar a una fecha — pero va
+                     TRANSPARENTE ENCIMA. Su texto lo pone el navegador y sale en
+                     formato gringo ("08/16/2026") con su icono gris del sistema,
+                     que es justo lo que se quitó del calendario del cliente. Lo
+                     que se ve es nuestra etiqueta, en español y con la serif. -->
+                <div class="admin-fecha-caja">
+                    <span class="admin-fecha-dia" id="admin-fecha-dia">—</span>
+                    <span class="admin-fecha-texto" id="admin-fecha-texto">—</span>
+                    <input type="date" id="admin-fecha" class="admin-fecha" aria-label="Elegir fecha"
+                           onchange="cargarAgendaAdmin()">
+                </div>
                 <button class="admin-flecha" onclick="moverDiaAdmin(1)" aria-label="Siguiente">›</button>
             </div>
             <input type="text" id="buscador-clientes" class="buscador-clientes hidden"
@@ -3963,7 +4053,7 @@ Cera rápida protectora
 
         // La versión del archivo. Sirve para que Tristán confirme de un vistazo si
         // el que abrió es el nuevo — ya pasó dos veces que probaba una copia vieja.
-        const VERSION_APP = '2026.08.31b';
+        const VERSION_APP = '2026.09.01a';
 
         function pintarVersion() {
             const el = document.getElementById('marca-version');
@@ -4253,17 +4343,19 @@ Cera rápida protectora
             }
             nueva.scrollTop = 0;
 
-            // En el login la foto tiene que cubrir TAMBIÉN el encabezado. Como el
-            // encabezado es hermano de las pantallas (no hijo), la foto no puede
-            // salirse a taparlo: lo que se hace es sacar el encabezado del flujo y
-            // dejarlo flotando encima. Sin esto quedaba una franja negra arriba de
-            // la foto y se veía cortada.
-            const enLogin = idPantalla === 'screen-login-phone';
-            document.querySelector('.app-container').classList.toggle('en-login', enLogin);
+            // En las pantallas con foto (login y Crear cuenta) la foto tiene que
+            // cubrir TAMBIÉN el encabezado. Como el encabezado es hermano de las
+            // pantallas (no hijo), la foto no puede salirse a taparlo: lo que se
+            // hace es sacar el encabezado del flujo y dejarlo flotando encima.
+            // Sin esto quedaba una franja negra arriba de la foto.
+            const conFoto = idPantalla === 'screen-login-phone' || idPantalla === 'screen-registro';
+            document.querySelector('.app-container').classList.toggle('en-login', conFoto);
 
-            // El carrusel de fondos sólo corre mientras el login se ve. Dejarlo
-            // corriendo por detrás sería bajar fotos y animar para nadie.
-            if (enLogin) arrancarCarruselDelLogin(); else detenerCarruselDelLogin();
+            // El carrusel de fondos sólo corre en el LOGIN. En Crear cuenta va una
+            // foto fija: dejarlo corriendo por detrás sería bajar fotos y animar
+            // para nadie.
+            if (idPantalla === 'screen-login-phone') arrancarCarruselDelLogin();
+            else detenerCarruselDelLogin();
         }
 
         // Regresar a la pantalla anterior. Lo usa el gesto de deslizar.
@@ -9011,9 +9103,39 @@ Cera rápida protectora
             return h * 60 + parseInt(m[2], 10);
         }
 
+        // La etiqueta que SE VE del navegador de fechas. El <input type="date">
+        // que hay debajo sigue abriendo el calendario del teléfono, pero su texto
+        // lo pone el navegador en formato gringo; éste va en español.
+        function pintarFechaAdmin() {
+            const elDia = document.getElementById('admin-fecha-dia');
+            const elFecha = document.getElementById('admin-fecha-texto');
+            const fecha = document.getElementById('admin-fecha').value;
+            if (!elDia || !elFecha) return;
+            if (!fecha) { elDia.textContent = '—'; elFecha.textContent = '—'; return; }
+
+            const d = new Date(fecha + 'T00:00:00');
+            const hoy = fechaLocalISO(new Date());
+            const manana = sumarDias(hoy, 1);
+            const ayer = sumarDias(hoy, -1);
+
+            // "Hoy" y "Mañana" en vez de la fecha: es lo que Tristán está
+            // buscando el 90% de las veces que abre la agenda.
+            elDia.textContent = fecha === hoy ? 'HOY'
+                              : fecha === manana ? 'MAÑANA'
+                              : fecha === ayer ? 'AYER'
+                              : d.toLocaleDateString('es-MX', { weekday: 'long' });
+
+            // El año sólo si NO es el de hoy: repetirlo todos los días es ruido.
+            const mismoAno = d.getFullYear() === new Date().getFullYear();
+            elFecha.textContent = d.toLocaleDateString('es-MX',
+                mismoAno ? { day: 'numeric', month: 'long' }
+                         : { day: 'numeric', month: 'long', year: 'numeric' });
+        }
+
         function cargarAgendaAdmin() {
             const fecha = document.getElementById('admin-fecha').value;
             const lista = document.getElementById('admin-lista');
+            pintarFechaAdmin();
             const resumen = document.getElementById('admin-resumen');
 
             // La vista de clientes no depende de ninguna fecha, por eso se exceptúa
@@ -9132,8 +9254,9 @@ Cera rápida protectora
                 .filter(c => c.cita.status === 'Completada')
                 .reduce((s, c) => s + (c.cita.total || 0), 0);
 
-            resumen.innerHTML = `${esc(formatearFechaLegible(fecha))}<br>
-                <span class="fuerte">${citas.length} ${citas.length === 1 ? 'auto' : 'autos'}</span> ·
+            // La fecha ya no se repite aquí: el navegador de arriba la muestra en
+            // español desde 2026.09.01, y decirla dos veces seguidas sobraba.
+            resumen.innerHTML = `<span class="fuerte">${citas.length} ${citas.length === 1 ? 'auto' : 'autos'}</span> ·
                 agendado <span class="fuerte">$${totalAgendado}</span> ·
                 cobrado <span class="fuerte">$${totalCobrado}</span>`;
 
