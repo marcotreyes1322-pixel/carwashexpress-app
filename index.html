@@ -1144,6 +1144,18 @@
         .chip.morado { border-color: var(--morado); color: var(--morado-claro); }
         .aviso-aprox { font-size: 11px; color: #fca5a5; margin-top: 8px; line-height: 1.5; }
         .aviso-ok { font-size: 11px; color: #86efac; margin-top: 8px; line-height: 1.5; }
+        /* Lo que el cliente pidió aparte y los daños que ya traía. Van con
+           recuadro, no como un renglón más: son las dos cosas que hay que ver
+           ANTES de tocar el auto, y perderlas entre los datos sale caro. */
+        .aviso-peticion, .aviso-danos {
+            font-size: 11.5px; margin-top: 10px; line-height: 1.55;
+            padding: 10px 12px; border-radius: 12px; border: 1px solid;
+        }
+        .aviso-peticion { color: #ddd6fe; border-color: rgba(196,181,253,0.34);
+                          background: rgba(139,92,246,0.10); }
+        .aviso-danos    { color: #fed7aa; border-color: rgba(251,146,60,0.34);
+                          background: rgba(251,146,60,0.10); }
+        .aviso-fino { opacity: 0.72; font-size: 10.5px; }
         /* Aviso de recordatorios pendientes para mañana. Va arriba de la lista del
            día y sólo aparece parado en HOY, porque ahí sí es una tarea del día. */
         .aviso-recordatorios {
@@ -2572,6 +2584,33 @@ Cera rápida protectora
                             </div>
                             <p class="vehiculo-hint hidden" id="aviso-sin-luz">
                                 Sin problema: te hablamos antes de salir para confirmarlo contigo.
+                            </p>
+                        </div>
+
+                        <!-- PETICIÓN ESPECIAL. Va SIN precio a propósito: Tristán
+                             decidió que se cotiza al llegar. Un chicle derretido y
+                             una mancha chica no cuestan lo mismo, y prometer un
+                             precio aquí sería comprometerlo antes de ver el auto. -->
+                        <div class="form-group">
+                            <label>¿Algo especial que revisar? (opcional)</label>
+                            <input type="text" id="input-peticion" class="form-input" maxlength="180"
+                                   placeholder="Ej. se me cayó un chicle, mancha de café, pelo de mascota">
+                            <p class="vehiculo-hint">
+                                Cuéntanos y lo revisamos al llegar. Si lleva trabajo extra
+                                <span class="resalte">te lo cotizamos ahí mismo</span>, antes de empezar.
+                            </p>
+                        </div>
+
+                        <!-- DAÑOS QUE YA TRAE EL AUTO. Protege a los dos: al cliente
+                             porque queda anotado antes de que lo toquen, y a Tristán
+                             porque no le pueden achacar un rayón que ya estaba. -->
+                        <div class="form-group">
+                            <label>¿Tu auto ya trae algún daño? (opcional)</label>
+                            <input type="text" id="input-danos" class="form-input" maxlength="180"
+                                   placeholder="Ej. rayón en la puerta izquierda, espejo flojo">
+                            <p class="vehiculo-hint">
+                                Anótalo y queda registrado <span class="resalte">antes</span> de tocar tu auto.
+                                Al llegar lo revisamos juntos.
                             </p>
                         </div>
 
@@ -4053,7 +4092,7 @@ Cera rápida protectora
 
         // La versión del archivo. Sirve para que Tristán confirme de un vistazo si
         // el que abrió es el nuevo — ya pasó dos veces que probaba una copia vieja.
-        const VERSION_APP = '2026.09.01a';
+        const VERSION_APP = '2026.09.02a';
 
         function pintarVersion() {
             const el = document.getElementById('marca-version');
@@ -8665,6 +8704,11 @@ Cera rápida protectora
                 costoBase: precioBase,
                 extras: extrasSeleccionados,
                 referencia: document.getElementById('input-referencia').value.trim(),
+                // Lo que el cliente pide aparte (un chicle, una mancha). Va sin
+                // precio: se cotiza al llegar, por decisión de Tristán.
+                peticion: document.getElementById('input-peticion').value.trim(),
+                // Los daños que el auto YA traía. Queda anotado antes de tocarlo.
+                danos: document.getElementById('input-danos').value.trim(),
                 // "si" | "nose" | "taller" (los detallados no necesitan su corriente)
                 tomaCorriente: servicioNecesitaCorrienteDelCliente() ? tomaCorriente : 'taller',
                 coordenadas: sectorNombre,
@@ -8903,6 +8947,16 @@ Cera rápida protectora
             if (extras.length) lineas.push("Extras: " + extras.join(", "));
 
             lineas.push("Total: $" + orden.total + " MXN");
+
+            // Van DESPUÉS del total y antes de la ubicación: son las dos cosas que
+            // cambian el trabajo al llegar. La petición se cotiza ahí mismo, así que
+            // el mensaje lo dice para que nadie dé por hecho que va incluida.
+            if (orden.peticion) {
+                lineas.push("Les pido revisar: " + orden.peticion + " (queda pendiente de cotizar)");
+            }
+            if (orden.danos) {
+                lineas.push("Daño que ya trae el auto: " + orden.danos);
+            }
             lineas.push("");
 
             // La ubicación: el sector se entiende, pero las coordenadas son las que
@@ -8949,6 +9003,10 @@ Cera rápida protectora
             document.getElementById('input-telefono').value = "";
             document.getElementById('input-vehiculo').value = "";
             document.getElementById('input-referencia').value = "";
+            // En una tablet compartida, el siguiente cliente no debe heredar la
+            // petición ni los daños del anterior — sería anotarle un rayón ajeno.
+            document.getElementById('input-peticion').value = "";
+            document.getElementById('input-danos').value = "";
             document.getElementById('hint-tamano').textContent = textoHintTamano();
             resetearBotonesTamano();
             modeloVehiculoTexto = "";
@@ -9321,6 +9379,8 @@ Cera rápida protectora
                     ${cita.ubicacionAproximada ? `<div class="aviso-aprox">⚠️ Este cliente no dio permiso de ubicación. La dirección es aproximada (centro de Cuauhtémoc) — confírmasela antes de salir.</div>` : ''}
                     ${cita.ubicacionManual ? `<div class="aviso-ok">📍 El cliente marcó su domicilio a mano en el mapa.</div>` : ''}
                     ${cita.tomaCorriente === 'nose' ? `<div class="aviso-aprox">🔌 El cliente NO está seguro de tener corriente cerca. Háblale antes de salir: sin luz no se puede lavar.</div>` : ''}
+                    ${cita.peticion ? `<div class="aviso-peticion">🫧 <b>Te pide revisar:</b> ${esc(cita.peticion)}<br><span class="aviso-fino">Cotízaselo antes de empezar — no se le prometió precio.</span></div>` : ''}
+                    ${cita.danos ? `<div class="aviso-danos">🚗 <b>Daño que ya traía:</b> ${esc(cita.danos)}<br><span class="aviso-fino">Revísalo con el cliente ANTES de tocar el auto, y tómale foto.</span></div>` : ''}
                     <div class="cita-admin-acciones"></div>
                 `;
 
