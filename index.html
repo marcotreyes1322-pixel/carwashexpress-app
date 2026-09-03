@@ -1157,6 +1157,41 @@
                           background: rgba(251,146,60,0.10); }
         .aviso-fino { opacity: 0.72; font-size: 10.5px; }
 
+        /* ══ TEXTOS LEGALES (privacidad y términos) ═════════════════════════
+           Van con interlineado ancho y párrafos cortos: son textos que nadie
+           quiere leer, así que al menos que no cansen. Los subtítulos en la
+           serif de la marca para que se puedan saltar de un vistazo. */
+        .legal { text-align: left; }
+        .legal h3 {
+            font-family: var(--serif); font-size: 21px; font-weight: 600;
+            color: var(--blanco); margin: 26px 0 8px; line-height: 1.2;
+        }
+        .legal h3:first-of-type { margin-top: 6px; }
+        .legal p {
+            font-size: 13px; line-height: 1.72; color: var(--tenue);
+            margin: 0 0 11px;
+        }
+        .legal b { color: var(--blanco); font-weight: 600; }
+        .legal ul { margin: 0 0 12px; padding-left: 18px; }
+        .legal li {
+            font-size: 13px; line-height: 1.68; color: var(--tenue); margin-bottom: 7px;
+        }
+        .legal-fecha {
+            font-size: 10.5px !important; letter-spacing: 0.1em; text-transform: uppercase;
+            color: var(--muy-tenue) !important; margin-bottom: 20px !important;
+        }
+        /* La línea de aceptación bajo el botón de registrarse. Es el ÚNICO
+           momento en que el cliente acepta algo, así que tiene que verse. */
+        .acepto {
+            margin-top: 14px; font-size: 11.5px; line-height: 1.6;
+            color: var(--muy-tenue); text-align: center;
+        }
+        .acepto button {
+            background: none; border: 0; padding: 0; cursor: pointer;
+            font: inherit; color: var(--morado-claro); text-decoration: underline;
+            text-underline-offset: 3px;
+        }
+
         /* ══ EL CLIMA DEL DÍA ELEGIDO ═══════════════════════════════════════
            Burbuja entre el calendario y las horas. El color del borde cambia
            con el pronóstico: morado de la marca si está despejado, ámbar si
@@ -1847,6 +1882,36 @@
                 </span>
             </button>
 
+            <!-- Lo legal va SIN "solo-con-sesion" a propósito: un cliente nuevo
+                 tiene que poder leerlo ANTES de registrarse, no después. -->
+            <button class="menu-fila" onclick="desdeElMenu(() => abrirLoLegal('screen-privacidad'))">
+                <span class="menu-icono ll" aria-hidden="true">
+                    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.9"
+                         stroke-linecap="round" stroke-linejoin="round">
+                        <path d="M12 3.2 5 6v5.6c0 4.3 2.9 8.3 7 9.2 4.1-.9 7-4.9 7-9.2V6l-7-2.8z"/>
+                        <path d="M9.4 12.2l1.9 1.9 3.5-3.7"/>
+                    </svg>
+                </span>
+                <span class="menu-texto">
+                    <b>Aviso de privacidad</b>
+                    <small>Qué datos guardamos y para qué</small>
+                </span>
+            </button>
+
+            <button class="menu-fila" onclick="desdeElMenu(() => abrirLoLegal('screen-terminos'))">
+                <span class="menu-icono ll" aria-hidden="true">
+                    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.9"
+                         stroke-linecap="round" stroke-linejoin="round">
+                        <path d="M14 3.2H7a2 2 0 0 0-2 2v13.6a2 2 0 0 0 2 2h10a2 2 0 0 0 2-2V8.2l-5-5z"/>
+                        <path d="M14 3.2v5h5M8.6 13h6.8M8.6 16.6h4.4"/>
+                    </svg>
+                </span>
+                <span class="menu-texto">
+                    <b>Términos y condiciones</b>
+                    <small>Las reglas del servicio</small>
+                </span>
+            </button>
+
             <button class="menu-fila peligro solo-con-sesion" onclick="desdeElMenu(cerrarSesion)">
                 <span class="menu-icono sa" aria-hidden="true">
                     <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.9"
@@ -1966,6 +2031,168 @@
             </div>
         </div>
 
+        <!-- ══ AVISO DE PRIVACIDAD ═══════════════════════════════════════════
+             El texto NO es una plantilla copiada: describe exactamente lo que
+             esta app guarda y a quién se lo manda, revisado contra el código.
+             Por eso nombra a Firebase, a Mapbox y a Open-Meteo — si algún día
+             se agrega otro servicio que reciba datos del cliente, hay que
+             agregarlo aquí también. -->
+        <div class="screen hidden" id="screen-privacidad">
+            <div class="text-group">
+                <h2 class="titulo">Aviso de<span class="cursiva">privacidad</span></h2>
+                <p class="subtitulo">Qué datos guardamos, para qué, y quién más los ve.</p>
+            </div>
+
+            <div class="menu-content-holder">
+                <div class="card-panel">
+                    <div class="legal">
+                        <p class="legal-fecha">Última actualización: 2 de septiembre de 2026</p>
+
+                        <h3>Quiénes somos</h3>
+                        <p>CarWashExpress, servicio de lavado y detallado de autos en
+                        Cuauhtémoc, Chihuahua. Puedes escribirnos al
+                        <b>625 100 9755</b> para cualquier cosa de este aviso.</p>
+
+                        <h3>Qué guardamos</h3>
+                        <p>Sólo lo que necesitamos para llegar a tu auto y cobrarte bien:</p>
+                        <ul>
+                            <li><b>Tu nombre y tu teléfono</b>, para identificarte y avisarte.</li>
+                            <li><b>Tu ubicación</b> (las coordenadas de donde nos pides el
+                            servicio) y la referencia del domicilio que escribas. Sin esto
+                            no podemos llegar.</li>
+                            <li><b>Tu auto</b>: marca, modelo y tamaño.</li>
+                            <li><b>Tus citas</b>: día, hora, servicio, extras y el total.</li>
+                            <li>Lo que escribas en <b>"algo especial que revisar"</b> y en
+                            <b>"daños que ya trae el auto"</b>.</li>
+                        </ul>
+                        <p><b>No pedimos correo, ni tarjeta, ni tu CURP, ni tu dirección
+                        completa escrita.</b> El pago se hace en persona, no dentro de la app.</p>
+
+                        <h3>Tu contraseña</h3>
+                        <p>Nunca la vemos. La guarda Google (Firebase) cifrada, y ni
+                        siquiera nosotros podemos leerla.</p>
+                        <p>Si prendes <b>"Guardar mi contraseña en este teléfono"</b> —que
+                        viene apagada— se queda escrita <b>en tu propio teléfono</b>, no en
+                        nuestros servidores. Quien agarre ese teléfono desbloqueado podría
+                        entrar a tu cuenta. Apágala y se borra.</p>
+
+                        <h3>Quién más ve tus datos</h3>
+                        <p>Para que la app funcione, algunos servicios reciben parte de tu
+                        información. <b>Ninguno los usa para otra cosa, y nosotros no
+                        vendemos ni compartimos tus datos con nadie más.</b></p>
+                        <ul>
+                            <li><b>Google (Firebase)</b> — ahí se guarda todo lo de arriba.</li>
+                            <li><b>Mapbox</b> — recibe tus coordenadas para dibujar el mapa.</li>
+                            <li><b>Open-Meteo</b> — recibe tus coordenadas para traer el clima
+                            del día que elijas.</li>
+                            <li><b>Google Fonts</b> — recibe tu IP al bajar las tipografías.</li>
+                            <li><b>WhatsApp e Instagram</b> — sólo si tú tocas esos botones.</li>
+                        </ul>
+
+                        <h3>Cuánto tiempo</h3>
+                        <p>Tus citas se quedan guardadas mientras tengas cuenta, porque nos
+                        sirven para saber cuándo te toca tu próximo lavado.</p>
+
+                        <h3>Cómo borrarlos</h3>
+                        <p>Escríbenos por WhatsApp al <b>625 100 9755</b> y borramos tu
+                        cuenta y tus citas. No hay que dar explicaciones.</p>
+                    </div>
+                </div>
+            </div>
+
+            <div class="action-buttons-group">
+                <button class="btn-premium secundario" onclick="volverA(pantallaAntesDeLoLegal)">Volver</button>
+            </div>
+        </div>
+
+        <!-- ══ TÉRMINOS Y CONDICIONES ════════════════════════════════════════
+             Las tres reglas de negocio (avisar 2 horas antes, fotos sin placas,
+             y responder por lo que el trabajo cause) las decidió Tristán en
+             septiembre de 2026. NO se inventa ninguna otra. -->
+        <div class="screen hidden" id="screen-terminos">
+            <div class="text-group">
+                <h2 class="titulo">Términos y<span class="cursiva">condiciones</span></h2>
+                <p class="subtitulo">Las reglas del servicio, en español claro.</p>
+            </div>
+
+            <div class="menu-content-holder">
+                <div class="card-panel">
+                    <div class="legal">
+                        <p class="legal-fecha">Última actualización: 2 de septiembre de 2026</p>
+
+                        <h3>Qué hacemos</h3>
+                        <p>Lavamos y detallamos autos en Cuauhtémoc, Chihuahua. El
+                        <b>lavado va a tu domicilio</b>. Los <b>detallados se hacen en
+                        nuestro taller</b>, porque llevan de 6 horas a 2 días.</p>
+
+                        <h3>Los precios</h3>
+                        <p>El precio depende del <b>tamaño de tu auto</b> y de los extras
+                        que elijas. La app te muestra el total antes de que confirmes.</p>
+                        <p>Si al llegar el auto resulta ser de otro tamaño del que
+                        marcaste, te decimos el precio correcto antes de empezar. Nunca
+                        te cobramos algo que no hayas aceptado.</p>
+                        <p>Lo que escribas en <b>"algo especial que revisar"</b> no viene
+                        incluido: lo vemos al llegar y <b>te lo cotizamos ahí mismo</b>,
+                        antes de tocar el auto.</p>
+
+                        <h3>Tu cita</h3>
+                        <p>Atendemos <b>un auto a la vez</b>, por eso cada horario se
+                        aparta sólo para ti.</p>
+                        <p><b>Si necesitas cancelar o cambiar tu cita, te pedimos avisar
+                        con al menos 2 horas de anticipación.</b> Puedes hacerlo tú mismo
+                        desde "Mis citas", sin costo y sin llamar a nadie. Avisar a tiempo
+                        nos deja darle ese lugar a otro cliente.</p>
+                        <p>Si nosotros no podemos llegar, te avisamos y te reagendamos.</p>
+
+                        <h3>Lo que necesitamos de ti</h3>
+                        <p>Para el lavado a domicilio necesitamos <b>una toma de corriente
+                        a menos de 40 metros</b> del auto: trabajamos con aspiradora,
+                        hidrolavadora y pulidora. Un contacto normal de casa sirve. Sin
+                        luz no se puede hacer el servicio.</p>
+                        <p>También necesitamos que la dirección sea correcta. Si el
+                        marcador del mapa está mal, puedes corregirlo a mano antes de
+                        confirmar.</p>
+
+                        <h3>Daños</h3>
+                        <p><b>Respondemos por los daños que cause nuestro trabajo.</b> Si
+                        algo pasa por lo que hicimos, lo resolvemos contigo.</p>
+                        <p>No respondemos por lo que el auto <b>ya traía</b> —rayones,
+                        golpes, piezas flojas o vencidas, molduras despegadas, pintura ya
+                        dañada— ni por fallas que se hagan visibles al limpiar.</p>
+                        <p>Por eso la app tiene el campo <b>"¿tu auto ya trae algún
+                        daño?"</b>: anótalo antes y lo revisamos juntos al llegar. Eso nos
+                        protege a los dos.</p>
+
+                        <h3>Fotos de tu auto</h3>
+                        <p>Podemos tomar fotos del trabajo y publicarlas en nuestras redes
+                        para enseñar lo que hacemos. <b>Siempre sin placas visibles y sin
+                        decir de quién es el auto.</b></p>
+                        <p>Si no quieres que publiquemos tu auto, dínoslo y no lo hacemos.
+                        Basta con avisarnos.</p>
+
+                        <h3>El pago</h3>
+                        <p>Se paga <b>al terminar el servicio</b>, en efectivo o por
+                        transferencia. <b>La app no cobra nada</b>: no pedimos tarjeta ni
+                        procesamos pagos aquí.</p>
+
+                        <h3>Tu cuenta</h3>
+                        <p>Cada teléfono puede tener una sola cuenta. Cuida tu contraseña:
+                        quien la tenga puede agendar a tu nombre.</p>
+                        <p>Si olvidas tu contraseña, escríbenos por WhatsApp al
+                        <b>625 100 9755</b> y te la reponemos.</p>
+
+                        <h3>Si cambiamos algo</h3>
+                        <p>Si cambiamos estos términos, la fecha de arriba cambia. Los
+                        cambios aplican a las citas que agendes después.</p>
+                    </div>
+                </div>
+            </div>
+
+            <div class="action-buttons-group">
+                <button class="btn-premium secundario" onclick="volverA(pantallaAntesDeLoLegal)">Volver</button>
+            </div>
+        </div>
+
         <!-- PANTALLA 0B: REGISTRO (TELÉFONO + CONTRASEÑA) -->
         <!-- Crear cuenta va con el MISMO diseño que el login: foto de un trabajo
              real de fondo y el formulario sobre el panel de cristal. Antes era
@@ -2001,6 +2228,15 @@
 
                 <button class="btn-premium" id="btn-registrarme" onclick="registrarTelefono()">Registrarme</button>
                 <button class="btn-premium secundario" onclick="volverA('screen-login-phone')">Ya tengo cuenta</button>
+
+                <!-- Éste es el ÚNICO momento en que el cliente acepta algo, así
+                     que tiene que verse y los dos textos tienen que estar a un
+                     toque. Al registrarse se guarda qué versión aceptó. -->
+                <p class="acepto">Al crear tu cuenta aceptas los
+                    <button type="button" onclick="abrirLoLegal('screen-terminos')">Términos</button>
+                    y el
+                    <button type="button" onclick="abrirLoLegal('screen-privacidad')">Aviso de privacidad</button>.
+                </p>
             </div>
         </div>
 
@@ -4138,7 +4374,20 @@ Cera rápida protectora
 
         // La versión del archivo. Sirve para que Tristán confirme de un vistazo si
         // el que abrió es el nuevo — ya pasó dos veces que probaba una copia vieja.
-        const VERSION_APP = '2026.09.02b';
+        const VERSION_APP = '2026.09.02c';
+
+        // La versión del AVISO DE PRIVACIDAD y los TÉRMINOS. Es distinta de la
+        // versión de la app a propósito: la app cambia cada semana y lo legal
+        // casi nunca. Se guarda con cada cuenta nueva, así que si algún día se
+        // cambia el texto, se sabe quién aceptó cuál.
+        // ⚠️ Al cambiar el texto de esas dos pantallas, SUBIR también esta fecha
+        // y la que se ve en pantalla ("Última actualización").
+        const VERSION_LEGAL = '2026-09-02';
+
+        // Desde dónde se entró a leer lo legal, para saber a dónde regresar.
+        // Puede ser el menú (con o sin sesión) o la pantalla de Crear cuenta —
+        // y en ese caso hay que volver SIN que pierda lo que ya escribió.
+        let pantallaAntesDeLoLegal = 'screen-login-phone';
 
         function pintarVersion() {
             const el = document.getElementById('marca-version');
@@ -4567,7 +4816,12 @@ Cera rápida protectora
                         // Guardamos el perfil (nombre, teléfono real) en la base de datos, ligado al UID
                         return firebase.database().ref('usuarios/' + cred.user.uid).set({
                             nombre: nombre,
-                            telefono: telefonoRaw
+                            telefono: telefonoRaw,
+                            // Queda anotado QUÉ VERSIÓN de los términos aceptó y
+                            // cuándo. Sin esto no habría forma de demostrarlo si
+                            // algún día hace falta — y si los términos cambian, se
+                            // sabe quién aceptó cuáles.
+                            aceptoTerminos: { version: VERSION_LEGAL, fecha: Date.now() }
                         });
                     }),
                 ESPERA_MAXIMA_LOGIN
@@ -4897,6 +5151,17 @@ Cera rápida protectora
         function desdeElMenu(accion) {
             cerrarMenu();
             accion();
+        }
+
+        // Abre el aviso de privacidad o los términos, recordando de dónde venía
+        // para poder regresar exactamente ahí. Sin esto, alguien que los abre a
+        // media pantalla de Crear cuenta perdería lo que ya escribió.
+        function abrirLoLegal(idPantalla) {
+            const actual = document.querySelector('.screen:not(.hidden)');
+            if (actual && actual.id !== 'screen-privacidad' && actual.id !== 'screen-terminos') {
+                pantallaAntesDeLoLegal = actual.id;
+            }
+            mostrarPantalla(idPantalla);
         }
 
         document.addEventListener('keydown', e => {
