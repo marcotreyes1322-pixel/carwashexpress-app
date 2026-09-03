@@ -1156,6 +1156,38 @@
         .aviso-danos    { color: #fed7aa; border-color: rgba(251,146,60,0.34);
                           background: rgba(251,146,60,0.10); }
         .aviso-fino { opacity: 0.72; font-size: 10.5px; }
+
+        /* ══ EL CLIMA DEL DÍA ELEGIDO ═══════════════════════════════════════
+           Burbuja entre el calendario y las horas. El color del borde cambia
+           con el pronóstico: morado de la marca si está despejado, ámbar si
+           puede llover, rojo si hay tormenta. Así se entiende sin leer. */
+        .clima {
+            /* El icono se alinea ARRIBA, no al centro: cuando sale el aviso de
+               lluvia son tres renglones, y centrado el dibujo quedaba junto al
+               segundo en vez de junto al título. */
+            display: flex; align-items: flex-start; gap: 14px;
+            margin: 18px 0 6px; padding: 14px 16px;
+            border-radius: 18px; text-align: left;
+            border: 1px solid rgba(196,181,253,0.30);
+            background: rgba(139,92,246,0.09);
+        }
+        .clima.lluvia   { border-color: rgba(251,191,36,0.38); background: rgba(251,191,36,0.09); }
+        .clima.tormenta { border-color: rgba(248,113,113,0.42); background: rgba(248,113,113,0.10); }
+        .clima-icono { flex: 0 0 auto; width: 46px; height: 46px; }
+        .clima-icono svg { width: 100%; height: 100%; display: block; }
+        .clima-texto { flex: 1; min-width: 0; }
+        .clima-titulo {
+            font-family: var(--serif); font-size: 19px; color: var(--blanco);
+            line-height: 1.15; font-variant-numeric: tabular-nums;
+        }
+        .clima-detalle {
+            font-size: 11.5px; color: var(--muy-tenue); line-height: 1.5; margin-top: 3px;
+            font-variant-numeric: tabular-nums;
+        }
+        .clima-detalle b { color: var(--morado-claro); font-weight: 700; }
+        /* Sólo cuando de verdad conviene avisar: el aviso pierde fuerza si sale siempre. */
+        .clima-aviso { color: #fcd34d; }
+        .clima.tormenta .clima-aviso { color: #fca5a5; }
         /* Aviso de recordatorios pendientes para mañana. Va arriba de la lista del
            día y sólo aparece parado en HOY, porque ahí sí es una tarea del día. */
         .aviso-recordatorios {
@@ -2504,6 +2536,20 @@ Cera rápida protectora
                                     <span><i class="pt libre"></i><i class="pt libre"></i><i class="pt libre"></i>Cada punto es un horario libre</span>
                                     <span><i class="pt lleno"></i>Último horario</span>
                                 </div>
+                            </div>
+                        </div>
+
+                        <!-- EL CLIMA DEL DÍA QUE ELIGIÓ. Va entre el calendario y
+                             las horas: justo después de elegir el día, que es
+                             cuando la información sirve para decidir.
+                             Si no hay pronóstico (más de 16 días, o sin internet)
+                             el bloque NO aparece — inventar un clima sería peor
+                             que no decir nada. -->
+                        <div class="clima hidden" id="bloque-clima">
+                            <div class="clima-icono" id="clima-icono"></div>
+                            <div class="clima-texto">
+                                <div class="clima-titulo" id="clima-titulo">—</div>
+                                <div class="clima-detalle" id="clima-detalle">—</div>
                             </div>
                         </div>
 
@@ -4092,7 +4138,7 @@ Cera rápida protectora
 
         // La versión del archivo. Sirve para que Tristán confirme de un vistazo si
         // el que abrió es el nuevo — ya pasó dos veces que probaba una copia vieja.
-        const VERSION_APP = '2026.09.02a';
+        const VERSION_APP = '2026.09.02b';
 
         function pintarVersion() {
             const el = document.getElementById('marca-version');
@@ -4990,6 +5036,13 @@ Cera rápida protectora
             sectorMsg = "";
             ubicacionLat = null;
             ubicacionLon = null;
+            // El pronóstico se pidió para la ubicación del cliente anterior. En
+            // una tablet compartida, el siguiente puede vivir en otro lado, así
+            // que se tira y se vuelve a pedir con SUS coordenadas.
+            climaDelMes = null;
+            climaPidiendo = null;
+            const climaBloque = document.getElementById('bloque-clima');
+            if (climaBloque) climaBloque.classList.add('hidden');
             ubicacionEsAproximada = true;
             ubicacionEsManual = false;
             motivoUbicacionAproximada = "";
@@ -7977,6 +8030,9 @@ Cera rápida protectora
         function abrirCalendario() {
             mesCalendario = new Date();
             mesCalendario.setDate(1);
+            // La burbuja del clima sólo tiene sentido con un día ya elegido.
+            const bloqueClima = document.getElementById('bloque-clima');
+            if (bloqueClima) bloqueClima.classList.add('hidden');
             const dias = diasQueOcupa(servicioSeleccionado);
 
             // Aviso propio de los detallados
@@ -8166,9 +8222,159 @@ Cera rápida protectora
             }
         }
 
+        // =====================================================================
+        // ☀️ EL CLIMA DEL DÍA QUE ELIGIÓ EL CLIENTE
+        // =====================================================================
+        //
+        // Para qué sirve: lavar un auto y que llueva esa tarde es dinero tirado
+        // para el cliente y un viaje perdido para Tristán. Ver el pronóstico
+        // ANTES de confirmar deja que cualquiera de los dos mueva la cita.
+        //
+        // De dónde sale: Open-Meteo. Es GRATIS, no pide registro ni llave, así
+        // que no hay ninguna credencial que esconder (regla de Tristán: nada de
+        // llaves privadas en el frontend). No se eligió un servicio de pago
+        // porque para 3 autos al día sería tirar dinero.
+        //
+        // ⚠️ EL LÍMITE DE LOS 16 DÍAS. El pronóstico sólo llega hasta ahí, y el
+        // calendario deja agendar más lejos. Más allá, la burbuja simplemente
+        // NO APARECE. Se decidió así con Tristán: inventar un clima —o mostrar
+        // el promedio histórico como si fuera pronóstico— sería mentirle al
+        // cliente sobre algo con lo que va a tomar una decisión.
+        const CLIMA_DIAS = 16;                 // hasta dónde llega el pronóstico
+        const CLIMA_LLUVIA_AVISO = 45;         // % de probabilidad para avisar
+        let climaDelMes = null;                // { fecha: {...} }, se pide UNA vez
+        let climaPidiendo = null;              // la promesa en curso, para no repetir
+
+        // Los códigos que manda Open-Meteo (estándar WMO) traducidos a algo que
+        // un cliente entienda, con el dibujo que le toca.
+        function leerCodigoDeClima(codigo, probLluvia) {
+            const c = Number(codigo);
+            if (c === 0)                    return { icono:'sol',      texto:'Despejado' };
+            if (c === 1 || c === 2)         return { icono:'solnube',  texto:'Medio nublado' };
+            if (c === 3)                    return { icono:'nube',     texto:'Nublado' };
+            if (c === 45 || c === 48)       return { icono:'nube',     texto:'Con neblina' };
+            if (c >= 51 && c <= 57)         return { icono:'llovizna', texto:'Llovizna', mojado:true };
+            if (c >= 61 && c <= 67)         return { icono:'lluvia',   texto:'Lluvia',   mojado:true };
+            if (c >= 71 && c <= 77)         return { icono:'nieve',    texto:'Nieve',    mojado:true };
+            if (c >= 80 && c <= 82)         return { icono:'lluvia',   texto:'Chubascos', mojado:true };
+            if (c === 85 || c === 86)       return { icono:'nieve',    texto:'Nevadas',  mojado:true };
+            if (c >= 95)                    return { icono:'tormenta', texto:'Tormenta', mojado:true, fuerte:true };
+            // Un código que no conocemos: se dibuja una nube y NO se inventa nada.
+            return { icono:'nube', texto:'—' };
+        }
+
+        // Los dibujos van como SVG dentro del propio archivo, igual que el logo:
+        // si no hay archivo que bajar, no hay imagen que se rompa.
+        function dibujoDeClima(cual) {
+            const sol   = '<circle cx="24" cy="24" r="9" fill="#fcd34d"/>' +
+                          '<g stroke="#fcd34d" stroke-width="2.6" stroke-linecap="round">' +
+                          '<path d="M24 6v5M24 37v5M6 24h5M37 24h5M11 11l3.5 3.5M33.5 33.5L37 37M37 11l-3.5 3.5M14.5 33.5L11 37"/></g>';
+            const nube  = '<path d="M15 34h18a7.5 7.5 0 0 0 .6-14.96A10.5 10.5 0 0 0 13.4 21 6.5 6.5 0 0 0 15 34z" ' +
+                          'fill="#cbd5e1"/>';
+            const gotas = '<g stroke="#7dd3fc" stroke-width="2.6" stroke-linecap="round">' +
+                          '<path d="M17 38l-1.5 4M24 38l-1.5 4M31 38l-1.5 4"/></g>';
+            const rayo  = '<path d="M25 36l-6 8h4.5l-2 7 8-10h-4.5l2.5-5z" fill="#fcd34d"/>';
+            const copos = '<g stroke="#e0f2fe" stroke-width="2.2" stroke-linecap="round">' +
+                          '<path d="M17 39v4M15 41h4M28 39v4M26 41h4"/></g>';
+            const cuerpo = {
+                sol:      sol,
+                solnube:  '<circle cx="18" cy="18" r="7" fill="#fcd34d"/>' + nube,
+                nube:     nube,
+                llovizna: nube + '<g stroke="#7dd3fc" stroke-width="2.4" stroke-linecap="round" opacity="0.8">' +
+                                 '<path d="M19 38l-1 3M26 38l-1 3"/></g>',
+                lluvia:   nube + gotas,
+                tormenta: nube + rayo,
+                nieve:    nube + copos
+            }[cual] || nube;
+            return '<svg viewBox="0 0 48 48" aria-hidden="true">' + cuerpo + '</svg>';
+        }
+
+        // Se pide UNA sola vez el pronóstico completo, no uno por día: son 16
+        // días en una sola llamada, y así el cliente puede pasearse por el
+        // calendario sin disparar una petición en cada toque.
+        function pedirPronostico() {
+            if (climaDelMes) return Promise.resolve(climaDelMes);
+            if (climaPidiendo) return climaPidiendo;
+
+            // Se pregunta por donde va a estar el auto: si ya sabemos dónde vive
+            // el cliente, ahí; si no, el centro de Cuauhtémoc.
+            const lat = (ubicacionLat != null) ? ubicacionLat : BASE_LAT;
+            const lon = (ubicacionLon != null) ? ubicacionLon : BASE_LON;
+
+            const url = 'https://api.open-meteo.com/v1/forecast'
+                      + '?latitude=' + lat.toFixed(4) + '&longitude=' + lon.toFixed(4)
+                      + '&daily=weather_code,temperature_2m_max,temperature_2m_min,precipitation_probability_max'
+                      + '&timezone=America%2FChihuahua&forecast_days=' + CLIMA_DIAS;
+
+            climaPidiendo = conTiempoLimite(
+                fetch(url).then(r => r.ok ? r.json() : Promise.reject(new Error('http ' + r.status))),
+                8000
+            ).then(datos => {
+                const d = datos && datos.daily;
+                if (!d || !d.time) throw new Error('sin datos');
+                const porFecha = {};
+                d.time.forEach((fecha, i) => {
+                    porFecha[fecha] = {
+                        codigo: d.weather_code[i],
+                        max: Math.round(d.temperature_2m_max[i]),
+                        min: Math.round(d.temperature_2m_min[i]),
+                        lluvia: d.precipitation_probability_max[i]
+                    };
+                });
+                climaDelMes = porFecha;
+                return porFecha;
+            }).catch(e => {
+                // Sin internet o servicio caído: NO se avisa nada al cliente.
+                // La burbuja es un extra; que falle no puede estorbar el agendado.
+                console.warn('No se pudo traer el clima:', e.message);
+                climaPidiendo = null;
+                return null;
+            });
+            return climaPidiendo;
+        }
+
+        function mostrarClimaDelDia(fechaISO) {
+            const bloque = document.getElementById('bloque-clima');
+            if (!bloque) return;
+            bloque.classList.add('hidden');          // se esconde hasta tener el dato
+            if (!fechaISO) return;
+
+            pedirPronostico().then(porFecha => {
+                // Si el cliente cambió de día mientras llegaba la respuesta, ya
+                // no aplica: se descarta en vez de pintar el día equivocado.
+                if (!porFecha || fechaSeleccionada !== fechaISO) return;
+                const d = porFecha[fechaISO];
+                if (!d) return;                      // más de 16 días: no se enseña nada
+
+                const info = leerCodigoDeClima(d.codigo, d.lluvia);
+                const prob = (d.lluvia == null) ? null : Math.round(d.lluvia);
+
+                document.getElementById('clima-icono').innerHTML = dibujoDeClima(info.icono);
+                document.getElementById('clima-titulo').textContent =
+                    info.texto + ' · ' + d.max + '° / ' + d.min + '°';
+
+                let detalle = '';
+                if (prob != null) detalle = 'Probabilidad de lluvia: <b>' + prob + '%</b>';
+                // El aviso sólo sale cuando de verdad conviene. Si saliera siempre,
+                // dejaría de significar algo. Y NO promete nada que Tristán no
+                // haya acordado: sólo recuerda que reagendar ya es gratis y solo.
+                if (info.fuerte || (prob != null && prob >= CLIMA_LLUVIA_AVISO)) {
+                    detalle += '<br><span class="clima-aviso">Si se descompone el día, '
+                             + 'puedes cambiar tu cita desde "Mis citas".</span>';
+                }
+                document.getElementById('clima-detalle').innerHTML = detalle;
+
+                bloque.classList.remove('lluvia', 'tormenta');
+                if (info.fuerte) bloque.classList.add('tormenta');
+                else if (info.mojado || (prob != null && prob >= CLIMA_LLUVIA_AVISO)) bloque.classList.add('lluvia');
+                bloque.classList.remove('hidden');
+            });
+        }
+
         function elegirDiaCalendario(fechaISO) {
             fechaSeleccionada = fechaISO;
             pintarCalendario();
+            mostrarClimaDelDia(fechaISO);
 
             const dias = diasQueOcupa(servicioSeleccionado);
             if (dias > 0) {
