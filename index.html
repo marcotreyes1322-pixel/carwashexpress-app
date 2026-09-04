@@ -19,6 +19,47 @@
     <link rel="apple-touch-icon" href="icono-192.png">
 
     <!--
+      🔒 POLÍTICA DE CONTENIDO (CSP) — septiembre 2026
+
+      Esto le dice al navegador DE DÓNDE puede venir el código de esta página y,
+      sobre todo, A DÓNDE puede mandar datos. Sirve para un caso concreto: si
+      alguna vez se colara código ajeno (por ejemplo, si uno de los servicios de
+      donde se bajan las librerías fuera alterado), ese código NO podría mandarse
+      los teléfonos y direcciones de los clientes a un servidor desconocido,
+      porque "connect-src" sólo permite Firebase, Mapbox y Open-Meteo.
+
+      ⚠️ LLEVA 'unsafe-inline' A PROPÓSITO, y hay que saber por qué: la app usa
+      onclick="..." en decenas de botones. Una política estricta los bloquearía
+      todos y LA APP DEJARÍA DE FUNCIONAR ENTERA. Quitarlo obligaría a reescribir
+      cada botón, que es justo el tipo de cambio grande que no se hace sin
+      preguntar. Aun con esa concesión, sigue bloqueando lo importante: un
+      <script src="sitio-malo.com"> y la fuga de datos a otro servidor.
+
+      · www.google.com y www.gstatic.com están permitidos porque son los que usa
+        Firebase App Check con reCAPTCHA. Van desde ya para que el día que
+        Tristán lo active en la consola, no truene nada.
+      · blob: en worker-src es de Mapbox: dibuja el mapa en hilos aparte.
+      · "frame-ancestors" (impedir que otro sitio meta la app en un marco) NO se
+        puede poner desde aquí — sólo desde el servidor. Queda anotado para
+        cuando la app se publique con un hosting propio.
+    -->
+    <meta http-equiv="Content-Security-Policy" content="
+        default-src 'self';
+        script-src 'self' 'unsafe-inline' https://www.gstatic.com https://api.mapbox.com https://cdnjs.cloudflare.com https://www.google.com;
+        style-src 'self' 'unsafe-inline' https://fonts.googleapis.com https://api.mapbox.com;
+        font-src 'self' data: https://fonts.gstatic.com;
+        img-src 'self' data: blob: https://*.mapbox.com;
+        connect-src 'self' data: blob: https://*.firebaseio.com wss://*.firebaseio.com https://*.googleapis.com https://api.mapbox.com https://events.mapbox.com https://api.open-meteo.com https://www.google.com;
+        worker-src 'self' blob:;
+        child-src 'self' blob:;
+        frame-src https://www.google.com;
+        media-src 'self' data: blob:;
+        object-src 'none';
+        base-uri 'self';
+        form-action 'none';
+    ">
+
+    <!--
       ⚡ POR QUÉ TODO ESTO LLEVA "defer" Y "media=print"
       Antes, estas 5 descargas estaban aquí SIN defer. Una etiqueta de script normal en el
       <head> DETIENE al navegador: no dibuja ni un pixel hasta terminar de bajarlo
@@ -839,7 +880,9 @@
         .agenda-aviso.error { color: #fca5a5; }
 
         /* --- CALENDARIO PROPIO (el de Android no se puede pintar con la marca) --- */
-        .cal { width: 100%; }
+        /* "relative" es lo que hace que la burbuja del clima se pueda colocar
+           respecto AL CALENDARIO, y no respecto a toda la página. */
+        .cal { width: 100%; position: relative; }
         .cal-cabeza { display: flex; align-items: center; justify-content: space-between; margin-bottom: 14px; }
         .cal-mes { font-family: var(--serif); font-size: 23px; letter-spacing: -0.01em; }
         .cal-mes::first-letter { text-transform: uppercase; }
@@ -873,7 +916,7 @@
         .pt.lleno { background: #fca5a5; box-shadow: 0 0 5px rgba(252,165,165,0.7); }
         .cal-dia.seleccionado .pt { background: #fff; box-shadow: none; }
         .cal-dia:disabled .pt-fila { display: none; }
-        /* "Guardar mi contraseña" — casilla propia, porque la del sistema no se
+        /* "Recordar mi número" — casilla propia, porque la del sistema no se
            puede pintar y sale gris de Android en medio del panel de cristal. */
         .recordar { display: flex; gap: 10px; align-items: flex-start; margin-top: 4px;
                     cursor: pointer; text-align: left; }
@@ -1188,20 +1231,44 @@
             /* El icono se alinea ARRIBA, no al centro: cuando sale el aviso de
                lluvia son tres renglones, y centrado el dibujo quedaba junto al
                segundo en vez de junto al título. */
-            display: flex; align-items: flex-start; gap: 14px;
-            margin: 18px 0 6px; padding: 14px 16px;
-            border-radius: 18px; text-align: left;
-            border: 1px solid rgba(196,181,253,0.30);
-            background: rgba(139,92,246,0.09);
+            display: flex; align-items: flex-start; gap: 12px;
+            padding: 12px 14px;
+            border-radius: 16px; text-align: left;
+            border: 1px solid rgba(196,181,253,0.34);
+            /* La burbuja va ENCIMA del calendario, así que el fondo tiene que ser
+               SÓLIDO: con el translúcido de antes se veían los números de los días
+               a través de ella y no se podía leer nada. */
+            background: #17151f;
+            position: absolute; z-index: 6; width: 244px; max-width: calc(100% - 8px);
+            box-shadow: 0 14px 34px rgba(0,0,0,0.55);
+            animation: climaAparece 0.18s ease-out;
+            /* La burbuja tapa la semana de abajo, y sin esto el dedo le pegaría a
+               ELLA en vez de al día que hay debajo: el cliente tocaría un día y no
+               pasaría nada. Como adentro no hay nada que tocar (es puro texto), se
+               deja que el toque la atraviese y llegue al día. */
+            pointer-events: none;
         }
-        .clima.lluvia   { border-color: rgba(251,191,36,0.38); background: rgba(251,191,36,0.09); }
-        .clima.tormenta { border-color: rgba(248,113,113,0.42); background: rgba(248,113,113,0.10); }
-        .clima-icono { flex: 0 0 auto; width: 46px; height: 46px; }
+        @keyframes climaAparece { from { opacity: 0; transform: translateY(-5px); } }
+        @media (prefers-reduced-motion: reduce) { .clima { animation: none; } }
+        /* El piquito que apunta al día. Es un cuadrito girado 45°: se le mueve el
+           "left" desde JavaScript para que siempre señale al día tocado, aunque la
+           burbuja se haya recorrido para no salirse por la orilla. */
+        .clima-pico {
+            position: absolute; width: 12px; height: 12px; transform: rotate(45deg);
+            background: #17151f; border: 1px solid rgba(196,181,253,0.34);
+        }
+        .clima.abajo  .clima-pico { top: -7px; border-right: none; border-bottom: none; }
+        .clima.arriba .clima-pico { bottom: -7px; border-left: none; border-top: none; }
+        .clima.lluvia   { border-color: rgba(251,191,36,0.45); }
+        .clima.tormenta { border-color: rgba(248,113,113,0.50); }
+        .clima.lluvia   .clima-pico { border-color: rgba(251,191,36,0.45); }
+        .clima.tormenta .clima-pico { border-color: rgba(248,113,113,0.50); }
+        .clima-icono { flex: 0 0 auto; width: 38px; height: 38px; }
         .clima-icono svg { width: 100%; height: 100%; display: block; }
         .clima-texto { flex: 1; min-width: 0; }
         .clima-titulo {
-            font-family: var(--serif); font-size: 19px; color: var(--blanco);
-            line-height: 1.15; font-variant-numeric: tabular-nums;
+            font-family: var(--serif); font-size: 17px; color: var(--blanco);
+            line-height: 1.2; font-variant-numeric: tabular-nums;
         }
         .clima-detalle {
             font-size: 11.5px; color: var(--muy-tenue); line-height: 1.5; margin-top: 3px;
@@ -1235,6 +1302,14 @@
                               padding: 12px 2px; border-bottom: 1px solid var(--linea); }
         .admin-horario-hora { font-family: var(--serif); font-size: 20px; min-width: 90px; }
         .admin-horario-estado { flex: 1; font-size: 12px; color: var(--muy-tenue); }
+        /* Un horario apartado que Tristán NO cerró y que no tiene cita. */
+        .admin-horario-fila.horario-ajeno { background: rgba(220,38,38,0.10);
+                                            border-radius: 8px; padding-left: 8px; }
+        .aviso-horarios-ajenos { width: 100%; margin: 0 0 12px 0; padding: 12px 14px;
+                                 border-radius: 12px; text-align: left; font-size: 12.5px;
+                                 line-height: 1.55; color: #fecaca;
+                                 background: rgba(220,38,38,0.12);
+                                 border: 1px solid rgba(248,113,113,0.35); }
 
         .admin-tabs { display: flex; gap: 8px; width: 100%; margin-bottom: 16px; }
         .admin-tab { flex: 1; background: transparent; border: 1px solid rgba(255,255,255,0.13);
@@ -1946,8 +2021,8 @@
                 <label class="recordar">
                     <input type="checkbox" id="chk-recordar" onchange="alternarRecordar()">
                     <span class="recordar-caja"></span>
-                    <span class="recordar-texto">Guardar mi contraseña en este teléfono
-                        <b>Sólo si el teléfono es tuyo: quien lo agarre podrá entrar a tu cuenta.</b>
+                    <span class="recordar-texto">Recordar mi número en este teléfono
+                        <b>Tu contraseña la guarda el navegador, no la app: te la va a ofrecer él.</b>
                     </span>
                 </label>
 
@@ -2057,10 +2132,15 @@
                         <h3>Tu contraseña</h3>
                         <p>Nunca la vemos. La guarda Google (Firebase) cifrada, y ni
                         siquiera nosotros podemos leerla.</p>
-                        <p>Si prendes <b>"Guardar mi contraseña en este teléfono"</b> —que
-                        viene apagada— se queda escrita <b>en tu propio teléfono</b>, no en
-                        nuestros servidores. Quien agarre ese teléfono desbloqueado podría
-                        entrar a tu cuenta. Apágala y se borra.</p>
+                        <p><b>La app no guarda tu contraseña en ningún lado.</b> Si prendes
+                        <b>"Recordar mi número en este teléfono"</b> —que viene apagada— lo
+                        único que se guarda en tu teléfono es <b>tu número</b>, para no
+                        tener que escribirlo cada vez. Apágala y se borra.</p>
+                        <p>La contraseña, si quieres que se recuerde, la guarda <b>tu propio
+                        navegador</b> (Chrome, Safari), que la protege con el bloqueo de tu
+                        teléfono. Eso lo decides tú cuando el navegador te pregunta si quiere
+                        guardarla, y se administra desde los ajustes del navegador, no
+                        desde aquí.</p>
 
                         <h3>Quién más ve tus datos</h3>
                         <p>Para que la app funcione, algunos servicios reciben parte de tu
@@ -2759,20 +2839,22 @@ Cera rápida protectora
                                     <span><i class="pt libre"></i><i class="pt libre"></i><i class="pt libre"></i>Cada punto es un horario libre</span>
                                     <span><i class="pt lleno"></i>Último horario</span>
                                 </div>
-                            </div>
-                        </div>
 
-                        <!-- EL CLIMA DEL DÍA QUE ELIGIÓ. Va entre el calendario y
-                             las horas: justo después de elegir el día, que es
-                             cuando la información sirve para decidir.
-                             Si no hay pronóstico (más de 16 días, o sin internet)
-                             el bloque NO aparece — inventar un clima sería peor
-                             que no decir nada. -->
-                        <div class="clima hidden" id="bloque-clima">
-                            <div class="clima-icono" id="clima-icono"></div>
-                            <div class="clima-texto">
-                                <div class="clima-titulo" id="clima-titulo">—</div>
-                                <div class="clima-detalle" id="clima-detalle">—</div>
+                                <!-- EL CLIMA DEL DÍA QUE ELIGIÓ: una burbuja que sale
+                                     PEGADA AL DÍA que tocó, con su piquito apuntándole.
+                                     Vive DENTRO del calendario porque se coloca respecto
+                                     a él (posición absoluta), no en el flujo de la página.
+                                     Si no hay pronóstico (más de 16 días, o sin internet)
+                                     la burbuja NO aparece — inventar un clima sería peor
+                                     que no decir nada. -->
+                                <div class="clima hidden" id="bloque-clima" role="status">
+                                    <i class="clima-pico" id="clima-pico"></i>
+                                    <div class="clima-icono" id="clima-icono"></div>
+                                    <div class="clima-texto">
+                                        <div class="clima-titulo" id="clima-titulo">—</div>
+                                        <div class="clima-detalle" id="clima-detalle">—</div>
+                                    </div>
+                                </div>
                             </div>
                         </div>
 
@@ -4341,7 +4423,7 @@ Cera rápida protectora
 
         // La versión del archivo. Sirve para que Tristán confirme de un vistazo si
         // el que abrió es el nuevo — ya pasó dos veces que probaba una copia vieja.
-        const VERSION_APP = '2026.09.02d';
+        const VERSION_APP = '2026.09.03a';
 
         // La versión del AVISO DE PRIVACIDAD y los TÉRMINOS. Es distinta de la
         // versión de la app a propósito: la app cambia cada semana y lo legal
@@ -4861,7 +4943,7 @@ Cera rápida protectora
                 )
                     .then((cred) => {
                         destrabar();
-                        guardarAccesoSiLoPidio(telefonoRaw, password);
+                        guardarAccesoSiLoPidio(telefonoRaw);
                         // No esperamos a que Firebase avise por su cuenta: entramos ya.
                         // (entrarComoUsuario es inofensivo si se llama dos veces.)
                         entrarComoUsuario(cred && cred.user ? cred.user : firebase.auth().currentUser);
@@ -4887,22 +4969,24 @@ Cera rápida protectora
         }
 
         // =====================================================================
-        // 🔑 "GUARDAR MI CONTRASEÑA EN ESTE TELÉFONO"
+        // 🔑 "RECORDAR MI TELÉFONO EN ESTE APARATO"
         //
-        // Por qué existe: la cuenta usa un correo FALSO armado con el teléfono
-        // (625…@carwashexpress.local), así que Firebase no puede mandar un
-        // mensaje de "restablecer contraseña" — no hay a dónde mandarlo. Quien
-        // la olvida queda fuera hasta que Tristán se la repone a mano. Guardarla
-        // en el teléfono es lo que evita que eso pase.
+        // 🔴 CAMBIO DE SEGURIDAD (septiembre 2026). Antes esto guardaba
+        // TAMBIÉN LA CONTRASEÑA, en texto plano, en el almacenamiento del
+        // navegador. Dos problemas con eso:
+        //   1. Quien agarrara el teléfono desbloqueado podía leerla tal cual.
+        //   2. Y peor: si alguna vez se colara código en la página, ese código
+        //      podía leerla y llevársela. O sea que una falla chica en otro
+        //      lado se convertía en el robo de la contraseña.
         //
-        // ⚠️ EL COSTO, DICHO CLARO: la contraseña queda escrita en el
-        // almacenamiento del navegador de ese teléfono. Quien agarre el teléfono
-        // desbloqueado puede entrar a la cuenta. Por eso:
-        //   · viene APAGADO de fábrica — el cliente tiene que prenderlo a propósito;
-        //   · la propia casilla lo advierte en pantalla;
-        //   · se borra en cuanto lo apaga.
-        // Para el teléfono personal de un cliente el trato vale la pena. Para la
-        // tablet del negocio (la de administrador), NO conviene prenderlo.
+        // Ahora la app guarda SÓLO EL TELÉFONO. La contraseña la guarda el
+        // propio navegador (Chrome, Safari) con `autocomplete`, que ya estaba
+        // puesto en el campo del login: la cifra con el bloqueo del teléfono y
+        // nunca queda legible desde la página. Para el cliente se siente casi
+        // igual — el navegador le ofrece llenarla — y es mucho más seguro.
+        //
+        // ⚠️ Y se BORRA la contraseña que ya estuviera guardada de antes: si no,
+        // a quien tenía la casilla prendida se le quedaría ahí para siempre.
         // =====================================================================
         const LLAVE_ACCESO_GUARDADO = 'cwe-acceso';
 
@@ -4910,11 +4994,12 @@ Cera rápida protectora
             if (!document.getElementById('chk-recordar').checked) olvidarAccesoGuardado();
         }
 
-        function guardarAccesoSiLoPidio(telefono, password) {
+        function guardarAccesoSiLoPidio(telefono) {
             const chk = document.getElementById('chk-recordar');
             if (!chk || !chk.checked) { olvidarAccesoGuardado(); return; }
             try {
-                localStorage.setItem(LLAVE_ACCESO_GUARDADO, JSON.stringify({ telefono, password }));
+                // SÓLO el teléfono. La contraseña es cosa del navegador.
+                localStorage.setItem(LLAVE_ACCESO_GUARDADO, JSON.stringify({ telefono }));
             } catch (e) {
                 // Modo privado o almacenamiento lleno: no es motivo para frenar
                 // a nadie, ya inició sesión. Simplemente no se guarda.
@@ -4930,12 +5015,21 @@ Cera rápida protectora
             let datos = null;
             try { datos = JSON.parse(localStorage.getItem(LLAVE_ACCESO_GUARDADO) || 'null'); } catch (e) {}
             if (!datos || !datos.telefono) return;
+
+            // Si viene de la versión vieja, traía la contraseña adentro. Se
+            // vuelve a guardar SIN ella, para que no se quede ahí para siempre.
+            if ('password' in datos) {
+                try {
+                    localStorage.setItem(LLAVE_ACCESO_GUARDADO,
+                                         JSON.stringify({ telefono: datos.telefono }));
+                } catch (e) {}
+            }
+
             const tel = document.getElementById('input-login-telefono');
-            const pass = document.getElementById('input-login-password');
             const chk = document.getElementById('chk-recordar');
             if (tel) tel.value = datos.telefono;
-            if (pass) pass.value = datos.password || "";
             if (chk) chk.checked = true;
+            // La contraseña NO se rellena a mano: la ofrece el navegador.
         }
 
         // =====================================================================
@@ -5273,8 +5367,7 @@ Cera rápida protectora
             // que se tira y se vuelve a pedir con SUS coordenadas.
             climaDelMes = null;
             climaPidiendo = null;
-            const climaBloque = document.getElementById('bloque-clima');
-            if (climaBloque) climaBloque.classList.add('hidden');
+            esconderClima();
             ubicacionEsAproximada = true;
             ubicacionEsManual = false;
             motivoUbicacionAproximada = "";
@@ -8263,8 +8356,7 @@ Cera rápida protectora
             mesCalendario = new Date();
             mesCalendario.setDate(1);
             // La burbuja del clima sólo tiene sentido con un día ya elegido.
-            const bloqueClima = document.getElementById('bloque-clima');
-            if (bloqueClima) bloqueClima.classList.add('hidden');
+            esconderClima();
             const dias = diasQueOcupa(servicioSeleccionado);
 
             // Aviso propio de los detallados
@@ -8389,6 +8481,9 @@ Cera rápida protectora
 
         function cambiarMesCalendario(delta) {
             mesCalendario.setMonth(mesCalendario.getMonth() + delta);
+            // El día elegido se queda en el mes anterior, así que la burbuja
+            // estaría apuntando a un día que ya no se ve.
+            esconderClima();
             // Ahora que se lee mes por mes, hay que pedir el del mes nuevo: si no,
             // los días de ese mes se pintarían sin puntitos.
             cargarDisponibilidadDelMes();
@@ -8565,6 +8660,76 @@ Cera rápida protectora
             return climaPidiendo;
         }
 
+        // Esconder la burbuja. Se hace desde varios lados (al cambiar de día, de
+        // mes, al abrir el calendario y al cerrar sesión), así que vive en un solo
+        // lugar en vez de repetir la línea cuatro veces.
+        function esconderClima() {
+            const bloque = document.getElementById('bloque-clima');
+            if (bloque) bloque.classList.add('hidden');
+        }
+
+        // =====================================================================
+        // 📍 DÓNDE SE COLOCA LA BURBUJA
+        //
+        // Va pegada al día que el cliente tocó, con el piquito apuntándole. Dos
+        // cosas hay que resolver o se ve mal:
+        //
+        //  1. QUE NO SE SALGA POR LOS LADOS. Los días de la primera y la última
+        //     columna están casi en la orilla: una burbuja centrada en ellos se
+        //     saldría del calendario. Se recorre hasta que quepa, y entonces el
+        //     PIQUITO se mueve solo para seguir apuntando al día correcto — si el
+        //     piquito se quedara en el centro, señalaría a otro día.
+        //  2. QUE NO SE SALGA POR ABAJO. En las últimas filas del mes no hay
+        //     espacio debajo, así que la burbuja se voltea y sale ARRIBA del día,
+        //     con el piquito abajo.
+        // =====================================================================
+        function colocarBurbujaDelClima() {
+            const bloque = document.getElementById('bloque-clima');
+            const pico = document.getElementById('clima-pico');
+            const cal = document.querySelector('#screen-agenda .cal');
+            const dia = document.querySelector('#cal-grid .cal-dia.seleccionado');
+            if (!bloque || !cal || !dia) return;
+
+            const rCal = cal.getBoundingClientRect();
+            const rDia = dia.getBoundingClientRect();
+
+            // Hay que medirla ya dibujada para saber cuánto ocupa; se hace
+            // invisible para que no se alcance a ver en el lugar equivocado.
+            bloque.style.visibility = 'hidden';
+            bloque.classList.remove('hidden');
+            const ancho = bloque.offsetWidth;
+            const alto = bloque.offsetHeight;
+
+            const centroDelDia = (rDia.left - rCal.left) + rDia.width / 2;
+            const MARGEN = 4;
+            let x = centroDelDia - ancho / 2;
+            x = Math.max(MARGEN, Math.min(x, rCal.width - ancho - MARGEN));
+
+            const abajoDelDia = (rDia.bottom - rCal.top) + 9;
+            const cabeAbajo = abajoDelDia + alto <= rCal.height;
+            const y = cabeAbajo ? abajoDelDia : (rDia.top - rCal.top) - alto - 9;
+
+            bloque.classList.toggle('abajo', cabeAbajo);
+            bloque.classList.toggle('arriba', !cabeAbajo);
+            bloque.style.left = Math.round(x) + 'px';
+            bloque.style.top = Math.round(y) + 'px';
+
+            if (pico) {
+                // El piquito, respecto a la burbuja ya colocada. Se limita a los
+                // extremos para que no se salga de la esquina redondeada.
+                const px = Math.max(14, Math.min(centroDelDia - x - 6, ancho - 26));
+                pico.style.left = Math.round(px) + 'px';
+            }
+            bloque.style.visibility = '';
+        }
+
+        // Si el teléfono se gira, el calendario cambia de ancho y la burbuja
+        // quedaría señalando a otro día. Sólo se recoloca si está visible.
+        window.addEventListener('resize', () => {
+            const bloque = document.getElementById('bloque-clima');
+            if (bloque && !bloque.classList.contains('hidden')) colocarBurbujaDelClima();
+        });
+
         function mostrarClimaDelDia(fechaISO) {
             const bloque = document.getElementById('bloque-clima');
             if (!bloque) return;
@@ -8599,7 +8764,7 @@ Cera rápida protectora
                 bloque.classList.remove('lluvia', 'tormenta');
                 if (info.fuerte) bloque.classList.add('tormenta');
                 else if (info.mojado || (prob != null && prob >= CLIMA_LLUVIA_AVISO)) bloque.classList.add('lluvia');
-                bloque.classList.remove('hidden');
+                colocarBurbujaDelClima();   // esto también la saca de 'hidden'
             });
         }
 
@@ -10123,6 +10288,7 @@ Cera rápida protectora
 
             firebase.database().ref('agenda/' + fecha).once('value').then(snap => {
                 const ocupados = snap.val() || {};
+                let ajenos = 0;
                 SLOTS.forEach(s => {
                     const apartado = ocupados[claveHora(s.hora)];
                     const tieneCita = horasConCita.has(s.hora);
@@ -10138,18 +10304,43 @@ Cera rápida protectora
                     estado.className = "admin-horario-estado";
                     fila.appendChild(estado);
 
+                    // ¿Este apartado lo puso Tristán, o alguien más?
+                    // Cuando él cierra un horario, el hueco queda a SU nombre. Un
+                    // hueco a nombre de otra cuenta y SIN cita que le corresponda
+                    // no debería existir: o una cita se quedó a medias, o alguien
+                    // está apartando horarios para estorbar. Antes los dos casos
+                    // se veían igual —"Cerrado por ti"— y él no tenía por qué
+                    // sospechar de un horario que creía haber cerrado él mismo.
+                    const loCerroElAdmin = apartado && usuarioActual &&
+                                           apartado.uid === usuarioActual.uid;
+
                     if (tieneCita) {
                         estado.textContent = "Con cita";
                         estado.style.color = "var(--morado-claro)";
-                    } else if (apartado) {
+                    } else if (apartado && loCerroElAdmin) {
                         estado.textContent = "Cerrado por ti";
                         fila.appendChild(chipBoton("Abrir", "chip", () => abrirHorario(fecha, s.hora)));
+                    } else if (apartado) {
+                        ajenos++;
+                        fila.classList.add("horario-ajeno");
+                        estado.textContent = "Apartado, sin cita";
+                        estado.style.color = "#fca5a5";
+                        fila.appendChild(chipBoton("Liberar", "chip", () => abrirHorario(fecha, s.hora)));
                     } else {
                         estado.textContent = "Libre";
                         fila.appendChild(chipBoton("Cerrar", "chip", () => cerrarHorario(fecha, s.hora)));
                     }
                     caja.appendChild(fila);
                 });
+
+                if (ajenos > 0) {
+                    const aviso = document.createElement('div');
+                    aviso.className = "aviso-horarios-ajenos";
+                    aviso.textContent = ajenos === 1
+                        ? "⚠️ Hay 1 horario apartado que TÚ no cerraste y que no tiene ninguna cita. Puede ser una cita que se quedó a medias, o alguien apartando horarios para estorbar. Si no lo reconoces, libéralo."
+                        : "⚠️ Hay " + ajenos + " horarios apartados que TÚ no cerraste y que no tienen ninguna cita. Pueden ser citas que se quedaron a medias, o alguien apartando horarios para estorbar. Si no los reconoces, libéralos.";
+                    caja.parentNode.insertBefore(aviso, caja);
+                }
             }).catch(err => {
                 console.error("No se pudieron leer los horarios:", err);
                 caja.innerHTML = `<p class="vacio-nota">No se pudieron leer los horarios.</p>`;
