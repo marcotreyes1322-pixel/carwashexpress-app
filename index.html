@@ -92,6 +92,11 @@
     <!-- Firebase: sólo el núcleo y el login (162 KB entre los dos) -->
     <script defer src="https://www.gstatic.com/firebasejs/10.8.0/firebase-app-compat.js"></script>
     <script defer src="https://www.gstatic.com/firebasejs/10.8.0/firebase-auth-compat.js"></script>
+    <!-- App Check: la credencial que demuestra que la petición viene de ESTA app y
+         no de un programa cualquiera. Va aquí arriba y NO en la carga diferida de
+         más abajo a propósito: tiene que activarse ANTES de la primera petición a
+         Firebase, y bajándola después llegaría tarde. -->
+    <script defer src="https://www.gstatic.com/firebasejs/10.8.0/firebase-app-check-compat.js"></script>
 
     <style>
         /* =================================================================
@@ -918,6 +923,14 @@
         .cal-dia:disabled .pt-fila { display: none; }
         /* "Recordar mi número" — casilla propia, porque la del sistema no se
            puede pintar y sale gris de Android en medio del panel de cristal. */
+        /* La insignia flotante de reCAPTCHA ("protected by reCAPTCHA") sale abajo
+           a la derecha en TODAS las pantallas, justo encima del botón fijo de
+           "Agendar mi lavado" de la bienvenida. Google permite esconderla a
+           cambio de poner su atribución visible, que está en el Aviso de
+           Privacidad. Se usa "visibility" y no "display:none" porque reCAPTCHA
+           necesita que el elemento siga existiendo para funcionar. */
+        .grecaptcha-badge { visibility: hidden; }
+
         .recordar { display: flex; gap: 10px; align-items: flex-start; margin-top: 4px;
                     cursor: pointer; text-align: left; }
         .recordar input { position: absolute; opacity: 0; width: 0; height: 0; }
@@ -1210,6 +1223,14 @@
         .legal-fecha {
             font-size: 10.5px !important; letter-spacing: 0.1em; text-transform: uppercase;
             color: var(--muy-tenue) !important; margin-bottom: 20px !important;
+        }
+        /* La atribución que Google exige por esconder su insignia. Tiene que
+           quedar legible: si se pusiera en gris ilegible, sería esconderla dos
+           veces y ya no se estaría cumpliendo. */
+        .legal-atribucion {
+            font-size: 11.5px !important; line-height: 1.6; color: var(--muy-tenue) !important;
+            border-left: 2px solid rgba(196,181,253,0.30); padding-left: 11px;
+            margin: 4px 0 16px !important;
         }
         /* La línea de aceptación bajo el botón de registrarse. Es el ÚNICO
            momento en que el cliente acepta algo, así que tiene que verse. */
@@ -2109,7 +2130,7 @@
             <div class="menu-content-holder">
                 <div class="card-panel">
                     <div class="legal">
-                        <p class="legal-fecha">Última actualización: 2 de septiembre de 2026</p>
+                        <p class="legal-fecha">Última actualización: 4 de septiembre de 2026</p>
 
                         <h3>Quiénes somos</h3>
                         <p>CarWashExpress, servicio de lavado y detallado de autos en
@@ -2152,8 +2173,15 @@
                             <li><b>Open-Meteo</b> — recibe tus coordenadas para traer el clima
                             del día que elijas.</li>
                             <li><b>Google Fonts</b> — recibe tu IP al bajar las tipografías.</li>
+                            <li><b>Google reCAPTCHA</b> — recibe datos de tu teléfono y de tu
+                            navegador para confirmar que eres una persona y no un programa
+                            automático. Es lo que impide que alguien nos llene la agenda de
+                            citas falsas.</li>
                             <li><b>WhatsApp e Instagram</b> — sólo si tú tocas esos botones.</li>
                         </ul>
+                        <p class="legal-atribucion">Este sitio está protegido por reCAPTCHA y
+                        aplican la <b>Política de Privacidad</b> y los <b>Términos del Servicio</b>
+                        de Google.</p>
 
                         <h3>Cuánto tiempo</h3>
                         <p>Tus citas se quedan guardadas mientras tengas cuenta, porque nos
@@ -3135,6 +3163,21 @@ Cera rápida protectora
         let MAPBOX_DISPONIBLE = false;
         const MAPBOX_TOKEN = "pk.eyJ1IjoidHJpc3RhbjIyIiwiYSI6ImNtc3YyN3NlYzExbngzNG93bmh6dzE1ZWQifQ.LYPvTjx3s1oMAYpZg4v9vg";
 
+        // =====================================================================
+        // 🛡️ APP CHECK — que la base sólo le haga caso a ESTA app
+        //
+        // Para qué sirve: sin esto, cualquiera con una cuenta gratis puede
+        // escribir en la agenda desde un programa y LLENARLE EL CALENDARIO a
+        // Tristán de horarios falsos, dejándolo sin poder recibir citas. Con
+        // App Check, Firebase pide una credencial que sólo puede generar la app
+        // de verdad corriendo en su dirección web.
+        //
+        // Esta clave es PÚBLICA y va aquí a propósito, igual que la de Mapbox y
+        // la apiKey de Firebase. La que NUNCA va en el código es la "clave
+        // secreta" de reCAPTCHA, que vive sólo en la consola de Firebase.
+        // =====================================================================
+        const APPCHECK_SITE_KEY = "6LfcWagtAAAAAK5Id-7UUZYJFSvIZsJSf8gpfQWL";
+
         const firebaseConfig = {
             apiKey: "AIzaSyCYLI5lpPECCtSqosMo6bsWApG2-GLpRsE",
             authDomain: "carwashexpress.firebaseapp.com",
@@ -3493,6 +3536,14 @@ Cera rápida protectora
             } catch (e) {
                 console.error("No se pudo iniciar Firebase:", e);
             }
+
+            // 🔴 App Check va FUERA del try de arriba, y no es un detalle de
+            // estilo: si fuera adentro y llegara a fallar, la línea
+            // "firebaseListo = true" no se ejecutaría, la app enseñaría la
+            // pantalla de "sin conexión" y NADIE PODRÍA ENTRAR. Es exactamente
+            // la forma de fallar que ya costó la tanda del botón "Entrando..."
+            // colgado. Aquí, si App Check falla, sólo se pierde la protección.
+            activarAppCheck();
 
             // El resto se pide en segundo plano, EN EL ORDEN EN QUE HACE FALTA:
             //   1. la base de datos, que se usa apenas el cliente entra
@@ -4423,7 +4474,7 @@ Cera rápida protectora
 
         // La versión del archivo. Sirve para que Tristán confirme de un vistazo si
         // el que abrió es el nuevo — ya pasó dos veces que probaba una copia vieja.
-        const VERSION_APP = '2026.09.03a';
+        const VERSION_APP = '2026.09.04a';
 
         // La versión del AVISO DE PRIVACIDAD y los TÉRMINOS. Es distinta de la
         // versión de la app a propósito: la app cambia cada semana y lo legal
@@ -4431,7 +4482,7 @@ Cera rápida protectora
         // cambia el texto, se sabe quién aceptó cuál.
         // ⚠️ Al cambiar el texto de esas dos pantallas, SUBIR también esta fecha
         // y la que se ve en pantalla ("Última actualización").
-        const VERSION_LEGAL = '2026-09-02';
+        const VERSION_LEGAL = '2026-09-04';
 
         // Desde dónde se entró a leer lo legal, para saber a dónde regresar.
         // Puede ser el menú (con o sin sesión) o la pantalla de Crear cuenta —
@@ -8658,6 +8709,31 @@ Cera rápida protectora
                 return null;
             });
             return climaPidiendo;
+        }
+
+        // Enciende App Check. Se llama una sola vez, justo después de que
+        // Firebase arrancó y antes de la primera petición.
+        //
+        // Las tres guardas de aquí abajo NO sobran:
+        //   · sin clave, no se hace nada (así se puede apagar cambiando una línea);
+        //   · si la librería no cargó (internet flojo), firebase.appCheck no
+        //     existe y llamarlo reventaría el arranque entero;
+        //   · y el try/catch, porque activate() también puede fallar por su
+        //     cuenta — por ejemplo al abrir la app como archivo suelto, donde
+        //     reCAPTCHA no funciona porque exige una dirección web de verdad.
+        //
+        // En los tres casos la app sigue funcionando: se pierde la protección,
+        // no el servicio. Dejar a un cliente sin poder agendar sería peor.
+        function activarAppCheck() {
+            if (!APPCHECK_SITE_KEY) return;
+            if (typeof firebase === 'undefined' || !firebase.appCheck) return;
+            try {
+                // El segundo parámetro es la renovación automática del permiso:
+                // sin él, se vence a la hora y el cliente se queda a medias.
+                firebase.appCheck().activate(APPCHECK_SITE_KEY, true);
+            } catch (e) {
+                console.warn("App Check no se pudo activar:", e);
+            }
         }
 
         // Esconder la burbuja. Se hace desde varios lados (al cambiar de día, de
