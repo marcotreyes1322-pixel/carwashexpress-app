@@ -92,11 +92,14 @@
     <!-- Firebase: sólo el núcleo y el login (162 KB entre los dos) -->
     <script defer src="https://www.gstatic.com/firebasejs/10.8.0/firebase-app-compat.js"></script>
     <script defer src="https://www.gstatic.com/firebasejs/10.8.0/firebase-auth-compat.js"></script>
-    <!-- App Check: la credencial que demuestra que la petición viene de ESTA app y
-         no de un programa cualquiera. Va aquí arriba y NO en la carga diferida de
-         más abajo a propósito: tiene que activarse ANTES de la primera petición a
-         Firebase, y bajándola después llegaría tarde. -->
-    <script defer src="https://www.gstatic.com/firebasejs/10.8.0/firebase-app-check-compat.js"></script>
+    <!-- ⚠️ App Check NO va aquí. Estuvo un día colgando de este bloque y estaba mal:
+         un <script defer> en el <head> RETIENE el arranque de la app. Si el archivo
+         no falla sino que SE CUELGA (internet flojo), la app nunca terminaba de
+         arrancar, saltaba el salvavidas de 15 segundos y salía "Sin conexión" — o
+         sea que una librería de PROTECCIÓN dejaba al cliente sin poder entrar, que
+         es justo lo contrario de lo que se buscaba. Ahora se baja sola, más abajo,
+         con cargarScript(), que nunca cuelga a nadie. -->
+
 
     <style>
         /* =================================================================
@@ -921,8 +924,6 @@
         .pt.lleno { background: #fca5a5; box-shadow: 0 0 5px rgba(252,165,165,0.7); }
         .cal-dia.seleccionado .pt { background: #fff; box-shadow: none; }
         .cal-dia:disabled .pt-fila { display: none; }
-        /* "Recordar mi número" — casilla propia, porque la del sistema no se
-           puede pintar y sale gris de Android en medio del panel de cristal. */
         /* La insignia flotante de reCAPTCHA ("protected by reCAPTCHA") sale abajo
            a la derecha en TODAS las pantallas, justo encima del botón fijo de
            "Agendar mi lavado" de la bienvenida. Google permite esconderla a
@@ -930,6 +931,9 @@
            Privacidad. Se usa "visibility" y no "display:none" porque reCAPTCHA
            necesita que el elemento siga existiendo para funcionar. */
         .grecaptcha-badge { visibility: hidden; }
+
+        /* "Recordar mi número" — casilla propia, porque la del sistema no se
+           puede pintar y sale gris de Android en medio del panel de cristal. */
 
         .recordar { display: flex; gap: 10px; align-items: flex-start; margin-top: 4px;
                     cursor: pointer; text-align: left; }
@@ -1227,11 +1231,15 @@
         /* La atribución que Google exige por esconder su insignia. Tiene que
            quedar legible: si se pusiera en gris ilegible, sería esconderla dos
            veces y ya no se estaría cumpliendo. */
+        /* Va en --tenue, el mismo tono del texto de junto, y NO en --muy-tenue: con
+           el más apagado quedaba menos legible que todo lo que la rodea, o sea que
+           se estaba escondiendo dos veces y ya no se cumplía la condición. */
         .legal-atribucion {
-            font-size: 11.5px !important; line-height: 1.6; color: var(--muy-tenue) !important;
+            font-size: 11.5px !important; line-height: 1.6; color: var(--tenue) !important;
             border-left: 2px solid rgba(196,181,253,0.30); padding-left: 11px;
             margin: 4px 0 16px !important;
         }
+        .legal-atribucion a { color: var(--morado-claro); text-decoration: underline; }
         /* La línea de aceptación bajo el botón de registrarse. Es el ÚNICO
            momento en que el cliente acepta algo, así que tiene que verse. */
         .acepto {
@@ -2179,9 +2187,14 @@
                             citas falsas.</li>
                             <li><b>WhatsApp e Instagram</b> — sólo si tú tocas esos botones.</li>
                         </ul>
+                        <!-- Los dos ENLACES no son adorno: son la condición que pone Google
+                             para dejarnos esconder su insignia. Con el texto en negritas y
+                             sin enlace, no se estaba cumpliendo. -->
                         <p class="legal-atribucion">Este sitio está protegido por reCAPTCHA y
-                        aplican la <b>Política de Privacidad</b> y los <b>Términos del Servicio</b>
-                        de Google.</p>
+                        aplican la <a href="https://policies.google.com/privacy" target="_blank"
+                        rel="noopener">Política de Privacidad</a> y los
+                        <a href="https://policies.google.com/terms" target="_blank"
+                        rel="noopener">Términos del Servicio</a> de Google.</p>
 
                         <h3>Cuánto tiempo</h3>
                         <p>Tus citas se quedan guardadas mientras tengas cuenta, porque nos
@@ -3457,6 +3470,7 @@ Cera rápida protectora
         const URL_MAPBOX_JS  = "https://api.mapbox.com/mapbox-gl-js/v3.9.0/mapbox-gl.js";
         const URL_MAPBOX_CSS = "https://api.mapbox.com/mapbox-gl-js/v3.9.0/mapbox-gl.css";
         const URL_FIREBASE_DB = "https://www.gstatic.com/firebasejs/10.8.0/firebase-database-compat.js";
+        const URL_APPCHECK = "https://www.gstatic.com/firebasejs/10.8.0/firebase-app-check-compat.js";
 
         let baseDeDatosLista = false;
 
@@ -3475,6 +3489,20 @@ Cera rápida protectora
                 if (MAPBOX_DISPONIBLE) mapboxgl.accessToken = MAPBOX_TOKEN;
                 return MAPBOX_DISPONIBLE;
             });
+        }
+
+        // App Check se baja sola, sin retener el arranque. Va PRIMERA de la cadena
+        // (antes que la base de datos) para que la credencial ya esté puesta cuando
+        // se haga la primera consulta.
+        const ESPERA_MAXIMA_APPCHECK = 6000;
+        function cargarAppCheck() {
+            if (!APPCHECK_SITE_KEY) return Promise.resolve(false);
+            if (typeof firebase !== 'undefined' && firebase.appCheck) return Promise.resolve(true);
+            // Con tiempo límite: cargarScript avisa si el archivo FALLA, pero si se
+            // queda colgado no avisa nunca, y sin esto la base de datos —que va
+            // detrás en la cadena— se quedaría esperando para siempre.
+            return conTiempoLimite(cargarScript('appCheck', URL_APPCHECK), ESPERA_MAXIMA_APPCHECK)
+                .catch(() => false);
         }
 
         function cargarBaseDeDatos() {
@@ -3537,21 +3565,22 @@ Cera rápida protectora
                 console.error("No se pudo iniciar Firebase:", e);
             }
 
-            // 🔴 App Check va FUERA del try de arriba, y no es un detalle de
-            // estilo: si fuera adentro y llegara a fallar, la línea
-            // "firebaseListo = true" no se ejecutaría, la app enseñaría la
-            // pantalla de "sin conexión" y NADIE PODRÍA ENTRAR. Es exactamente
-            // la forma de fallar que ya costó la tanda del botón "Entrando..."
-            // colgado. Aquí, si App Check falla, sólo se pierde la protección.
-            activarAppCheck();
-
             // El resto se pide en segundo plano, EN EL ORDEN EN QUE HACE FALTA:
+            //   0. App Check, para que la credencial esté puesta antes de la
+            //      primera consulta a la base
             //   1. la base de datos, que se usa apenas el cliente entra
             //   2. Mapbox, cuando toque "Agendar mi lavado"
             //   3. Three.js, para el personaje sobre ese mapa
-            // Se encadenan en vez de dispararse las tres juntas: peleando por el
+            // Se encadenan en vez de dispararse todas juntas: peleando por el
             // mismo internet, la que se necesita primero llegaría al final.
-            cargarBaseDeDatos()
+            //
+            // 🔴 Nada de esta cadena retiene el arranque de la app: para cuando se
+            // llega aquí, la pantalla de login ya se está viendo. Por eso App Check
+            // se mudó de una etiqueta <script> del <head> a esta cadena — colgado
+            // del <head> podía dejar al cliente sin poder entrar.
+            cargarAppCheck()
+                .then(() => activarAppCheck())
+                .then(() => cargarBaseDeDatos())
                 .then(() => cargarMapbox())
                 .then(() => cargarThree());
 
@@ -4474,7 +4503,7 @@ Cera rápida protectora
 
         // La versión del archivo. Sirve para que Tristán confirme de un vistazo si
         // el que abrió es el nuevo — ya pasó dos veces que probaba una copia vieja.
-        const VERSION_APP = '2026.09.04a';
+        const VERSION_APP = '2026.09.04b';
 
         // La versión del AVISO DE PRIVACIDAD y los TÉRMINOS. Es distinta de la
         // versión de la app a propósito: la app cambia cada semana y lo legal
@@ -8730,7 +8759,25 @@ Cera rápida protectora
             try {
                 // El segundo parámetro es la renovación automática del permiso:
                 // sin él, se vence a la hora y el cliente se queda a medias.
-                firebase.appCheck().activate(APPCHECK_SITE_KEY, true);
+                const appCheck = firebase.appCheck();
+                appCheck.activate(APPCHECK_SITE_KEY, true);
+
+                // ⚠️ Este try/catch NO alcanza a ver el fallo más común. reCAPTCHA
+                // no truena en el momento: arranca y contesta después, cuando la
+                // red de seguridad de aquí ya se cerró. O sea que abrir la app
+                // desde un archivo suelto —donde reCAPTCHA no funciona porque
+                // exige una dirección web— pasaba por aquí SIN UNA SOLA QUEJA.
+                // Pidiendo el permiso a propósito sí se entera uno del fallo, que
+                // es lo único que avisa antes de prender el bloqueo de verdad.
+                if (typeof appCheck.getToken === 'function') {
+                    appCheck.getToken()
+                        .then(() => console.info("App Check: credencial obtenida."))
+                        .catch(e => console.warn(
+                            "App Check NO pudo obtener la credencial. Con el bloqueo " +
+                            "prendido, la base de datos va a rechazar todo desde aquí. " +
+                            "Casi siempre es que la app no se abrió desde su dirección " +
+                            "de internet:", (e && e.message) || e));
+                }
             } catch (e) {
                 console.warn("App Check no se pudo activar:", e);
             }
