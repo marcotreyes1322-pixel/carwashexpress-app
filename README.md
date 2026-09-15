@@ -4,7 +4,7 @@ Agenda tu lavado o detallado a domicilio en Cuauhtémoc, Chihuahua.
 
 **App:** https://marcotreyes1322-pixel.github.io/carwashexpress-app/
 
-WhatsApp: 625 100 9755 · Instagram: @car_washex
+WhatsApp: 625 100 9755 · Instagram: @car_washexpresss
 
 ---
 
