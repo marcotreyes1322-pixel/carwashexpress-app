@@ -851,20 +851,27 @@
             transform: translateX(-50%); width: 12px; height: 5px; border-radius: 50%;
             background: rgba(0,0,0,0.45);
         }
-        /* ⚡ SIN DESENFOQUE, a propósito (septiembre 2026). Antes llevaba
-           backdrop-filter: blur(12px), y detrás de esta hoja está el MAPA, que
-           se redibuja en cada cuadro mientras el cliente lo arrastra o gira: la
-           tarjeta gráfica tenía que volver a difuminar ese pedazo 60 veces por
-           segundo. En un Android de gama baja era lo que más tironeaba el mapa.
-           Un fondo casi sólido se ve igual de elegante y cuesta cero. */
+        /* Una tarjeta chica y traslúcida que FLOTA sobre el mapa (con aire a los
+           lados y abajo), en vez de una caja negra de orilla a orilla: Tristán la
+           encontró pesada. El mapa se sigue viendo detrás.
+           ⚡ El desenfoque (cristal) sólo va donde el teléfono puede con él
+           (clase con-cristal, ver dibujarElMapa): detrás está el MAPA, que se
+           redibuja en cada cuadro al arrastrarlo, y en un Android de gama baja
+           re-difuminar ese pedazo 60 veces por segundo es lo que más lo tironea.
+           Ahí va sin desenfoque y un poco más oscura, para que se lea igual. */
         .hoja-mapa {
-            position: absolute; left: 0; right: 0; bottom: 0; z-index: 30;
-            display: flex; flex-direction: column; align-items: stretch; gap: 3px;
-            padding: 8px 18px 16px; text-align: left;
-            border-top: 1px solid rgba(196,181,253,0.20);
-            border-radius: 20px 20px 17px 17px;
-            background: rgba(11, 8, 17, 0.93);
-            box-shadow: 0 -10px 28px rgba(0, 0, 0, 0.35);
+            position: absolute; left: 10px; right: 10px; bottom: 10px; z-index: 30;
+            display: flex; flex-direction: column; align-items: stretch; gap: 2px;
+            padding: 6px 14px 12px; text-align: left;
+            border: 1px solid rgba(196,181,253,0.18);
+            border-radius: 16px;
+            background: rgba(11, 8, 17, 0.78);
+            box-shadow: 0 8px 24px rgba(0, 0, 0, 0.35);
+        }
+        .mapa-grande.con-cristal .hoja-mapa {
+            background: rgba(11, 8, 17, 0.55);
+            -webkit-backdrop-filter: blur(10px) saturate(1.2);
+            backdrop-filter: blur(10px) saturate(1.2);
         }
         /* El logo y la atribución de Mapbox van ABAJO del mapa, justo donde flota
            esta hoja, y quedaban tapados. Los términos de Mapbox piden que se vean
@@ -875,18 +882,20 @@
         /* El asa no hace nada: es la señal de "esto es un panel", que es lo que
            hace que se lea como app y no como texto encima de una imagen. */
         .hoja-asa {
-            width: 38px; height: 4px; border-radius: 999px; margin: 0 auto 8px;
+            width: 34px; height: 4px; border-radius: 999px; margin: 0 auto 6px;
             background: rgba(255,255,255,0.22);
         }
+        .hoja-mapa .hoja-estado { margin-bottom: 2px; }
         .hoja-sector {
-            font-family: var(--serif); font-weight: 400; font-size: 26px;
-            color: var(--blanco); margin: 4px 0 0; line-height: 1.15; min-height: 30px;
+            font-family: var(--serif); font-weight: 400; font-size: 21px;
+            color: var(--blanco); margin: 2px 0 0; line-height: 1.15; min-height: 24px;
         }
         .hoja-nota {
-            font-size: 12px; color: var(--tenue); line-height: 1.55;
-            margin: 4px 0 0; min-height: 18px;
+            font-size: 11.5px; color: rgba(255,255,255,0.72); line-height: 1.45;
+            margin: 3px 0 0; min-height: 16px;
         }
-        .hoja-mapa .btn-premium { margin-top: 12px; }
+        .hoja-mapa .enlace-suave { padding: 6px 2px 0; align-self: flex-start; }
+        .hoja-mapa .btn-premium { margin-top: 9px; padding: 12px; }
         /* La pista se sube: abajo chocaba con la hoja. */
         .mapa-grande .map-pista { bottom: auto; top: 12px; }
 
@@ -3920,7 +3929,7 @@ Cera rápida protectora
         // Al publicar, GitHub Actions la reemplaza sola por fecha + commit (la
         // misma que el Service Worker): este valor sólo se ve probando el archivo
         // del repo sin construir.
-        const VERSION_APP = '2026.09.26f';
+        const VERSION_APP = '2026.09.26g';
 
         // La versión del AVISO DE PRIVACIDAD y los TÉRMINOS. Es distinta de la
         // versión de la app a propósito: la app cambia cada semana y lo legal
@@ -5075,24 +5084,24 @@ Cera rápida protectora
                 .then(() => dibujarElMapa(lat, lon));
         }
 
-        // ¿Es un teléfono modesto? 2 GB de memoria o menos, 4 núcleos o menos, o
-        // con Ahorro de datos. El corte es a propósito conservador: un gama media
-        // de 4 GB y 8 núcleos (un Galaxy A, por ejemplo) SÍ ve el mapa en 3D, que
-        // es la firma de la app. (Safari no informa memoria ni núcleos: ahí se
-        // asume que no es gama baja.)
+        // ¿Es un teléfono modesto? 2 GB de memoria o menos, o con Ahorro de datos.
+        // 🐛 Antes también contaba "4 núcleos o menos", y eso marcaba como gama
+        // baja a TODOS los iPhone: Safari informa 2 o 4 núcleos a propósito (por
+        // privacidad), tenga los que tenga, y a Tristán le salía el mapa plano en
+        // su iPhone. La memoria sólo la informa Chrome/Android, que es justo donde
+        // hay teléfonos de 1 o 2 GB; Safari no la informa y ahí no es gama baja.
         function esGamaBaja() {
-            return !!((navigator.deviceMemory && navigator.deviceMemory <= 2)
-                || (navigator.hardwareConcurrency && navigator.hardwareConcurrency <= 4)
-                || quiereAhorrarDatos());
+            return !!((navigator.deviceMemory && navigator.deviceMemory <= 2) || quiereAhorrarDatos());
         }
 
-        // La cámara "de lujo" (inclinada, con edificios en 3D) cuesta: con el mapa
-        // inclinado se ve hasta el horizonte y hay que bajar y dibujar MUCHOS más
-        // mosaicos. En gama baja el mapa va cenital y plano: se ve limpio, carga
-        // menos datos y se mueve fluido. Un solo lugar, para que la cámara inicial
-        // y la de regresar del ajuste manual nunca se contradigan.
+        // El mapa va SIEMPRE inclinado, mirando hacia la ubicación: es la firma
+        // de la app, y cenital (desde arriba) se veía plano y sin gracia. En gama
+        // baja se inclina un poco menos y sin edificios en 3D: con menos
+        // inclinación se ve menos horizonte y hay que bajar menos mosaicos. Un solo
+        // lugar, para que la cámara inicial y la de regresar del ajuste manual
+        // nunca se contradigan.
         function camaraDelMapa() {
-            return esGamaBaja() ? { pitch: 0, bearing: 0 } : { pitch: 55, bearing: -10 };
+            return esGamaBaja() ? { pitch: 45, bearing: -10 } : { pitch: 55, bearing: -10 };
         }
 
         // Mantiene el logo y la atribución de Mapbox justo ENCIMA de la hoja
@@ -5103,7 +5112,9 @@ Cera rápida protectora
             const visor = document.querySelector('.mapa-grande');
             if (!hoja || !visor) return;
             const poner = () => {
-                const alto = hoja.offsetHeight;
+                // Lo que tapa la hoja: de su orilla de arriba al fondo del mapa
+                // (flota a 10 px del borde, así que no basta con su alto).
+                const alto = Math.round(visor.getBoundingClientRect().bottom - hoja.getBoundingClientRect().top);
                 visor.style.setProperty('--alto-hoja', alto + 'px');
                 // 🐛 El mapa ponía la ubicación del cliente en el centro de TODO el
                 // recuadro, y la hoja tapa la mitad de abajo: el marcador quedaba
@@ -5117,7 +5128,9 @@ Cera rápida protectora
                 const H = visor.clientHeight;
                 const visible = Math.max(0, H - alto);
                 const GOTA = 56;
-                const centro = Math.round(Math.min(visible - 6, Math.max(GOTA + 4, visible / 2 + GOTA / 2)));
+                const pista = document.getElementById('map-pista');
+                const libreArriba = pista ? pista.offsetTop + pista.offsetHeight + 4 : 4;
+                const centro = Math.round(Math.min(visible - 6, Math.max(GOTA + libreArriba, visible / 2 + GOTA / 2)));
                 visor.style.setProperty('--centro-mapa', centro + 'px');
                 if (map) {
                     map.setPadding(2 * centro <= H
@@ -5146,6 +5159,8 @@ Cera rápida protectora
                 if (map) { map.remove(); map = null; }
 
                 const camara = camaraDelMapa();
+                // La hoja lleva cristal (desenfoque) sólo donde el teléfono puede con él.
+                document.querySelector('.mapa-grande').classList.toggle('con-cristal', !esGamaBaja());
                 map = new mapboxgl.Map({
                     container: 'map',
                     style: 'mapbox://styles/tristan22/cmrmjntvf002q01s1ep52h6bw',
@@ -5471,7 +5486,7 @@ Cera rápida protectora
 
             document.getElementById('sector-detected').textContent = sectorNombre;
             document.getElementById('sector-message').textContent = ubicacionEsAproximada
-                ? "⚠️ " + motivoUbicacionAproximada + " Estamos usando el centro de Cuauhtémoc, así que tu sector puede estar mal. Si no es correcto, corrígelo con nosotros al confirmar."
+                ? "⚠️ " + motivoUbicacionAproximada + " Usamos el centro de Cuauhtémoc: toca «No es aquí · marcarla yo» para señalar tu casa."
                 : ubicacionPocoPrecisa()
                     ? sectorMsg + " Tu teléfono te ubicó con un margen de unos " + precisionUbicacion
                       + " m: revisa que el marcador esté en tu casa, o toca «No es aquí · marcarla yo»."
