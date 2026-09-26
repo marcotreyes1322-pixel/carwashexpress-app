@@ -3549,6 +3549,21 @@ Cera rápida protectora
             });
         }
 
+        // App Check PRIMERO y la base DESPUÉS, siempre en ese orden y una sola vez.
+        // Quien necesite la base (arranque, login, registro) espera ESTA promesa y
+        // no cargarBaseDeDatos() suelta: si la base llegara antes que App Check,
+        // sus primeras escrituras saldrían sin credencial, y el día que se prenda
+        // el bloqueo en la consola se rechazarían (justo el registro de cuentas).
+        let preparacionDeLaBase = null;
+        function prepararBaseDeDatos() {
+            if (!preparacionDeLaBase) {
+                preparacionDeLaBase = cargarAppCheck()
+                    .then(() => activarAppCheck())
+                    .then(() => cargarBaseDeDatos());
+            }
+            return preparacionDeLaBase;
+        }
+
         // Arranca con DOMContentLoaded, no con window.onload. La diferencia importa:
         // window.onload espera a que TODO haya bajado (librerías, tipografías, cada
         // imagen). Con datos móviles lentos eso dejaba la app sin arrancar durante
@@ -3614,9 +3629,7 @@ Cera rápida protectora
             // llega aquí, la pantalla de login ya se está viendo. Por eso App Check
             // se mudó de una etiqueta <script> del <head> a esta cadena — colgado
             // del <head> podía dejar al cliente sin poder entrar.
-            cargarAppCheck()
-                .then(() => activarAppCheck())
-                .then(() => cargarBaseDeDatos())
+            prepararBaseDeDatos()
                 .then(() => cargarMapbox())
                 .then(() => cargarThree());
 
@@ -3653,7 +3666,7 @@ Cera rápida protectora
             // lado, todo lo que toca la base (citas, personaje, agenda) ya la tiene.
             // Con tiempo límite, para que un fallo de la base no deje al cliente
             // atorado en la bienvenida sin poder hacer nada.
-            conTiempoLimite(cargarBaseDeDatos(), ESPERA_MAXIMA_LOGIN)
+            conTiempoLimite(prepararBaseDeDatos(), ESPERA_MAXIMA_LOGIN)
                 .catch(() => false)
                 .then(() => { if (usuarioActual) cargarPersonajeDelUsuario(); });
         }
@@ -4396,7 +4409,7 @@ Cera rápida protectora
             caja.classList.add('hidden');   // se esconde hasta saber que hay algo
             if (!baseLista() || !usuarioActual) return;
 
-            firebase.database().ref('ordenes/' + usuarioActual.uid).once('value')
+            conTiempoLimite(firebase.database().ref('ordenes/' + usuarioActual.uid).once('value'), ESPERA_MAXIMA_CITAS)
                 .then(snap => {
                     const hoy = fechaLocalISO(new Date());
                     const proximas = Object.values(snap.val() || {})
@@ -4417,7 +4430,7 @@ Cera rápida protectora
                         esc(dia) + ' · <span class="hora">' + esc(cita.agendaHora || '') + '</span>';
                     document.getElementById('proxima-detalle').textContent =
                         [cita.paquete, cita.auto].filter(Boolean).join(' · ')
-                        + (cita.total ? '  ·  $' + cita.total : '');
+                        + (cita.total ? '  ·  ' + dinero(cita.total) : '');
                     caja.classList.remove('hidden');
                 })
                 .catch(err => console.error("No se pudo leer la próxima cita:", err));
@@ -4437,6 +4450,19 @@ Cera rápida protectora
                 .replace(/&/g, "&amp;").replace(/</g, "&lt;").replace(/>/g, "&gt;")
                 .replace(/"/g, "&quot;").replace(/'/g, "&#39;");
         }
+
+        // TODO el dinero que se pinta sale por aquí. Dos motivos:
+        //   · seguridad: el total lo escribe el teléfono del cliente. Hoy las
+        //     Reglas exigen que sea número, pero si algún día se relajan, un
+        //     texto con código pegado en innerHTML correría en la pantalla del
+        //     administrador, que puede leer los datos de todos. Number() lo
+        //     vuelve inofensivo pase lo que pase.
+        //   · presentación: "$1,249" y no "$1249", igual que en el menú.
+        function dinero(valor) {
+            return '$' + (Number(valor) || 0).toLocaleString('es-MX');
+        }
+        // Para sumar totales sin que un texto convierta la suma en concatenación.
+        function monto(valor) { return Number(valor) || 0; }
 
         // =====================================================================
         // 💬 AVISOS CON LA ESTÉTICA DE LA MARCA
@@ -4539,7 +4565,7 @@ Cera rápida protectora
 
         // La versión del archivo. Sirve para que Tristán confirme de un vistazo si
         // el que abrió es el nuevo — ya pasó dos veces que probaba una copia vieja.
-        const VERSION_APP = '2026.09.04b';
+        const VERSION_APP = '2026.09.26a';
 
         // La versión del AVISO DE PRIVACIDAD y los TÉRMINOS. Es distinta de la
         // versión de la app a propósito: la app cambia cada semana y lo legal
@@ -4978,8 +5004,21 @@ Cera rápida protectora
                 firebase.auth().createUserWithEmailAndPassword(pseudoEmail, password)
                     .then((cred) => {
                         usuarioCreado = cred.user;
+                        // ⚠️ La librería de la base se baja APARTE y puede no haber
+                        // llegado todavía (con internet lento tarda varios segundos
+                        // detrás de App Check). Antes se usaba sin esperarla: la cuenta
+                        // se creaba SIN perfil y se perdía el registro de qué términos
+                        // aceptó. Ahora se espera a que esté (con App Check ya puesto).
+                        return prepararBaseDeDatos();
+                    })
+                    .then((hayBase) => {
+                        if (!hayBase) {
+                            const e = new Error("No se pudo bajar la base de datos");
+                            e.code = 'app/sin-base';
+                            throw e;
+                        }
                         // Guardamos el perfil (nombre, teléfono real) en la base de datos, ligado al UID
-                        return firebase.database().ref('usuarios/' + cred.user.uid).set({
+                        return firebase.database().ref('usuarios/' + usuarioCreado.uid).set({
                             nombre: nombre,
                             telefono: telefonoRaw,
                             // Queda anotado QUÉ VERSIÓN de los términos aceptó y
@@ -4993,18 +5032,25 @@ Cera rápida protectora
             )
                 .then(() => {
                     destrabar();
-                    entrarComoUsuario(usuarioCreado || firebase.auth().currentUser);
+                    // Firebase ya avisó por su cuenta (onAuthStateChanged) en cuanto se
+                    // creó la cuenta, así que normalmente el cliente YA está dentro, y
+                    // puede que hasta haya tocado "Agendar". Volver a "entrar" lo
+                    // regresaría a la bienvenida. Sólo se completa el saludo, que ahora
+                    // sí tiene su nombre guardado.
+                    if (usuarioActual) pintarAvatarEnBienvenida(nombre);
+                    else entrarComoUsuario(usuarioCreado || firebase.auth().currentUser);
                 })
                 .catch((error) => {
                     console.error("Error registrando:", error);
                     destrabar();
-                    if (error.code === 'app/timeout') {
-                        // La cuenta pudo haberse creado aunque no nos llegara la respuesta:
-                        // hay que decirlo, o el cliente lo intentaría de nuevo y le saldría
-                        // "ese número ya tiene una cuenta" sin entender por qué.
-                        errorEl.textContent = usuarioCreado
-                            ? "Tu cuenta se creó, pero la conexión se cortó al guardar tus datos. Inicia sesión normalmente."
-                            : "Tu conexión está muy lenta y el servidor no contestó. Vuelve a intentar en un momento.";
+                    if (usuarioCreado && error.code !== 'auth/email-already-in-use') {
+                        // La cuenta SÍ se creó (y Firebase ya dejó la sesión abierta);
+                        // lo que falló fue guardar el perfil. Hay que decirlo, o el
+                        // cliente lo intentaría de nuevo y le saldría "ese número ya
+                        // tiene una cuenta" sin entender por qué.
+                        errorEl.textContent = "Tu cuenta se creó, pero la conexión se cortó al guardar tus datos. Inicia sesión normalmente.";
+                    } else if (error.code === 'app/timeout') {
+                        errorEl.textContent = "Tu conexión está muy lenta y el servidor no contestó. Vuelve a intentar en un momento.";
                     } else if (error.code === 'auth/email-already-in-use') {
                         // Cada teléfono puede tener UNA sola cuenta. Lo más probable es
                         // que el cliente ya se haya registrado antes y no lo recuerde,
@@ -5239,13 +5285,17 @@ Cera rápida protectora
         }
 
         // Si no hay internet, decirlo YA en vez de dejar al cliente esperando 20 segundos.
+        // `errorEl` es opcional: al confirmar la cita no hay un renglón de error y
+        // el aviso lo pone quien llama. (Antes se llamaba sin él desde
+        // finalizarMision y, sin internet, reventaba con el botón ya bloqueado.)
         function hayConexionParaEntrar(errorEl) {
+            const decir = texto => { if (errorEl) errorEl.textContent = texto; };
             if (navigator.onLine === false) {
-                errorEl.textContent = "No tienes conexión a internet. Conéctate y vuelve a intentar.";
+                decir("No tienes conexión a internet. Conéctate y vuelve a intentar.");
                 return false;
             }
             if (!firebaseListo) {
-                errorEl.textContent = "La app no alcanzó a conectarse con el servidor. Cierra la app y vuelve a abrirla.";
+                decir("La app no alcanzó a conectarse con el servidor. Cierra la app y vuelve a abrirla.");
                 return false;
             }
             return true;
@@ -5466,6 +5516,7 @@ Cera rápida protectora
         // o en un celular compartido: sin esto, el siguiente cliente que entrara podía
         // arrastrar el servicio, los extras y el sector del cliente anterior.
         function limpiarCotizacion() {
+            olvidarIntentoDeCita();
             servicioSeleccionado = "";
             tipoDetallado = "";
             tomaCorriente = "";
@@ -8035,7 +8086,7 @@ Cera rápida protectora
                 ? "⚠️ " + motivoUbicacionAproximada + " Estamos usando el centro de Cuauhtémoc, así que tu sector puede estar mal. Si no es correcto, corrígelo con nosotros al confirmar."
                 : sectorMsg;
             document.getElementById('fuel-notice').textContent = recargoGasolina > 0
-                ? `${sectorNombre} · Traslado +$${recargoGasolina}`
+                ? `${sectorNombre} · Traslado +${dinero(recargoGasolina)}`
                 : `${sectorNombre} · Sin cargo por traslado`;
 
             // Más allá del máximo NO se deja agendar. Dejarlo pasar con $0 sería
@@ -8094,6 +8145,7 @@ Cera rápida protectora
         }
 
         function seleccionarServicioBase(servicio) {
+            olvidarIntentoDeCita();
             servicioSeleccionado = servicio;
             tipoDetallado = ""; 
             precioBase = 0;
@@ -8112,6 +8164,7 @@ Cera rápida protectora
         }
 
         function seleccionarMembresia(nombrePlan, precio) {
+            olvidarIntentoDeCita();
             servicioSeleccionado = nombrePlan;
             // Se limpia por si el cliente venía de ver un detallado y se echó para
             // atrás: si no, el precio del detallado le pisaría el de la membresía.
@@ -8380,19 +8433,19 @@ Cera rápida protectora
             if (esLavadoBasico) {
                 const etiquetaTipo = tipoLavado === 'completo' ? '' :
                     (tipoLavado === 'exterior' ? ' · sólo exterior (70%)' : ' · sólo interior (70%)');
-                partes.push(`Lavado ${tamanoVehiculoSeleccionado}${etiquetaTipo}: $${precioBase}`);
+                partes.push(`Lavado ${tamanoVehiculoSeleccionado}${etiquetaTipo}: ${dinero(precioBase)}`);
             } else {
-                partes.push(`${servicioSeleccionado}: $${precioBase}`);
+                partes.push(`${servicioSeleccionado}: ${dinero(precioBase)}`);
             }
             Object.entries(extrasSeleccionados).forEach(([id, precio]) => {
                 const nombre = EXTRAS[id] ? EXTRAS[id].nombre : id;
                 partes.push(EXTRAS[id] && EXTRAS[id].cotiza
                     ? `${nombre}: te cotizamos`
-                    : `${nombre}: +$${precio}`);
+                    : `${nombre}: +${dinero(precio)}`);
             });
-            if (recargoGasolina > 0) partes.push(`Traslado (${minusculaInicial(sectorNombre)}): +$${recargoGasolina}`);
+            if (recargoGasolina > 0) partes.push(`Traslado (${minusculaInicial(sectorNombre)}): +${dinero(recargoGasolina)}`);
 
-            monto.textContent = "$" + calcularTotal() + " MXN";
+            monto.textContent = dinero(calcularTotal()) + " MXN";
             detalle.textContent = partes.join("  ·  ");
         }
 
@@ -8421,6 +8474,7 @@ Cera rápida protectora
         }
 
         function elegirDetallado(tipo, etiquetaTamano, precio) {
+            olvidarIntentoDeCita();
             servicioSeleccionado = `Detallado ${tipo} (${etiquetaTamano})`;
             tipoDetallado = tipo;
             precioBase = precio;
@@ -8541,8 +8595,26 @@ Cera rápida protectora
                     });
                     disponibilidadCargada = true;
                     pintarCalendario();
-                    pintarAviso("");
-                    if (fechaSeleccionada) cargarDisponibilidad(fechaSeleccionada);
+
+                    // 🐛 Si el cliente tocó un día ANTES de que llegara esto (internet
+                    // lento o dedo rápido), aquí se le borraba la hora elegida. En un
+                    // detallado eso lo dejaba atorado en "selecciona un Día y una
+                    // Hora", aunque ahí no hay hora que elegir.
+                    if (!fechaSeleccionada) {
+                        pintarAviso("");
+                    } else if (diasQueOcupa(servicioSeleccionado) > 0) {
+                        // Detallado: sólo se confirma que el día siga libre, con los
+                        // datos que acaban de llegar. Su aviso ("Apartamos tu…") se queda.
+                        if (!diaEsElegible(fechaSeleccionada)) {
+                            fechaSeleccionada = "";
+                            horaSeleccionada = "";
+                            pintarCalendario();
+                            esconderClima();
+                            pintarAviso("Ese día ya no tiene lugar para el detallado. Elige otro.", true);
+                        }
+                    } else {
+                        cargarDisponibilidad(fechaSeleccionada, true);   // true = respeta la hora ya elegida
+                    }
                 })
                 .catch(err => {
                     console.error("Error leyendo la disponibilidad:", err);
@@ -8573,9 +8645,13 @@ Cera rápida protectora
         }
 
         // Cuántas franjas quedan libres ese día (descontando las que ya pasaron)
+        // (Al reagendar, los huecos de la PROPIA cita cuentan como libres: si no,
+        // un detallado no podría recorrerse un día sobre sus mismas fechas.)
         function franjasLibresEn(fechaISO) {
             const ocupadas = ocupacionPorFecha[fechaISO] || [];
-            return SLOTS.filter(s => !ocupadas.includes(claveHora(s.hora)) && !horaYaPaso(fechaISO, s.hora)).length;
+            return SLOTS.filter(s =>
+                (!ocupadas.includes(claveHora(s.hora)) || esHuecoPropioEnReagenda(fechaISO, s.hora))
+                && !horaYaPaso(fechaISO, s.hora)).length;
         }
 
         function diaEsElegible(fechaISO) {
@@ -8928,6 +9004,7 @@ Cera rápida protectora
         }
 
         function elegirDiaCalendario(fechaISO) {
+            olvidarIntentoDeCita();   // otro día = otros huecos = otro intento
             fechaSeleccionada = fechaISO;
             pintarCalendario();
             mostrarClimaDelDia(fechaISO);
@@ -8987,13 +9064,18 @@ Cera rápida protectora
             return horaAMinutos(hora) <= minutosAhora;
         }
 
-        function cargarDisponibilidad(fecha) {
-            // Partimos de todo libre y sin nada seleccionado
+        // `conservarHora`: al refrescar el MISMO día (llegó la disponibilidad del
+        // mes), la hora que el cliente ya eligió se respeta si sigue libre.
+        function cargarDisponibilidad(fecha, conservarHora) {
+            const horaPrevia = conservarHora ? horaSeleccionada : "";
+            // Partimos de todo libre y sin nada seleccionado (salvo la hora que se
+            // respeta: sigue elegida mientras se confirma que continúe libre)
             SLOTS.forEach(s => {
                 const el = document.getElementById(s.id);
-                el.classList.remove('ocupado', 'selected');
+                el.classList.remove('ocupado');
+                el.classList.toggle('selected', !!horaPrevia && s.hora === horaPrevia);
             });
-            horaSeleccionada = "";
+            horaSeleccionada = horaPrevia;
 
             if (!baseLista()) {
                 pintarAviso("Sin conexión a la base de datos: no se puede confirmar qué horarios están libres.", true);
@@ -9004,6 +9086,9 @@ Cera rápida protectora
 
             conTiempoLimite(firebase.database().ref('agenda/' + fecha).once('value'), 12000)
                 .then(snap => {
+                    // Si mientras llegaba la respuesta el cliente ya tocó otro día,
+                    // ésta es de un día que ya no está viendo: se descarta.
+                    if (fecha !== fechaSeleccionada) return;
                     const ocupados = snap.val() || {};
                     let libres = 0;
 
@@ -9011,7 +9096,7 @@ Cera rápida protectora
 
                     SLOTS.forEach(s => {
                         const el = document.getElementById(s.id);
-                        if (ocupados[claveHora(s.hora)]) {
+                        if (ocupados[claveHora(s.hora)] && !esHuecoPropioEnReagenda(fecha, s.hora)) {
                             el.classList.add('ocupado');
                         } else if (horaYaPaso(fecha, s.hora)) {
                             el.classList.add('ocupado');
@@ -9020,6 +9105,16 @@ Cera rápida protectora
                             libres++;
                         }
                     });
+
+                    // La hora que se respetaba: si mientras tanto la apartó alguien, se suelta.
+                    if (horaPrevia) {
+                        const previa = SLOTS.find(x => x.hora === horaPrevia);
+                        const el = previa && document.getElementById(previa.id);
+                        if (!el || el.classList.contains('ocupado')) {
+                            if (el) el.classList.remove('selected');
+                            if (horaSeleccionada === horaPrevia) horaSeleccionada = "";
+                        }
+                    }
 
                     if (libres === 0) {
                         pintarAviso(yaPasaron > 0
@@ -9045,6 +9140,7 @@ Cera rápida protectora
             }
             SLOTS.forEach(s => document.getElementById(s.id).classList.remove('selected'));
             slot.classList.add('selected');
+            if (horaSeleccionada !== hora) olvidarIntentoDeCita();
             horaSeleccionada = hora;
         }
 
@@ -9141,9 +9237,14 @@ Cera rápida protectora
                 return;
             }
 
+            if (!baseLista()) {
+                contenedor.innerHTML = `<p class="vacio-nota">No hay conexión con el servidor. Revisa tu internet y vuelve a entrar.</p>`;
+                return;
+            }
+
             contenedor.innerHTML = `<p class="vacio-nota">Cargando tus citas...</p>`;
 
-            firebase.database().ref('ordenes/' + usuarioActual.uid).once('value')
+            conTiempoLimite(firebase.database().ref('ordenes/' + usuarioActual.uid).once('value'), ESPERA_MAXIMA_CITAS)
                 .then((snapshot) => {
                     const data = snapshot.val();
                     if (!data) {
@@ -9173,7 +9274,7 @@ Cera rápida protectora
                         item.innerHTML = `
                             <div class="cita-servicio">${esc(cita.paquete)}</div>
                             <div><strong>${esc(formatearFechaLegible(cita.agendaDia))}</strong> · ${esc(cita.agendaHora)}</div>
-                            <div>${esc(cita.auto)}${cita.total ? ' · $' + cita.total : ''}</div>
+                            <div>${esc(cita.auto)}${cita.total ? ' · ' + dinero(cita.total) : ''}</div>
                             ${esPasada ? '' : `<div class="cita-acciones">
                                 <button class="chip" onclick="iniciarReagenda('${esc(citaId)}')">Reagendar</button>
                                 <button class="chip rojo" onclick="cancelarCita('${esc(citaId)}')">Cancelar</button>
@@ -9202,7 +9303,12 @@ Cera rápida protectora
                 })
                 .catch((error) => {
                     console.error("Error leyendo citas:", error);
-                    contenedor.innerHTML = `<p class="vacio-nota">No pudimos cargar tus citas. Revisa tu conexión.</p>`;
+                    contenedor.innerHTML = `<div class="vacio-invita">
+                        <p>${error && error.code === 'app/timeout'
+                            ? 'La conexión está muy lenta y tus citas no terminaron de cargar.'
+                            : 'No pudimos cargar tus citas. Revisa tu conexión.'}</p>
+                        <button class="btn-premium secundario" onclick="renderizarCitas()">Reintentar</button>
+                    </div>`;
                 });
         }
 
@@ -9214,19 +9320,38 @@ Cera rápida protectora
         // y sólo si se logró se libera el viejo y se actualiza la cita.
         // Si algo falla a medias, se devuelve el nuevo hueco y todo queda igual.
         // =====================================================================
-        let citaReagendando = null;   // { citaId, fechaAnterior, horaAnterior }
+        let citaReagendando = null;   // { citaId, cita, propios: Set('fecha|hora'), servicioAntes }
+
+        // Tiempo límite de las lecturas y escrituras de "Mis citas". Sin él, con la
+        // señal colgada se quedaban en "Cargando..." o "Cambiando..." para siempre.
+        const ESPERA_MAXIMA_CITAS = 12000;
 
         function iniciarReagenda(citaId) {
-            firebase.database().ref('ordenes/' + usuarioActual.uid + '/' + citaId).once('value')
+            if (!baseLista() || !usuarioActual) { mostrarAviso("⚠️ Sin conexión con el servidor. Revisa tu internet."); return; }
+            const refCita = firebase.database().ref('ordenes/' + usuarioActual.uid + '/' + citaId);
+            let cita = null;
+
+            conTiempoLimite(refCita.once('value'), ESPERA_MAXIMA_CITAS)
                 .then(snap => {
-                    const cita = snap.val();
+                    cita = snap.val();
+                    if (!cita) return null;
+                    // Qué huecos son DE ESTA cita: en el calendario no deben contar
+                    // como ocupados, o un detallado no podría recorrerse un día.
+                    return conTiempoLimite(soloLosMios(huecosDeLaCita(cita)), ESPERA_MAXIMA_CITAS);
+                })
+                .then(mios => {
                     if (!cita) { mostrarAviso("⚠️ No encontramos esa cita."); return; }
 
                     citaReagendando = {
                         citaId: citaId,
-                        fechaAnterior: cita.agendaDia,
-                        horaAnterior: cita.agendaHora
+                        cita: cita,
+                        propios: new Set((mios || []).map(mismaLlave)),
+                        servicioAntes: servicioSeleccionado
                     };
+                    // El calendario decide qué días se pueden elegir según el
+                    // servicio: un detallado necesita el día (o los dos) completos.
+                    // Antes se quedaba con el último servicio que se hubiera tocado.
+                    servicioSeleccionado = cita.paquete || "";
 
                     // La pantalla de agenda se reutiliza, pero cambia lo que hace el botón
                     const btn = document.getElementById('btn-continuar-agenda');
@@ -9246,6 +9371,12 @@ Cera rápida protectora
                 });
         }
 
+        // ¿Este hueco es de la cita que se está moviendo? Entonces para ella está libre.
+        function esHuecoPropioEnReagenda(fechaISO, hora) {
+            return !!(citaReagendando && citaReagendando.propios &&
+                      citaReagendando.propios.has(fechaISO + '|' + hora));
+        }
+
         function salirDeModoReagenda() {
             citaReagendando = null;
             const btn = document.getElementById('btn-continuar-agenda');
@@ -9253,75 +9384,66 @@ Cera rápida protectora
             btn.setAttribute('onclick', 'avanzarAFormularioDesdeAgenda()');
         }
 
-        function cancelarReagenda() {
+        // Las dos salidas explícitas del modo reagendar devuelven el servicio que
+        // el cliente traía antes de entrar, para no ensuciar una cotización a medias.
+        function terminarReagenda() {
+            if (citaReagendando) servicioSeleccionado = citaReagendando.servicioAntes || "";
             salirDeModoReagenda();
+        }
+
+        function cancelarReagenda() {
+            terminarReagenda();
             mostrarPantalla('screen-ver-citas');
             renderizarCitas(); pintarProximaCita();
         }
 
         function confirmarReagenda() {
             if (!citaReagendando) return;
+            const { citaId, cita } = citaReagendando;
             if (!fechaSeleccionada || !horaSeleccionada) {
                 pintarAviso("Elige el nuevo día y la nueva hora.", true);
                 return;
             }
-            if (fechaSeleccionada === citaReagendando.fechaAnterior &&
-                horaSeleccionada === citaReagendando.horaAnterior) {
+            if (fechaSeleccionada === cita.agendaDia && horaSeleccionada === cita.agendaHora) {
                 pintarAviso("Ese es el mismo horario que ya tenías. Elige otro.", true);
+                return;
+            }
+            if (horaYaPaso(fechaSeleccionada, horaSeleccionada)) {
+                pintarAviso("Ese horario ya pasó. Elige uno más tarde o cambia de día.", true);
+                cargarDisponibilidad(fechaSeleccionada);
                 return;
             }
 
             const btn = document.getElementById('btn-continuar-agenda');
+            const restaurar = () => { btn.disabled = false; btn.textContent = "Confirmar nuevo horario"; };
             btn.disabled = true;
             btn.textContent = "Cambiando...";
 
-            const db = firebase.database();
-            const refNuevo = db.ref('agenda/' + fechaSeleccionada + '/' + claveHora(horaSeleccionada));
-            const refCita  = db.ref('ordenes/' + usuarioActual.uid + '/' + citaReagendando.citaId);
-            const refViejo = db.ref('agenda/' + citaReagendando.fechaAnterior + '/' + claveHora(citaReagendando.horaAnterior));
-
-            refNuevo.transaction(actual => {
-                if (actual === null) {
-                    return { uid: usuarioActual.uid, folio: 'REAGENDADA', timestamp: Date.now() };
-                }
-                return; // ocupado: abortamos
-            })
-            .then(res => {
-                if (!res.committed) {
-                    btn.disabled = false;
-                    btn.textContent = "Confirmar nuevo horario";
-                    pintarAviso("Alguien acaba de apartar ese horario. Elige otro.", true);
-                    cargarDisponibilidad(fechaSeleccionada);
-                    return null;
-                }
-                // Ya es nuestro: actualizamos la cita y soltamos el hueco viejo
-                return refCita.update({ agendaDia: fechaSeleccionada, agendaHora: horaSeleccionada })
-                    .then(() => refViejo.remove().catch(err => {
-                        // La cita ya quedó movida; sólo no se liberó el hueco anterior.
-                        console.error("No se pudo liberar el horario anterior:", err);
-                    }))
-                    .then(() => {
-                        btn.disabled = false;
-                        salirDeModoReagenda();
-                        mostrarAviso("✅ Tu cita quedó cambiada al " + formatearFechaLegible(fechaSeleccionada) + " a las " + horaSeleccionada + ".");
-                        mostrarPantalla('screen-ver-citas');
-                        renderizarCitas(); pintarProximaCita();
-                    })
-                    .catch(err => {
-                        // No se pudo mover: devolvemos el hueco nuevo para no dejarlo bloqueado
-                        console.error("Error moviendo la cita:", err);
-                        refNuevo.remove().catch(() => {});
-                        btn.disabled = false;
-                        btn.textContent = "Confirmar nuevo horario";
-                        mostrarAviso("⚠️ No se pudo cambiar tu cita. Sigue en su horario original.");
-                    });
-            })
-            .catch(err => {
-                console.error("Error apartando el nuevo horario:", err);
-                btn.disabled = false;
-                btn.textContent = "Confirmar nuevo horario";
-                mostrarAviso("⚠️ No pudimos apartar ese horario. Revisa tu conexión.");
-            });
+            // Aparta lo nuevo, suelta lo viejo y actualiza la cita (incluida su
+            // lista de huecos) en UNA sola escritura: o se mueve completa o se
+            // queda como estaba. Antes movía un solo hueco aunque la cita fuera
+            // un detallado, y dejaba horarios bloqueados para siempre.
+            conTiempoLimite(moverCita(citaId, cita, fechaSeleccionada, horaSeleccionada), ESPERA_MAXIMA_LOGIN)
+                .then(estado => {
+                    restaurar();
+                    if (estado === 'ocupado') {
+                        pintarAviso("Alguien acaba de apartar ese horario. Elige otro.", true);
+                        cargarDisponibilidadDelMes();
+                        return;
+                    }
+                    const fecha = fechaSeleccionada, hora = horaSeleccionada;
+                    terminarReagenda();
+                    mostrarAviso("✅ Tu cita quedó cambiada al " + formatearFechaLegible(fecha) + " a las " + hora + ".");
+                    mostrarPantalla('screen-ver-citas');
+                    renderizarCitas(); pintarProximaCita();
+                })
+                .catch(err => {
+                    console.error("Error moviendo la cita:", err);
+                    restaurar();
+                    mostrarAviso(err && err.code === 'app/timeout'
+                        ? "⚠️ La conexión está muy lenta y no pudimos confirmar el cambio.\n\nAntes de intentar de nuevo, revisa \"Mis citas\": puede que sí se haya cambiado."
+                        : "⚠️ No se pudo cambiar tu cita. Sigue en su horario original.\n\n" + motivoDeFirebase(err));
+                });
         }
 
         function cancelarCita(citaId) {
@@ -9330,37 +9452,30 @@ Cera rápida protectora
             preguntar("¿Seguro que quieres cancelar esta cita?\n\nEl horario quedará libre para otro cliente.",
                       "Sí, cancelar", "No, dejarla").then(respuesta => {
                 if (!respuesta) return;
+                if (!baseLista() || !usuarioActual) { mostrarAviso("⚠️ Sin conexión con el servidor. Revisa tu internet."); return; }
                 const refCita = firebase.database().ref('ordenes/' + usuarioActual.uid + '/' + citaId);
 
-                // Leemos la cita ANTES de borrarla para saber qué día y hora hay que
-                // liberar en la agenda. Si no liberáramos el hueco, ese horario
-                // quedaría apartado para siempre aunque nadie vaya a ir.
-                refCita.once('value')
-                    .then(snap => {
+                // Se lee la cita para saber qué huecos soltar, y la cita y sus huecos
+                // se borran JUNTOS en una sola escritura. Antes se borraba primero
+                // la cita y después los huecos: si fallaba lo segundo, el horario
+                // quedaba apartado para siempre sin que nadie fuera a ir.
+                conTiempoLimite(
+                    refCita.once('value').then(snap => {
                         const cita = snap.val();
-                        return refCita.remove().then(() => cita);
-                    })
-                    .then(cita => {
-                        if (!cita) return;
-                        // Un detallado ocupa varios huecos (día o dos días completos).
-                        // Se guardaron al agendar; si la cita es vieja y no los tiene,
-                        // se calculan a partir del servicio para no dejar días trabados.
-                        const huecos = cita.huecosOcupados
-                            || (cita.agendaDia && cita.agendaHora
-                                ? huecosQueOcupa(cita.paquete, cita.agendaDia, cita.agendaHora)
-                                : []);
-                        return liberarHuecos(huecos).catch(err => {
-                            // La cita ya se borró; avisamos para que Tristán libere el hueco a mano.
-                            console.error("No se pudieron liberar todos los horarios:", err);
-                        });
-                    })
+                        return cita ? cancelarCitaAtomica(citaId, cita) : null;
+                    }),
+                    ESPERA_MAXIMA_CITAS
+                )
                     .then(() => {
                         renderizarCitas(); pintarProximaCita();
                         mostrarAviso("🗑️ La reservación ha sido cancelada y el horario quedó libre.");
                     })
                     .catch((error) => {
                         console.error("Error cancelando cita:", error);
-                        mostrarAviso("⚠️ No se pudo cancelar la cita. Intenta de nuevo.");
+                        renderizarCitas();
+                        mostrarAviso(error && error.code === 'app/timeout'
+                            ? "⚠️ La conexión está muy lenta. Revisa \"Mis citas\" en un momento para ver si se canceló."
+                            : "⚠️ No se pudo cancelar la cita. Intenta de nuevo.");
                     });
             });
         }
@@ -9386,38 +9501,155 @@ Cera rápida protectora
             return lista;
         }
 
-        // Aparta los huecos uno por uno con transacción. Si alguno ya estaba tomado,
-        // devuelve los que ya había apartado para no dejar el día bloqueado a medias.
-        function apartarHuecos(huecos, folio, timestamp) {
-            const db = firebase.database();
-            const apartados = [];
+        // =====================================================================
+        // 🔒 LA AGENDA SE ESCRIBE "TODO O NADA" (septiembre 2026)
+        //
+        // Antes se apartaba hueco por hueco (un Detallado Completo eran 8
+        // transacciones seguidas) y al final se guardaba la cita aparte. Eso
+        // dejaba tres agujeros medidos en la auditoría:
+        //   · si se cortaba la señal o se cerraba la app a la mitad, quedaban
+        //     huecos apartados SIN cita (los "Apartado, sin cita" del admin);
+        //   · si el cliente reintentaba tras un corte, su propio hueco le salía
+        //     como "alguien acaba de apartarlo";
+        //   · reagendar movía UN solo hueco aunque la cita ocupara 4 u 8, y no
+        //     actualizaba huecosOcupados, así que al cancelar después se
+        //     quedaban horarios bloqueados para siempre.
+        //
+        // Ahora la cita y TODOS sus huecos van en UNA sola escritura de varias
+        // rutas. Firebase garantiza que se guarda completa o no se guarda nada,
+        // y las Reglas revisan cada ruta por su cuenta: si un solo hueco ya es
+        // de otra persona, se rechaza toda la escritura. Además es UN viaje al
+        // servidor en vez de nueve.
+        //
+        // Cada hueco guarda `cita` (la llave de la orden) para saber sin duda a
+        // qué cita pertenece.
+        // =====================================================================
+        const claveHueco = h => 'agenda/' + h.fecha + '/' + claveHora(h.hora);
+        const mismaLlave = h => h.fecha + '|' + h.hora;
 
-            const siguiente = (i) => {
-                if (i >= huecos.length) return Promise.resolve({ committed: true });
-                const ref = db.ref('agenda/' + huecos[i].fecha + '/' + claveHora(huecos[i].hora));
-                return ref.transaction(actual => {
-                    if (actual === null) {
-                        // Se guarda el uid para que las Reglas de Seguridad puedan exigir
-                        // que sólo quien apartó el hueco pueda liberarlo.
-                        return { uid: usuarioActual.uid, folio: folio, timestamp: timestamp };
-                    }
-                    return; // ya estaba ocupado: abortamos sin pisarlo
-                }).then(res => {
-                    if (!res.committed) {
-                        return liberarHuecos(apartados).then(() => ({ committed: false }));
-                    }
-                    apartados.push(huecos[i]);
-                    return siguiente(i + 1);
+        // La llave y el folio se fijan UNA vez por intento de agendar: si el
+        // cliente reintenta después de un corte, se usan los mismos y la cita no
+        // se duplica. Se renuevan en cuanto cambia el día, la hora o el servicio.
+        let intentoEnCurso = null;   // { clave, folio }
+        function intentoDeCita() {
+            if (!intentoEnCurso) {
+                intentoEnCurso = {
+                    // La llave la genera Firebase en el teléfono, sin internet, y no
+                    // se repite nunca. El folio es el número corto que ve la gente.
+                    clave: firebase.database().ref('ordenes/' + usuarioActual.uid).push().key,
+                    folio: 'CWE-' + Math.floor(Math.random() * 900000 + 100000)
+                };
+            }
+            return intentoEnCurso;
+        }
+        function olvidarIntentoDeCita() { intentoEnCurso = null; }
+
+        // Los huecos que ocupa una cita: los que guardó MÁS los que salen de su
+        // fecha y hora actuales. Las citas reagendadas con la versión anterior
+        // traen huecosOcupados desfasado, por eso se juntan las dos listas.
+        function huecosDeLaCita(cita) {
+            const vistos = new Set();
+            const lista = [];
+            const calculados = (cita && cita.agendaDia && cita.agendaHora)
+                ? huecosQueOcupa(cita.paquete, cita.agendaDia, cita.agendaHora) : [];
+            ((cita && Array.isArray(cita.huecosOcupados)) ? cita.huecosOcupados : [])
+                .concat(calculados)
+                .forEach(h => {
+                    if (!h || !h.fecha || !h.hora || vistos.has(mismaLlave(h))) return;
+                    vistos.add(mismaLlave(h));
+                    lista.push({ fecha: h.fecha, hora: h.hora });
                 });
-            };
-            return siguiente(0);
+            return lista;
         }
 
-        function liberarHuecos(huecos) {
+        // De esa lista, sólo los que de verdad son de este cliente. En una
+        // escritura atómica UNA sola ruta ajena haría fallar todo lo demás, y
+        // las Reglas no dejan borrar un hueco de otra persona.
+        function soloLosMios(huecos) {
             const db = firebase.database();
-            return Promise.all((huecos || []).map(hu =>
-                db.ref('agenda/' + hu.fecha + '/' + claveHora(hu.hora)).remove().catch(() => {})
-            ));
+            return Promise.all(huecos.map(h => db.ref(claveHueco(h)).once('value')
+                .then(s => { const v = s.val(); return (v && v.uid === usuarioActual.uid) ? h : null; })))
+                .then(lista => lista.filter(Boolean));
+        }
+
+        // Después de un rechazo: ¿los huecos ya son de ESTA cita (un intento
+        // anterior sí entró, sólo no nos llegó la respuesta), los tiene otra
+        // persona, o el rechazo vino de otro lado (Reglas, un dato inválido)?
+        function diagnosticarHuecos(huecos, claveCita) {
+            const db = firebase.database();
+            return Promise.all(huecos.map(h => db.ref(claveHueco(h)).once('value').then(s => s.val())))
+                .then(valores => {
+                    if (valores.length && valores.every(v => v && v.cita === claveCita)) return 'ya-es-mia';
+                    if (valores.some(v => v && v.cita !== claveCita)) return 'ocupado';
+                    return 'rechazado';
+                });
+        }
+
+        // Aparta los huecos y guarda la cita en una sola escritura.
+        // Devuelve 'ok' | 'ocupado'; cualquier otro fallo se rechaza con su error.
+        function reservarCita(clave, orden, huecos) {
+            const uid = usuarioActual.uid;
+            const updates = {};
+            updates['ordenes/' + uid + '/' + clave] = orden;
+            huecos.forEach(h => {
+                updates[claveHueco(h)] = { uid: uid, folio: orden.idLocal, cita: clave, timestamp: orden.timestamp };
+            });
+            return firebase.database().ref().update(updates)
+                .then(() => 'ok')
+                .catch(err => diagnosticarHuecos(huecos, clave).then(estado => {
+                    // Un intento anterior sí entró. Se vuelve a escribir la cita
+                    // (sólo la cita, los huecos ya son suyos) por si entre un
+                    // intento y otro cambió el tamaño del auto o algún extra.
+                    if (estado === 'ya-es-mia') {
+                        return firebase.database().ref('ordenes/' + uid + '/' + clave).set(orden).then(() => 'ok');
+                    }
+                    if (estado === 'ocupado') return 'ocupado';
+                    throw err;
+                }));
+        }
+
+        // Cambia una cita de día y hora en una sola escritura: aparta sólo lo que
+        // no era suyo y suelta sólo lo que ya no usa (al mover un Detallado
+        // Completo un día, el día del medio se queda como está).
+        function moverCita(citaId, cita, nuevaFecha, nuevaHora) {
+            const uid = usuarioActual.uid;
+            const nuevos = huecosQueOcupa(cita.paquete, nuevaFecha, nuevaHora);
+            return soloLosMios(huecosDeLaCita(cita)).then(viejos => {
+                const llavesViejas = new Set(viejos.map(mismaLlave));
+                const llavesNuevas = new Set(nuevos.map(mismaLlave));
+                const porApartar = nuevos.filter(h => !llavesViejas.has(mismaLlave(h)));
+
+                const updates = {};
+                const base = 'ordenes/' + uid + '/' + citaId + '/';
+                updates[base + 'agendaDia'] = nuevaFecha;
+                updates[base + 'agendaHora'] = nuevaHora;
+                updates[base + 'huecosOcupados'] = nuevos;
+                porApartar.forEach(h => {
+                    updates[claveHueco(h)] = { uid: uid, folio: cita.idLocal || citaId, cita: citaId, timestamp: Date.now() };
+                });
+                viejos.filter(h => !llavesNuevas.has(mismaLlave(h))).forEach(h => {
+                    updates[claveHueco(h)] = null;
+                });
+
+                return firebase.database().ref().update(updates)
+                    .then(() => 'ok')
+                    .catch(err => diagnosticarHuecos(porApartar, citaId).then(estado => {
+                        if (estado === 'ya-es-mia') return 'ok';   // un intento anterior sí entró
+                        if (estado === 'ocupado') return 'ocupado';
+                        throw err;
+                    }));
+            });
+        }
+
+        // Borra la cita y suelta sus huecos en una sola escritura: ya no puede
+        // quedar una cita borrada con sus horarios todavía apartados.
+        function cancelarCitaAtomica(citaId, cita) {
+            return soloLosMios(huecosDeLaCita(cita)).then(mios => {
+                const updates = {};
+                updates['ordenes/' + usuarioActual.uid + '/' + citaId] = null;
+                mios.forEach(h => { updates[claveHueco(h)] = null; });
+                return firebase.database().ref().update(updates);
+            });
         }
 
         function finalizarMision() {
@@ -9455,8 +9687,19 @@ Cera rápida protectora
                 return;
             }
 
+            if (!hayConexionParaEntrar()) {
+                mostrarAviso("⚠️ No hay conexión a internet.\n\nRevisa tu wifi o tus datos e intenta de nuevo.");
+                return;
+            }
+            if (!baseLista() || !usuarioActual) {
+                mostrarAviso("⚠️ No hay sesión activa. Vuelve a iniciar sesión para agendar.");
+                return;
+            }
+
+            // Llave y folio fijos para ESTE intento: reintentar tras un corte no duplica la cita.
+            const intento = intentoDeCita();
             const nuevaOrden = {
-                idLocal: 'CWE-' + Math.floor(Math.random() * 900000 + 100000),
+                idLocal: intento.folio,
                 cliente: nombre,
                 contacto: telefono,
                 auto: modeloVehiculoTexto,
@@ -9518,58 +9761,37 @@ Cera rápida protectora
                     + "Antes de intentar de nuevo, revisa \"Mis citas\": puede que sí se haya guardado.");
             }, RENDIRSE_AL_GUARDAR);
 
-            if (!hayConexionParaEntrar()) {
-                restaurarBoton();
-                mostrarAviso("⚠️ No hay conexión a internet.\n\nRevisa tu wifi o tus datos e intenta de nuevo.");
-                return;
-            }
+            // Qué huecos aparta: un lavado ocupa una franja; un detallado, el día
+            // entero (o dos días, si es Completo). Se guardan en la cita para poder
+            // soltarlos exactos al cancelar o reagendar.
+            const huecos = huecosQueOcupa(nuevaOrden.paquete, fechaSeleccionada, horaSeleccionada);
+            nuevaOrden.huecosOcupados = huecos;
 
-            if (baseLista() && usuarioActual) {
-                // Primero APARTAMOS el horario, y sólo si lo logramos guardamos la cita.
-                //
-                // Se usa una "transacción": Firebase garantiza que si dos clientes
-                // intentan apartar el mismo hueco en el mismo instante, sólo uno gana.
-                // Sin esto, dos personas podrían reservar las 10:00 AM del mismo día y
-                // tú te enterarías hasta que llegaras a la casa equivocada.
-                // Qué huecos hay que apartar. Un lavado ocupa una franja; un detallado
-                // ocupa el día entero (o dos días, si es Completo).
-                const huecos = huecosQueOcupa(nuevaOrden.paquete, fechaSeleccionada, horaSeleccionada);
-                nuevaOrden.huecosOcupados = huecos;   // se guardan para poder liberarlos al cancelar
-                const refHueco = firebase.database().ref('agenda/' + fechaSeleccionada + '/' + claveHora(horaSeleccionada));
-
-                apartarHuecos(huecos, nuevaOrden.idLocal, nuevaOrden.timestamp)
-                .then(resultado => {
-                    if (!resultado.committed) {
-                        // Alguien más ganó el hueco entre que abrió la pantalla y confirmó
+            // La cita y sus huecos en UNA sola escritura (ver reservarCita): si
+            // dos clientes confirman el mismo horario al mismo tiempo, las Reglas
+            // dejan pasar sólo al primero, y nunca queda una mitad guardada.
+            reservarCita(intento.clave, nuevaOrden, huecos)
+                .then(estado => {
+                    if (estado === 'ocupado') {
                         restaurarBoton();
+                        olvidarIntentoDeCita();
                         mostrarAviso("😔 Alguien acaba de apartar ese horario.\n\nTe regresamos a la agenda para que elijas otro.");
                         volverA('screen-agenda');
                         cargarDisponibilidad(fechaSeleccionada);
-                        return null;
+                        return;
                     }
-                    return firebase.database().ref('ordenes/' + usuarioActual.uid).push(nuevaOrden)
-                        .then(() => {
-                            restaurarBoton();
-                            completarFlujoExitoso(nuevaOrden);
-                        })
-                        .catch(error => {
-                            // No se pudo guardar la cita: liberamos el hueco que ya
-                            // habíamos apartado, si no quedaría bloqueado para siempre.
-                            console.error("Error guardando la orden:", error);
-                            liberarHuecos(huecos).catch(() => {});
-                            restaurarBoton();
-                            mostrarAviso("⚠️ No se pudo guardar tu cita.\n\n" + motivoDeFirebase(error));
-                        });
+                    // Si la respuesta llegó DESPUÉS del aviso de "conexión lenta", ese
+                    // aviso ya no es verdad: se quita y se enseña la cita confirmada.
+                    if (yaSeDestrabo) cerrarAvisoCon(true);
+                    restaurarBoton();
+                    olvidarIntentoDeCita();
+                    completarFlujoExitoso(nuevaOrden);
                 })
                 .catch(error => {
-                    console.error("Error apartando el horario:", error);
+                    console.error("No se pudo guardar la cita:", error);
                     restaurarBoton();
-                    mostrarAviso("⚠️ No pudimos apartar tu horario.\n\n" + motivoDeFirebase(error));
+                    mostrarAviso("⚠️ No se pudo guardar tu cita.\n\n" + motivoDeFirebase(error));
                 });
-            } else {
-                restaurarBoton();
-                mostrarAviso("⚠️ No hay sesión activa. Vuelve a iniciar sesión para agendar.");
-            }
         }
 
         // Traduce el error de la base de datos a algo que un cliente entienda — y que
@@ -9608,17 +9830,17 @@ Cera rápida protectora
             // Desglose: precio base, cada extra elegido y el cargo por traslado.
             const desglose = document.getElementById('conf-desglose');
             desglose.innerHTML = "";
-            desglose.appendChild(filaResumen("Servicio base", "$" + orden.costoBase, true));
+            desglose.appendChild(filaResumen("Servicio base", dinero(orden.costoBase), true));
             Object.entries(orden.extras).forEach(([id, precio]) => {
                 const nombre = EXTRAS[id] ? EXTRAS[id].nombre : id;
-                const monto = (EXTRAS[id] && EXTRAS[id].cotiza) ? "Te cotizamos" : "+$" + precio;
-                desglose.appendChild(filaResumen(nombre, monto, true));
+                const cuanto = (EXTRAS[id] && EXTRAS[id].cotiza) ? "Te cotizamos" : "+" + dinero(precio);
+                desglose.appendChild(filaResumen(nombre, cuanto, true));
             });
             if (orden.cargoEnvio > 0) {
-                desglose.appendChild(filaResumen("Traslado (" + minusculaInicial(orden.coordenadas) + ")", "+$" + orden.cargoEnvio, true));
+                desglose.appendChild(filaResumen("Traslado (" + minusculaInicial(orden.coordenadas) + ")", "+" + dinero(orden.cargoEnvio), true));
             }
 
-            document.getElementById('conf-total').textContent = "$" + orden.total + " MXN";
+            document.getElementById('conf-total').textContent = dinero(orden.total) + " MXN";
             document.getElementById('conf-pie').textContent = orden.idLocal || "";
             document.getElementById('conf-whatsapp').href = enlaceDeConfirmacion(orden);
 
@@ -9703,7 +9925,7 @@ Cera rápida protectora
                 .map(id => EXTRAS[id] ? EXTRAS[id].nombre : id);
             if (extras.length) lineas.push("Extras: " + extras.join(", "));
 
-            lineas.push("Total: $" + orden.total + " MXN");
+            lineas.push("Total: " + dinero(orden.total) + " MXN");
             lineas.push("");
 
             // La ubicación: el sector se entiende, pero las coordenadas son las que
@@ -9731,10 +9953,17 @@ Cera rápida protectora
                  + "?text=" + encodeURIComponent(lineas.join("\n"));
         }
 
+        // Con textContent y no innerHTML: la etiqueta puede traer el nombre de un
+        // extra o el sector, y nada que se pinte aquí debe poder volverse código.
         function filaResumen(etiqueta, valor, esExtra) {
             const fila = document.createElement('div');
             fila.className = "resumen-row" + (esExtra ? " resumen-extra" : "");
-            fila.innerHTML = `<span>${etiqueta}</span><strong>${valor}</strong>`;
+            const e = document.createElement('span');
+            e.textContent = etiqueta;
+            const v = document.createElement('strong');
+            v.textContent = valor;
+            fila.appendChild(e);
+            fila.appendChild(v);
             return fila;
         }
 
@@ -9813,8 +10042,8 @@ Cera rápida protectora
             let totalAgendado = 0, totalCobrado = 0, totalAutos = 0, pendientes = 0;
             Object.values(porFecha).forEach(citas => citas.forEach(({ cita }) => {
                 totalAutos++;
-                totalAgendado += cita.total || 0;
-                if (cita.status === 'Completada') totalCobrado += cita.total || 0;
+                totalAgendado += monto(cita.total);
+                if (cita.status === 'Completada') totalCobrado += monto(cita.total);
                 if (!cita.status || cita.status === 'Pendiente') pendientes++;
             }));
 
@@ -9822,8 +10051,8 @@ Cera rápida protectora
             resumen.innerHTML = `Del ${esc(formatearFechaLegible(fechaInicio))}<br>al ${esc(formatearFechaLegible(fin))}<br>
                 <span class="fuerte">${totalAutos} ${totalAutos === 1 ? 'auto' : 'autos'}</span> ·
                 <span class="fuerte">${pendientes} pendientes</span> ·
-                agendado <span class="fuerte">$${totalAgendado}</span> ·
-                cobrado <span class="fuerte">$${totalCobrado}</span>`;
+                agendado <span class="fuerte">${dinero(totalAgendado)}</span> ·
+                cobrado <span class="fuerte">${dinero(totalCobrado)}</span>`;
 
             const hoy = fechaLocalISO();
             Object.keys(porFecha).sort().forEach(fecha => {
@@ -9831,11 +10060,11 @@ Cera rápida protectora
                 const dia = document.createElement('div');
                 dia.className = "semana-dia" + (fecha === hoy ? " hoy" : "");
 
-                const suma = citas.reduce((s, c) => s + (c.cita.total || 0), 0);
+                const suma = citas.reduce((s, c) => s + monto(c.cita.total), 0);
                 const cabeza = document.createElement('div');
                 cabeza.className = "semana-cabeza";
                 cabeza.innerHTML = `<span class="semana-fecha">${esc(formatearFechaCorta(fecha))}</span>
-                    <span class="semana-resumen">${citas.length ? citas.length + (citas.length === 1 ? ' auto · $' : ' autos · $') + suma : 'libre'}</span>`;
+                    <span class="semana-resumen">${citas.length ? citas.length + (citas.length === 1 ? ' auto · ' : ' autos · ') + dinero(suma) : 'libre'}</span>`;
                 dia.appendChild(cabeza);
 
                 if (citas.length === 0) {
@@ -9950,9 +10179,22 @@ Cera rápida protectora
             resumen.textContent = "Cargando la agenda...";
             lista.innerHTML = "";
 
-            firebase.database().ref('ordenes').once('value')
+            conTiempoLimite(firebase.database().ref('ordenes').once('value'), ESPERA_MAXIMA_CITAS)
                 .then(snap => {
                     const todo = snap.val() || {};
+
+                    // Qué huecos cubre CADA cita, calculado desde su fecha y hora
+                    // ACTUALES. Un detallado cubre el día entero (o dos días), no
+                    // sólo la hora con la que se guardó: antes las otras franjas
+                    // salían como "Apartado, sin cita" con el botón Liberar, y
+                    // liberarlas abría el día a otros clientes.
+                    huecosConCita = new Set();
+                    Object.values(todo).forEach(citas => Object.values(citas || {}).forEach(c => {
+                        if (c && c.agendaDia && c.agendaHora) {
+                            huecosQueOcupa(c.paquete, c.agendaDia, c.agendaHora)
+                                .forEach(h => huecosConCita.add(mismaLlave(h)));
+                        }
+                    }));
 
                     if (vistaAdmin === 'semana') {
                         pintarSemanaAdmin(todo, fecha);
@@ -9966,6 +10208,7 @@ Cera rápida protectora
                     }
 
                     const delDia = [];
+                    const enTaller = [];
                     // De paso se cuentan las de MAÑANA, para poder avisar que hay
                     // recordatorios que mandar. Va en el mismo recorrido: no cuesta
                     // ninguna consulta extra, porque las citas ya están todas aquí.
@@ -9979,6 +10222,11 @@ Cera rápida protectora
                         Object.entries(citasDeUnCliente || {}).forEach(([citaId, cita]) => {
                             if (!cita) return;
                             if (cita.agendaDia === fecha) delDia.push({ uid, citaId, cita });
+                            // El Detallado Completo se guarda en su PRIMER día; el
+                            // segundo día el auto sigue en el taller y hay que verlo.
+                            else if (cita.agendaDia && diasQueOcupa(cita.paquete) === 2
+                                     && sumarDias(cita.agendaDia, 1) === fecha
+                                     && cita.status !== 'NoSeHizo') enTaller.push(cita);
                             if (cita.agendaDia === manana && (!cita.status || cita.status === 'Pendiente')) {
                                 pendientesManana++;
                             }
@@ -9986,14 +10234,18 @@ Cera rápida protectora
                     });
                     delDia.sort((a, b) => horaAMinutos(a.cita.agendaHora) - horaAMinutos(b.cita.agendaHora));
                     citasDelDiaCargadas = delDia;   // se guarda para no releer todo al marcar una cita
+                    enTallerCargados = enTaller;
                     pintarAgendaAdmin(delDia, fecha, pendientesManana);
                 })
                 .catch(error => {
                     console.error("Error leyendo la agenda del día:", error);
                     resumen.innerHTML = "";
-                    lista.innerHTML = `<p class="vacio-nota">No se pudieron cargar las citas.<br><br>
-                        Si dice "permission denied", falta publicar las Reglas de Seguridad
-                        que permiten al administrador leer todas las citas (sección 5.6 del CLAUDE.md).</p>`;
+                    lista.innerHTML = (error && error.code === 'app/timeout')
+                        ? `<p class="vacio-nota">La conexión está muy lenta y la agenda no terminó de cargar.<br><br>
+                            Revisa tu internet y vuelve a entrar.</p>`
+                        : `<p class="vacio-nota">No se pudieron cargar las citas.<br><br>
+                            Si dice "permission denied", falta publicar las Reglas de Seguridad
+                            que permiten al administrador leer todas las citas (sección 5.6 del CLAUDE.md).</p>`;
                 });
         }
 
@@ -10050,16 +10302,16 @@ Cera rápida protectora
             const hoy = fechaLocalISO(new Date());
 
             // Cuánto se agendó y cuánto se cobró de verdad (sólo lo completado).
-            const totalAgendado = citas.reduce((s, c) => s + (c.cita.total || 0), 0);
+            const totalAgendado = citas.reduce((s, c) => s + monto(c.cita.total), 0);
             const totalCobrado = citas
                 .filter(c => c.cita.status === 'Completada')
-                .reduce((s, c) => s + (c.cita.total || 0), 0);
+                .reduce((s, c) => s + monto(c.cita.total), 0);
 
             // La fecha ya no se repite aquí: el navegador de arriba la muestra en
             // español desde 2026.09.01, y decirla dos veces seguidas sobraba.
             resumen.innerHTML = `<span class="fuerte">${citas.length} ${citas.length === 1 ? 'auto' : 'autos'}</span> ·
-                agendado <span class="fuerte">$${totalAgendado}</span> ·
-                cobrado <span class="fuerte">$${totalCobrado}</span>`;
+                agendado <span class="fuerte">${dinero(totalAgendado)}</span> ·
+                cobrado <span class="fuerte">${dinero(totalCobrado)}</span>`;
 
             lista.innerHTML = "";
 
@@ -10083,7 +10335,18 @@ Cera rápida protectora
                 lista.appendChild(aviso);
             }
 
-            if (citas.length === 0) {
+            // El segundo día de un Detallado Completo: no es una cita nueva (no se
+            // cobra ni se cuenta dos veces), pero el día SÍ está ocupado.
+            enTallerCargados.forEach(cita => {
+                const nota = document.createElement('div');
+                nota.className = "aviso-ok";
+                nota.textContent = "🔧 Día 2 de 2 · " + (cita.paquete || "Detallado") + " de "
+                    + (cita.cliente || "un cliente") + (cita.auto ? " (" + cita.auto + ")" : "")
+                    + ": el auto sigue en el taller.";
+                lista.appendChild(nota);
+            });
+
+            if (citas.length === 0 && enTallerCargados.length === 0) {
                 const vacio = document.createElement('p');
                 vacio.className = "vacio-nota";
                 vacio.textContent = "No hay citas agendadas este día.";
@@ -10108,7 +10371,7 @@ Cera rápida protectora
                     <div class="cita-admin-cabeza">
                         <div class="cita-admin-hora">${esc(cita.agendaHora)}</div>
                         <div class="cita-admin-cliente">${esc(cita.cliente)}</div>
-                        <div class="cita-admin-total">$${cita.total || 0}</div>
+                        <div class="cita-admin-total">${dinero(cita.total)}</div>
                     </div>
                     <div class="estado-cita" style="color:${estado.color}">${esc(estado.etiqueta)}</div>
                     <div class="cita-admin-datos">
@@ -10229,7 +10492,7 @@ Cera rápida protectora
                         c.proximas.push(cita.agendaDia);
                     } else {
                         c.visitas.push(cita.agendaDia);
-                        c.gastado += cita.total || 0;
+                        c.gastado += monto(cita.total);
                     }
                 });
             });
@@ -10354,7 +10617,7 @@ Cera rápida protectora
                 ficha.innerHTML = `
                     <div class="cliente-cabeza">
                         <div class="cliente-nombre">${esc(c.nombre)}</div>
-                        <div class="cliente-gastado">$${c.gastado}</div>
+                        <div class="cliente-gastado">${dinero(c.gastado)}</div>
                     </div>
                     <div class="cliente-señal" style="color:${señal.color}">${esc(señal.etiqueta)}</div>
                     <div class="cliente-datos">
@@ -10406,6 +10669,10 @@ Cera rápida protectora
         // disparaba dos lecturas completas del árbol de órdenes: se sentía lento y
         // gastaba datos de más en cada toque.
         let citasDelDiaCargadas = [];
+        // 'fecha|hora' de todos los huecos que cubre alguna cita (ver cargarAgendaAdmin)
+        let huecosConCita = new Set();
+        // Detallados Completos que ese día van en su SEGUNDO día (el auto sigue en el taller)
+        let enTallerCargados = [];
 
         function cambiarEstadoCita(uid, citaId, nuevoEstado) {
             const fecha = document.getElementById('admin-fecha').value;
@@ -10416,9 +10683,15 @@ Cera rápida protectora
             // guardado falla se regresa al estado anterior.
             if (anterior) { anterior.status = nuevoEstado; pintarAgendaAdmin(citasDelDiaCargadas, fecha); }
 
-            firebase.database().ref('ordenes/' + uid + '/' + citaId + '/status').set(nuevoEstado)
+            conTiempoLimite(firebase.database().ref('ordenes/' + uid + '/' + citaId + '/status').set(nuevoEstado), ESPERA_MAXIMA_CITAS)
                 .catch(err => {
                     console.error("No se pudo cambiar el estado:", err);
+                    // Sin señal, Firebase deja el cambio EN COLA y lo manda solo al
+                    // volver la conexión: regresarlo en pantalla sería mentir.
+                    if (err && err.code === 'app/timeout') {
+                        mostrarAviso("La conexión está lenta: el cambio se guarda en cuanto vuelva la señal.\n\nNo cierres la app hasta entonces.");
+                        return;
+                    }
                     if (anterior) { anterior.status = estadoPrevio; pintarAgendaAdmin(citasDelDiaCargadas, fecha); }
                     mostrarAviso("⚠️ No se pudo guardar el cambio. Revisa tu conexión.");
                 });
@@ -10433,7 +10706,6 @@ Cera rápida protectora
         // =====================================================================
         function pintarControlDeHorarios(citasDelDia, fecha) {
             const lista = document.getElementById('admin-lista');
-            const horasConCita = new Set(citasDelDia.map(c => c.cita.agendaHora));
 
             const titulo = document.createElement('div');
             titulo.className = "etiqueta";
@@ -10445,12 +10717,12 @@ Cera rápida protectora
             caja.className = "admin-horarios";
             lista.appendChild(caja);
 
-            firebase.database().ref('agenda/' + fecha).once('value').then(snap => {
+            conTiempoLimite(firebase.database().ref('agenda/' + fecha).once('value'), ESPERA_MAXIMA_CITAS).then(snap => {
                 const ocupados = snap.val() || {};
                 let ajenos = 0;
                 SLOTS.forEach(s => {
                     const apartado = ocupados[claveHora(s.hora)];
-                    const tieneCita = horasConCita.has(s.hora);
+                    const tieneCita = huecosConCita.has(fecha + '|' + s.hora);
                     const fila = document.createElement('div');
                     fila.className = "admin-horario-fila";
 
