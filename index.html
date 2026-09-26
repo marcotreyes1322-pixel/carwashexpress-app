@@ -817,13 +817,23 @@
            línea que le quita al mapa, y el mapa es el protagonista aquí. */
         #screen-satellite .titulo { font-size: 34px; line-height: 1.02; }
         #screen-satellite .text-group { margin-bottom: 10px; }
+        /* Teléfonos bajos (o un iPhone con las barras de Safari): el título va en
+           UN renglón. Son ~40 px más de mapa, que ahí es casi la mitad de lo que
+           se alcanza a ver arriba de la hoja. */
+        @media (max-height: 700px) {
+            #screen-satellite .titulo { font-size: 30px; }
+            #screen-satellite .titulo .cursiva { display: inline; margin-left: 0.22em; }
+        }
         .hoja-estado { font-size: 11px; color: rgba(255,255,255,0.62); margin-bottom: 6px; }
 
         /* La mira del ajuste manual: fija en el centro del mapa. El anillo marca
            el punto exacto y el tallo lo ancla al suelo, para que se lea a qué
            parte del terreno apunta y no quede flotando en el aire. */
+        /* Va en el centro de lo que SE VE del mapa (arriba de la hoja), que es
+           el mismo punto que Mapbox toma como centro (ver subirControlesSobreLaHoja).
+           Con top: 50% quedaba tapada por la hoja. */
         .mira-ajuste {
-            position: absolute; left: 50%; top: 50%; z-index: 35;
+            position: absolute; left: 50%; top: var(--centro-mapa, 50%); z-index: 35;
             transform: translate(-50%, -100%); pointer-events: none;
             display: flex; flex-direction: column; align-items: center;
         }
@@ -3910,7 +3920,7 @@ Cera rápida protectora
         // Al publicar, GitHub Actions la reemplaza sola por fecha + commit (la
         // misma que el Service Worker): este valor sólo se ve probando el archivo
         // del repo sin construir.
-        const VERSION_APP = '2026.09.26e';
+        const VERSION_APP = '2026.09.26f';
 
         // La versión del AVISO DE PRIVACIDAD y los TÉRMINOS. Es distinta de la
         // versión de la app a propósito: la app cambia cada semana y lo legal
@@ -5092,7 +5102,29 @@ Cera rápida protectora
             const hoja = document.querySelector('.hoja-mapa');
             const visor = document.querySelector('.mapa-grande');
             if (!hoja || !visor) return;
-            const poner = () => visor.style.setProperty('--alto-hoja', hoja.offsetHeight + 'px');
+            const poner = () => {
+                const alto = hoja.offsetHeight;
+                visor.style.setProperty('--alto-hoja', alto + 'px');
+                // 🐛 El mapa ponía la ubicación del cliente en el centro de TODO el
+                // recuadro, y la hoja tapa la mitad de abajo: el marcador quedaba
+                // debajo de ella y el cliente tenía que arrastrar el mapa para
+                // encontrarse (lo reportó Tristán en su iPhone). Con este margen,
+                // Mapbox toma como centro el pedazo que SÍ se ve, arriba de la hoja.
+                // Lo que se centra es la GOTA completa (su punta cae en el punto),
+                // no sólo la punta: así no se encima con el letrero de arriba. En un
+                // teléfono muy bajo, donde casi no queda mapa, la punta se acerca a
+                // la hoja lo más posible sin quedar debajo.
+                const H = visor.clientHeight;
+                const visible = Math.max(0, H - alto);
+                const GOTA = 56;
+                const centro = Math.round(Math.min(visible - 6, Math.max(GOTA + 4, visible / 2 + GOTA / 2)));
+                visor.style.setProperty('--centro-mapa', centro + 'px');
+                if (map) {
+                    map.setPadding(2 * centro <= H
+                        ? { top: 0, right: 0, bottom: H - 2 * centro, left: 0 }
+                        : { top: 2 * centro - H, right: 0, bottom: 0, left: 0 });
+                }
+            };
             poner();
             if (window.ResizeObserver && !hoja.dataset.observada) {
                 hoja.dataset.observada = '1';
