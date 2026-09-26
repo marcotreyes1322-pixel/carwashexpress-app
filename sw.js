@@ -15,7 +15,7 @@
    error clásico de las PWA y es justo el problema que ya nos pasó a mano.
    ===================================================================== */
 
-const VERSION = 'cwe-2026.09.26b';
+const VERSION = 'cwe-2026.09.26c';
 
 // Lo mínimo para que la app abra sin red. Las librerías (Mapbox, Firebase,
 // Three.js) NO se guardan a propósito: pesan 2 MB, cambian por su cuenta, y
