@@ -8,5 +8,6 @@ WhatsApp: 625 100 9755 · Instagram: @car_washexpresss
 
 ---
 
-Este repositorio contiene **únicamente la app publicada**. El desarrollo, las
-notas del negocio y el historial completo viven en un repositorio privado aparte.
+Este repositorio contiene la app y las herramientas que la publican solas
+(ver [PUBLICAR.md](PUBLICAR.md)). Las notas del negocio y el historial
+completo viven en un repositorio privado aparte.
