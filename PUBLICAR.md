@@ -70,6 +70,9 @@ cwp() { git add -A && git commit -m "$*" && git push; }   # uso: cwp "cambié el
 - Al tocar una corrida sale el **resumen**: cuánto pesa la app, cuántas fotos
   encontró, avisos, y qué revisión falló si algo falló. Abajo está el
   artefacto **capturas**, con la app en 4 tamaños de pantalla.
+- Un aviso amarillo que dice **"Node.js 20 is deprecated"** es de las
+  herramientas de GitHub (se arregla solo cuando GitHub las actualice), no de
+  la app: se puede ignorar.
 - Para confirmar qué versión está publicada, abre
   `https://marcotreyes1322-pixel.github.io/carwashexpress-app/version.json`.
   Es la misma que ve Tristán junto al logo al entrar con su número.
