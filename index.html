@@ -192,7 +192,15 @@
                 radial-gradient(75% 45% at 50% 100%, rgba(232,121,201,0.11), transparent 66%);
             background-attachment: fixed;
             display: flex; justify-content: center; align-items: center;
-            min-height: 100vh; font-family: var(--sans); overflow: hidden;
+            /* 🐛 Con sólo 100vh, en iPhone (Safari y Chrome) el body medía la
+               pantalla COMPLETA, contando lo que tapan las barras del navegador,
+               y la app —que mide lo visible— quedaba centrada en ese alto de más:
+               recorrida hacia abajo, con un hueco arriba y el final DEBAJO de la
+               barra de Chrome. Como aquí no hay desplazamiento, lo último de cada
+               pantalla —el botón "Confirmar" de Tus datos— quedaba inalcanzable.
+               100dvh es lo visible; 100vh queda de respaldo para navegadores viejos. */
+            min-height: 100vh; min-height: 100dvh;
+            font-family: var(--sans); overflow: hidden;
             -webkit-font-smoothing: antialiased;
         }
 
@@ -209,6 +217,11 @@
             height: 100vh;          /* respaldo para navegadores viejos */
             height: 100dvh;
             max-height: 844px;
+            /* Instalada en el iPhone (pantalla de inicio), la app se dibuja
+               DEBAJO de la barra de estado (black-translucent) y de la rayita de
+               abajo: estos márgenes la mantienen a salvo. En el navegador valen 0. */
+            padding-top: env(safe-area-inset-top, 0px);
+            padding-bottom: env(safe-area-inset-bottom, 0px);
             background: var(--negro);
             border-radius: 36px; overflow: hidden; position: relative;
             box-shadow: 0 0 60px rgba(0, 0, 0, 0.9);
@@ -895,6 +908,7 @@
             margin: 3px 0 0; min-height: 16px;
         }
         .hoja-mapa .enlace-suave { padding: 6px 2px 0; align-self: flex-start; }
+        .hoja-enlaces { display: flex; flex-wrap: wrap; column-gap: 16px; }
         .hoja-mapa .btn-premium { margin-top: 9px; padding: 12px; }
         /* La pista se sube: abajo chocaba con la hoja. */
         .mapa-grande .map-pista { bottom: auto; top: 12px; }
@@ -1478,6 +1492,46 @@
         .saludo-simple { font-family: var(--serif); font-size: 26px; color: var(--blanco);
                          text-align: left; width: 100%; margin: 2px 0 4px; }
 
+        /* ── FONDO DE LA BIENVENIDA ──────────────────────────────────────────
+           Las fotos de trabajos detrás de toda la pantalla, deslizándose cada
+           3 s (Tristán: "el inicio es muy aburrido"). Antes eran un carrusel
+           que había que deslizar con el dedo, a media pantalla. */
+        .bienvenida-fondo {
+            position: absolute; inset: 0; z-index: 0; overflow: hidden;
+            border-radius: inherit; pointer-events: none;
+            opacity: 0; transition: opacity 0.6s ease;
+        }
+        .app-container.en-bienvenida .bienvenida-fondo { opacity: 1; }
+        .bienvenida-capa {
+            position: absolute; inset: 0;
+            background: #0d0a12 center / cover no-repeat;
+            transition: transform 0.9s cubic-bezier(0.22, 1, 0.30, 1);
+        }
+        .bienvenida-capa.visible { transform: translateX(0); }
+        .bienvenida-capa.se-va   { transform: translateX(-100%); }
+        .bienvenida-capa.espera  { transform: translateX(100%); transition: none; }
+        /* El velo: oscuro arriba (encabezado y título) y más oscuro abajo (la
+           cita y el botón), con la foto viva en medio. Sin él, el texto blanco
+           se perdía sobre las partes claras de las fotos. */
+        .bienvenida-fondo::after {
+            content: ""; position: absolute; inset: 0;
+            background: linear-gradient(180deg,
+                rgba(9, 9, 11, 0.74) 0%, rgba(9, 9, 11, 0.30) 34%,
+                rgba(9, 9, 11, 0.42) 58%, rgba(9, 9, 11, 0.90) 100%);
+        }
+        #screen-welcome .titulo, #screen-welcome .saludo-simple {
+            text-shadow: 0 2px 14px rgba(0, 0, 0, 0.65);
+        }
+        /* El título arriba y lo demás (saludo, cita, botón) junto ABAJO, con la
+           foto libre en medio. Sin esto, sin cita agendada el "Hola" quedaba
+           flotando solo a media pantalla. */
+        #screen-welcome .saludo-simple { margin-top: auto; }
+        /* La cita flota sobre la foto: se le da cuerpo para que se lea. */
+        #screen-welcome .proxima-cita {
+            background: linear-gradient(145deg, rgba(24, 16, 38, 0.78), rgba(24, 16, 38, 0.60));
+            -webkit-backdrop-filter: blur(8px); backdrop-filter: blur(8px);
+        }
+
         /* --- AVISO DE LA MARCA (sustituye al alert() gris del navegador) --- */
         .aviso-fondo {
             position: absolute; inset: 0; z-index: 200; display: flex;
@@ -1824,6 +1878,14 @@
          primero, antes de que corra mostrarPantalla(). Sin esto, el encabezado
          aparecía un instante con su franja negra y luego saltaba. -->
     <div class="app-container en-login">
+        <!-- FONDO DE LA BIENVENIDA: las fotos de trabajos, deslizándose solas.
+             Va aquí (y no dentro de la pantalla) para cubrir también el
+             encabezado y no moverse si la pantalla se desplaza. Sólo se ve con
+             la clase en-bienvenida (ver mostrarPantalla). -->
+        <div class="bienvenida-fondo" id="bienvenida-fondo" aria-hidden="true">
+            <i class="bienvenida-capa visible" id="bienvenida-capa-a"></i>
+            <i class="bienvenida-capa espera" id="bienvenida-capa-b"></i>
+        </div>
         <div class="marca-header">
             <div class="marca-fila">
                 <img data-logo="1" alt="CarWashExpress" class="marca-logo" onerror="usarLogoDeRespaldo(this)">
@@ -2385,8 +2447,12 @@
                         <div class="etiqueta">Sector detectado</div>
                         <h3 id="sector-detected" class="hoja-sector">Buscando...</h3>
                         <p id="sector-message" class="hoja-nota"></p>
-                        <button class="enlace-suave" id="btn-ajustar-ubicacion"
-                                onclick="activarAjusteManual()">📍 No es aquí · marcarla yo</button>
+                        <div class="hoja-enlaces">
+                            <button class="enlace-suave hidden" id="btn-activar-ubicacion"
+                                    onclick="activarMiUbicacion()">📡 Activar mi ubicación</button>
+                            <button class="enlace-suave" id="btn-ajustar-ubicacion"
+                                    onclick="activarAjusteManual()">📍 No es aquí · marcarla yo</button>
+                        </div>
                         <button class="btn-premium" id="btn-confirm-sector" style="display:none;"
                                 onclick="irAServicios()">Confirmar y ver servicios</button>
                         <a class="btn-premium hidden" id="btn-lejos-whatsapp"
@@ -3929,7 +3995,7 @@ Cera rápida protectora
         // Al publicar, GitHub Actions la reemplaza sola por fecha + commit (la
         // misma que el Service Worker): este valor sólo se ve probando el archivo
         // del repo sin construir.
-        const VERSION_APP = '2026.09.26g';
+        const VERSION_APP = '2026.09.26h';
 
         // La versión del AVISO DE PRIVACIDAD y los TÉRMINOS. Es distinta de la
         // versión de la app a propósito: la app cambia cada semana y lo legal
@@ -4097,13 +4163,14 @@ Cera rápida protectora
 
             // Las fotos son archivos del propio sitio y no dependen de Firebase.
             // Si además hay reseñas cargadas, se agregan encima.
-            fotosDeTrabajos().then(fotos => {
-                pintarFeed(fotos);
-                if (!baseLista()) return;
-                conTiempoLimite(firebase.database().ref('resenas').once('value'), 8000)
-                    .then(snap => pintarFeed(Object.assign({}, fotos, snap.val() || {})))
-                    .catch(() => { /* Sin reseñas quedan las fotos: no se estorba al cliente */ });
-            });
+            // Las fotos de trabajos ya no van aquí en un carrusel para deslizar con
+            // el dedo: ahora son el FONDO de toda la pantalla y pasan solas (ver
+            // arrancarFondoDeBienvenida). Este bloque queda para las reseñas; sin
+            // ninguna, no se ve.
+            if (!baseLista()) return;
+            conTiempoLimite(firebase.database().ref('resenas').once('value'), 8000)
+                .then(snap => pintarFeed(snap.val() || {}))
+                .catch(() => { /* sin reseñas no se enseña nada: no se estorba al cliente */ });
         }
 
         // VISTA PREVIA DEL FEED, SÓLO PARA TRISTÁN.
@@ -4303,6 +4370,12 @@ Cera rápida protectora
             // para nadie.
             if (idPantalla === 'screen-login-phone') arrancarCarruselDelLogin();
             else detenerCarruselDelLogin();
+
+            // Igual con el fondo de la bienvenida: sólo corre mientras se ve.
+            const enBienvenida = idPantalla === 'screen-welcome';
+            document.querySelector('.app-container').classList.toggle('en-bienvenida', enBienvenida);
+            if (enBienvenida) arrancarFondoDeBienvenida();
+            else detenerFondoDeBienvenida();
         }
 
         // Regresar a la pantalla anterior. Lo usa el gesto de deslizar.
@@ -4676,6 +4749,69 @@ Cera rápida protectora
             relojDeFondos = setInterval(pasarAlSiguienteFondo, MS_ENTRE_FONDOS);
         }
 
+        // ── FONDO DE LA BIENVENIDA ───────────────────────────────────────────
+        // Usa las mismas fotos de trabajos que ya se buscan una vez por sesión
+        // (fotosDeTrabajos), la más reciente primero. Cada foto se baja ANTES de
+        // deslizarla, así nunca entra un recuadro vacío con señal floja. Con
+        // "movimiento reducido" o "Ahorro de datos" se queda la primera, quieta.
+        const MS_ENTRE_FOTOS_BIENVENIDA = 3000;
+        let fotosDelFondo = [];
+        let fotoDelFondo = 0;
+        let capaDelFondo = 'a';
+        let relojDelFondo = null;
+        let bajandoFotoDelFondo = false;
+
+        function arrancarFondoDeBienvenida() {
+            fotosDeTrabajos().then(lista => {
+                const fotos = Object.values(lista || {})
+                    .sort((x, y) => (y.orden || 0) - (x.orden || 0))
+                    .map(f => f.foto || f.despues)
+                    .filter(Boolean);
+                if (!fotos.length) return;
+                const pantalla = document.getElementById('screen-welcome');
+                if (!pantalla || pantalla.classList.contains('hidden')) return;
+                if (!fotosDelFondo.length) {
+                    fotosDelFondo = fotos;
+                    fotoDelFondo = 0;
+                    document.getElementById('bienvenida-capa-' + capaDelFondo).style.backgroundImage =
+                        "url('" + fotos[0] + "')";
+                }
+                if (relojDelFondo || fotosDelFondo.length < 2 || animacionReducida() || quiereAhorrarDatos()) return;
+                relojDelFondo = setInterval(pasarFotoDelFondo, MS_ENTRE_FOTOS_BIENVENIDA);
+            });
+        }
+
+        function detenerFondoDeBienvenida() {
+            if (relojDelFondo) { clearInterval(relojDelFondo); relojDelFondo = null; }
+        }
+
+        function pasarFotoDelFondo() {
+            const pantalla = document.getElementById('screen-welcome');
+            if (!pantalla || pantalla.classList.contains('hidden') || document.hidden || bajandoFotoDelFondo) return;
+            const siguiente = (fotoDelFondo + 1) % fotosDelFondo.length;
+            const url = fotosDelFondo[siguiente];
+            bajandoFotoDelFondo = true;
+            const prueba = new Image();
+            prueba.onload = () => {
+                bajandoFotoDelFondo = false;
+                const sale  = document.getElementById('bienvenida-capa-' + capaDelFondo);
+                const otra  = capaDelFondo === 'a' ? 'b' : 'a';
+                const entra = document.getElementById('bienvenida-capa-' + otra);
+                if (!sale || !entra) return;
+                // La que entra espera a la derecha (sin animación), con su foto…
+                entra.className = 'bienvenida-capa espera';
+                entra.style.backgroundImage = "url('" + url + "')";
+                void entra.offsetWidth;          // el navegador la acomoda ANTES de moverla
+                // …y las dos se deslizan juntas hacia la izquierda.
+                entra.className = 'bienvenida-capa visible';
+                sale.className = 'bienvenida-capa se-va';
+                capaDelFondo = otra;
+                fotoDelFondo = siguiente;
+            };
+            prueba.onerror = () => { bajandoFotoDelFondo = false; fotoDelFondo = siguiente; };
+            prueba.src = url;
+        }
+
         function detenerCarruselDelLogin() {
             if (relojDeFondos) { clearInterval(relojDeFondos); relojDeFondos = null; }
         }
@@ -4962,6 +5098,7 @@ Cera rápida protectora
             motivoUbicacionAproximada = "";
             ubicacionPrecargada = null;
             precisionUbicacion = null;
+            ultimoErrorDeUbicacion = null;
             apagarMapa();
             salirDeModoReagenda();
             limpiarFormularioDatos();
@@ -4994,6 +5131,40 @@ Cera rápida protectora
                 && precisionUbicacion != null && precisionUbicacion > METROS_PRECISION_ACEPTABLE;
         }
 
+        // Por qué falló la última vez: 1 = sin permiso, 2 = no disponible, 3 = tardó.
+        let ultimoErrorDeUbicacion = null;
+
+        // Cuando el permiso está negado, volver a preguntar no sirve: el navegador
+        // ya ni enseña la ventana. Lo único que funciona es que el cliente lo
+        // active en su teléfono, y cada teléfono lo esconde en un lugar distinto.
+        // Chrome en iPhone es el caso más engañoso: si en la Configuración del
+        // iPhone Chrome tiene la ubicación en "Nunca", la página recibe "negado"
+        // sin que el cliente haya visto ninguna pregunta.
+        function instruccionesDeUbicacion() {
+            const ua = navigator.userAgent || '';
+            const esIPhone = /iPhone|iPad|iPod/.test(ua) || (/Macintosh/.test(ua) && navigator.maxTouchPoints > 1);
+            if (esIPhone && /CriOS/.test(ua)) {
+                return "En tu iPhone abre Configuración (Ajustes) → Apps → Chrome → Ubicación, elige «Mientras se usa la app» y activa «Ubicación exacta».";
+            }
+            if (esIPhone) {
+                return "En tu iPhone abre Configuración (Ajustes) → Privacidad y seguridad → Localización → Sitios web de Safari, elige «Mientras se usa la app» y activa «Ubicación exacta».";
+            }
+            if (/Android/.test(ua)) {
+                return "Toca el ícono que está a la izquierda de la dirección de la página → Permisos → Ubicación → Permitir. Revisa también que la ubicación del teléfono esté encendida.";
+            }
+            return "Toca el ícono que está a la izquierda de la dirección de la página y permite la ubicación.";
+        }
+
+        function activarMiUbicacion() {
+            const reintentar = () => { ubicacionPrecargada = null; pedirGPS(); };
+            // Si sólo tardó o no estaba disponible, basta con volver a intentar.
+            if (ultimoErrorDeUbicacion !== 1) { reintentar(); return; }
+            preguntar("Para llegar a tu auto necesitamos tu ubicación.\n\n" + instruccionesDeUbicacion()
+                    + "\n\nCuando la actives, regresa aquí.",
+                "Ya la activé, intentar de nuevo", "Ahora no")
+                .then(si => { if (si) reintentar(); });
+        }
+
         // Los navegadores sólo entregan el GPS a páginas servidas por https:// (o a
         // localhost). Al abrir el archivo directo desde la tablet (file:// o
         // content://) SIEMPRE va a fallar, por más permisos que se den.
@@ -5006,6 +5177,8 @@ Cera rápida protectora
         function pedirGPS() {
             const satScreen = document.getElementById('screen-satellite');
             document.getElementById('screen-welcome').classList.add('hidden');
+            document.querySelector('.app-container').classList.remove('en-bienvenida');
+            detenerFondoDeBienvenida();
             satScreen.classList.remove('hidden');
             satScreen.classList.add('sky-drop');
             document.getElementById('btn-confirm-sector').style.display = 'none';
@@ -5026,6 +5199,7 @@ Cera rápida protectora
                 navigator.geolocation.getCurrentPosition(
                     (position) => {
                         ubicacionEsAproximada = false;
+                        ultimoErrorDeUbicacion = null;
                         precisionUbicacion = Math.round(position.coords.accuracy || 0) || null;
                         ubicacionPrecargada = { lat: position.coords.latitude, lon: position.coords.longitude,
                                                 precision: precisionUbicacion };
@@ -5037,6 +5211,7 @@ Cera rápida protectora
                         // diciendo el motivo real, para no adivinar qué salió mal.
                         ubicacionEsAproximada = true;
                         precisionUbicacion = null;
+                        ultimoErrorDeUbicacion = error ? error.code : 2;
                         if (error && error.code === 1 && !origenSeguro()) {
                             // Chrome devuelve "permiso denegado" cuando la página no viene
                             // de https://, aunque el cliente nunca haya dicho que no. Decir
@@ -5044,7 +5219,7 @@ Cera rápida protectora
                             // no hizo, y a Tristán le costó una hora de pruebas creerlo.
                             motivoUbicacionAproximada = "Esta app se abrió como archivo, no desde una dirección de internet, y por seguridad el navegador no entrega la ubicación así.";
                         } else if (error && error.code === 1) {
-                            motivoUbicacionAproximada = "No nos diste permiso de ubicación.";
+                            motivoUbicacionAproximada = "Tu teléfono no nos dio permiso de ubicación.";
                         } else if (error && error.code === 3) {
                             motivoUbicacionAproximada = "El GPS tardó demasiado en responder.";
                         } else {
@@ -5486,11 +5661,14 @@ Cera rápida protectora
 
             document.getElementById('sector-detected').textContent = sectorNombre;
             document.getElementById('sector-message').textContent = ubicacionEsAproximada
-                ? "⚠️ " + motivoUbicacionAproximada + " Usamos el centro de Cuauhtémoc: toca «No es aquí · marcarla yo» para señalar tu casa."
+                ? "⚠️ " + motivoUbicacionAproximada + " Por ahora usamos el centro de Cuauhtémoc: actívala o marca tu casa aquí abajo."
                 : ubicacionPocoPrecisa()
                     ? sectorMsg + " Tu teléfono te ubicó con un margen de unos " + precisionUbicacion
                       + " m: revisa que el marcador esté en tu casa, o toca «No es aquí · marcarla yo»."
                     : sectorMsg;
+            const activar = document.getElementById('btn-activar-ubicacion');
+            if (activar) activar.classList.toggle('hidden',
+                !(ubicacionEsAproximada && !ubicacionEsManual && navigator.geolocation && origenSeguro()));
             document.getElementById('fuel-notice').textContent = recargoGasolina > 0
                 ? `${sectorNombre} · Traslado +${dinero(recargoGasolina)}`
                 : `${sectorNombre} · Sin cargo por traslado`;
