@@ -154,8 +154,13 @@
             --magenta:      #e879c9;
             --magenta-hondo:#a855f7;
             --blanco:       #ffffff;
-            --tenue:        rgba(255, 255, 255, 0.52);
-            --muy-tenue:    rgba(255, 255, 255, 0.34);
+            /* Contraste medido sobre --negro (septiembre 2026): el texto chico debe
+               llegar a 4.5:1 (WCAG AA). --muy-tenue estaba en 0.34 = 3.0:1 y se
+               usaba en textos de 9.5 a 11 px: ilegible con sol o brillo bajo. Ahora
+               0.48 = 5.0:1. --tenue sube a 0.62 (7.6:1) para que siga habiendo
+               diferencia entre los dos grises. */
+            --tenue:        rgba(255, 255, 255, 0.62);
+            --muy-tenue:    rgba(255, 255, 255, 0.48);
             --linea:        rgba(255, 255, 255, 0.09);
             --serif:        'Cormorant Garamond', Georgia, serif;
             --sans:         'DM Sans', system-ui, sans-serif;
@@ -235,9 +240,14 @@
            incluida la de login que ve un cliente nuevo. Ahora es sólo texto tenue:
            se encuentra si la buscas y no le quita protagonismo a la marca.
            Si algún día no la alcanza a ver, se sube la opacidad aquí y ya. */
+        /* Sólo la ve el ADMINISTRADOR (clase es-admin, ver actualizarAccesoAdmin).
+           A un cliente, "v2026.09.26c" junto al logo le parecía una etiqueta de
+           prueba olvidada; Tristán la sigue viendo al entrar con su número. */
+        .marca-version { display: none; }
+        .app-container.es-admin .marca-version { display: block; }
         .marca-version {
             position: absolute; top: 20px; right: 74px;
-            font-size: 9.5px; font-weight: 500; letter-spacing: 0.08em;
+            font-size: 10px; font-weight: 500; letter-spacing: 0.08em;
             color: var(--morado-claro); opacity: 0.55;
             font-variant-numeric: tabular-nums;
             /* En el login y en Crear cuenta va encima de una FOTO, y sobre una
@@ -415,7 +425,7 @@
             max-width: 100%; overflow: hidden; text-overflow: ellipsis; white-space: nowrap;
         }
         .mosaico-pie {
-            font-size: 9.5px; letter-spacing: 0.14em; text-transform: uppercase;
+            font-size: 10px; letter-spacing: 0.14em; text-transform: uppercase;
             display: flex; align-items: center; gap: 5px;
             /* Pegado abajo: así los dos mosaicos quedan parejos aunque uno tenga
                el texto más largo que el otro. */
@@ -545,7 +555,7 @@
         .feed-encabezado { display: flex; justify-content: space-between; align-items: baseline;
                            padding: 0 2px 8px 2px; }
         .feed-titulo { font-family: var(--serif); font-size: 17px; color: var(--blanco); }
-        .feed-pista  { font-size: 9px; letter-spacing: .18em; text-transform: uppercase;
+        .feed-pista  { font-size: 10px; letter-spacing: .18em; text-transform: uppercase;
                        color: var(--muy-tenue); }
 
         /* El carrusel usa el desplazamiento propio del navegador con `scroll-snap`:
@@ -613,7 +623,7 @@
 
         .cmp-etiqueta {
             position: absolute; bottom: 8px; z-index: 2; pointer-events: none;
-            font-size: 8.5px; letter-spacing: 0.14em; text-transform: uppercase;
+            font-size: 10px; letter-spacing: 0.14em; text-transform: uppercase;
             padding: 3px 7px; border-radius: 999px; color: #fff;
             /* Sin desenfoque: va sobre las fotos del carrusel, que se desplaza,
                y cada etiqueta obligaba a re-difuminar al mover el dedo. */
@@ -634,7 +644,7 @@
         .cmp-rango:focus-visible + .cmp-etiqueta,
         .comparador:focus-within .cmp-linea { box-shadow: 0 0 0 2px var(--morado-claro); }
         .feed-etiqueta {
-            position: absolute; top: 8px; left: 8px; font-size: 8px; letter-spacing: .14em;
+            position: absolute; top: 8px; left: 8px; font-size: 10px; letter-spacing: .14em;
             text-transform: uppercase; padding: 4px 8px; border-radius: 999px;
             background: rgba(9, 9, 11, 0.72); border: 1px solid rgba(196,181,253,.28);
             color: var(--morado-claro);
@@ -643,7 +653,7 @@
         .feed-estrellas { color: var(--magenta); font-size: 12px; letter-spacing: 2px;
                           text-shadow: 0 0 8px rgba(232, 121, 201, 0.7); }
         .feed-texto { font-size: 11px; line-height: 1.45; color: var(--tenue); margin-top: 5px; }
-        .feed-autor { font-size: 9px; letter-spacing: .14em; text-transform: uppercase;
+        .feed-autor { font-size: 10px; letter-spacing: .14em; text-transform: uppercase;
                       color: var(--muy-tenue); margin-top: 7px; }
 
         /* --- ANIMACIONES --- */
@@ -662,7 +672,7 @@
         .titulo .cursiva { display: block; font-style: italic; font-weight: 300; }
         .subtitulo { font-size: 12px; color: var(--tenue); margin-top: 12px; line-height: 1.55; }
         .etiqueta {
-            font-size: 9.5px; font-weight: 500; letter-spacing: 0.34em;
+            font-size: 10px; font-weight: 500; letter-spacing: 0.34em;
             text-transform: uppercase; color: var(--morado-claro); opacity: 0.85;
         }
 
@@ -694,7 +704,7 @@
         .fila-sub { font-size: 11.5px; color: var(--muy-tenue); margin-top: 4px; line-height: 1.5; white-space: pre-line; }
         /* El ahorro va en verde y aparte: es LO que hace que alguien compare la
            membresía contra pagar suelto, que es la decisión que queremos que haga. */
-        .ahorro { display: inline-block; margin-top: 5px; font-size: 9.5px; font-weight: 700;
+        .ahorro { display: inline-block; margin-top: 5px; font-size: 10px; font-weight: 700;
                   letter-spacing: 0.1em; text-transform: uppercase; color: #6ee7b7; }
         .fila-precio { font-family: var(--serif); font-size: 27px; font-weight: 400;
                        color: var(--morado-claro); white-space: nowrap; line-height: 1; padding-top: 2px; }
@@ -722,6 +732,13 @@
             letter-spacing: 0.2em; transition: 0.2s; font-family: var(--sans);
         }
         .btn-premium:disabled { opacity: 0.35; cursor: not-allowed; box-shadow: none; }
+
+        /* El anillo que marca dónde está el foco al usar TECLADO, con el color de
+           la marca: el de fábrica de Chrome (amarillo o azul, según el tema) no
+           combina. Es :focus-visible, así que al tocar con el dedo no sale nada. */
+        button:focus-visible, a:focus-visible, [tabindex]:focus-visible {
+            outline: 2px solid var(--morado-claro); outline-offset: 3px;
+        }
 
         /* RESPLANDOR NEÓN en los botones de acción principal. Va con degradado
            morado→magenta: el magenta solo, a botón completo, sobre negro, vibra y
@@ -756,20 +773,6 @@
         .btn-premium.peligro { background: transparent; border-color: rgba(248, 113, 113, 0.35); color: #fca5a5; }
 
         /* --- LOGO --- */
-        /* 🐛 flex-shrink en el CONTENEDOR dejaba su caja más baja que el logo, y
-           el logo se salía por abajo encimándose con el título. El que tiene que
-           encoger es el logo, no su caja. */
-        .logo-container { width: 100%; display: flex; justify-content: center; align-items: center;
-                          padding: 14px 0; flex-shrink: 0; }
-        /* El tamaño sale de la ALTURA de la pantalla: con la próxima cita y el
-           feed abajo, un logo fijo de 150px empujaba "Agendar mi lavado" fuera de
-           la vista en una tablet chica. El logo puede ceder; la acción principal no. */
-        .logo-frame { width: min(150px, 17vh); height: min(150px, 17vh);
-                      border-radius: 50%; overflow: hidden;
-                      display: flex; justify-content: center; align-items: center; background-color: #000; }
-        /* En la bienvenida el logo va más chico: ya hay otro logo en el encabezado,
-           y a 150px empujaba la próxima cita del cliente a media pantalla. */
-        #screen-welcome .logo-frame { width: min(104px, 12vh); height: min(104px, 12vh); }
         .logo-img { width: 100%; height: 100%; object-fit: cover; object-position: center; display: block; }
 
         /* --- MAPA --- */
@@ -786,7 +789,7 @@
         .map-pista {
             position: absolute; left: 50%; bottom: 12px; transform: translateX(-50%);
             z-index: 26; pointer-events: none;
-            font-size: 9.5px; letter-spacing: 0.14em; text-transform: uppercase;
+            font-size: 10px; letter-spacing: 0.14em; text-transform: uppercase;
             color: var(--blanco); padding: 7px 13px; border-radius: 999px;
             background: rgba(9, 9, 11, 0.72); border: 1px solid rgba(196, 181, 253, 0.3);
             animation: pistaSeVa 6s ease-out forwards;
@@ -908,7 +911,7 @@
 
         /* --- AGENDA --- */
         .agenda-wrapper { width: 100%; display: flex; flex-direction: column; gap: 24px; text-align: left; }
-        .agenda-label { font-size: 9.5px; font-weight: 500; text-transform: uppercase;
+        .agenda-label { font-size: 10px; font-weight: 500; text-transform: uppercase;
                         letter-spacing: 0.28em; color: var(--morado-claro); margin-bottom: 11px; display: block; }
         .calendar-input {
             width: 100%; background: transparent; border: none; border-bottom: 1px solid var(--linea);
@@ -921,6 +924,7 @@
             background: transparent; border: 1px solid rgba(255,255,255,0.13); color: var(--blanco);
             padding: 15px; border-radius: 12px; font-weight: 500; font-size: 14px;
             cursor: pointer; text-align: center; transition: 0.2s; font-family: var(--sans);
+            width: 100%;   /* es <button> desde septiembre 2026: que llene su celda */
         }
         .time-slot.selected { background: var(--morado); border-color: var(--morado); font-weight: 700; }
         .time-slot.ocupado { opacity: 0.24; cursor: not-allowed; text-decoration: line-through;
@@ -942,7 +946,7 @@
         }
         .cal-flecha:disabled { opacity: 0.2; cursor: not-allowed; }
         .cal-semana { display: grid; grid-template-columns: repeat(7, 1fr); gap: 3px; margin-bottom: 6px; }
-        .cal-semana span { text-align: center; font-size: 9px; font-weight: 500; letter-spacing: 0.16em;
+        .cal-semana span { text-align: center; font-size: 10px; font-weight: 500; letter-spacing: 0.16em;
                            color: var(--morado-claro); opacity: 0.7; }
         .cal-grid { display: grid; grid-template-columns: repeat(7, 1fr); gap: 3px; }
         .cal-dia {
@@ -990,7 +994,7 @@
         .recordar input:focus-visible + .recordar-caja { outline: 2px solid var(--morado); outline-offset: 2px; }
         .recordar-texto { font-size: 12px; color: rgba(255,255,255,0.72); line-height: 1.45; }
         .recordar-texto b { display: block; font-weight: 400; font-size: 10.5px;
-                            color: rgba(255,255,255,0.45); margin-top: 2px; }
+                            color: rgba(255,255,255,0.56); margin-top: 2px; }
 
         /* ── EL COMPROBANTE QUE SE IMPRIME ───────────────────────────────────
            La "impresora" es la barra oscura de arriba; el papel sale de detrás
@@ -1007,7 +1011,7 @@
             position: relative; z-index: 2;
         }
         .impresora-marca {
-            font-size: 9.5px; letter-spacing: 0.22em; color: var(--morado-claro);
+            font-size: 10px; letter-spacing: 0.22em; color: var(--morado-claro);
         }
         .impresora-estado {
             font-size: 12.5px; color: rgba(255,255,255,0.72);
@@ -1080,11 +1084,11 @@
             opacity: 0.85;
         }
         .ticket-pie {
-            text-align: center; font-size: 9.5px; letter-spacing: 0.20em;
+            text-align: center; font-size: 10px; letter-spacing: 0.20em;
             color: #6b635a; text-transform: uppercase;
         }
         .ticket-nota {
-            font-size: 9.5px; color: #7d766c; line-height: 1.6; margin-top: 12px;
+            font-size: 10px; color: #7d766c; line-height: 1.6; margin-top: 12px;
             text-align: center;
         }
         /* La orilla dentada, como papel cortado de la impresora */
@@ -1115,20 +1119,20 @@
         }
 
         .cal-leyenda { display: flex; gap: 14px; justify-content: center; margin-top: 12px;
-                       font-size: 9.5px; color: var(--muy-tenue); flex-wrap: wrap; }
+                       font-size: 10px; color: var(--muy-tenue); flex-wrap: wrap; }
         .cal-leyenda span { display: flex; align-items: center; gap: 5px; }
 
         /* --- FORMULARIOS --- */
         .form-container { width: 100%; display: flex; flex-direction: column; gap: 22px; text-align: left; }
         .form-group { display: flex; flex-direction: column; }
-        .form-group label { font-size: 9.5px; font-weight: 500; text-transform: uppercase;
+        .form-group label { font-size: 10px; font-weight: 500; text-transform: uppercase;
                             letter-spacing: 0.28em; color: var(--morado-claro); margin-bottom: 9px; }
         .form-input {
             width: 100%; background: transparent; border: none; border-bottom: 1px solid var(--linea);
             border-radius: 0; padding: 9px 2px; color: var(--blanco); font-family: var(--sans);
             font-size: 15px; outline: none; transition: border-color 0.2s;
         }
-        .form-input::placeholder { color: rgba(255,255,255,0.22); }
+        .form-input::placeholder { color: rgba(255,255,255,0.36); }
         .form-input:focus { border-bottom-color: var(--morado); }
 
         /* --- OPCIONES DE TAMAÑO Y TIPO DE LAVADO --- */
@@ -1138,6 +1142,9 @@
             background: transparent; border: 1px solid rgba(255,255,255,0.13); color: var(--blanco);
             padding: 11px 4px; border-radius: 12px; cursor: pointer;
             display: flex; flex-direction: column; align-items: center; gap: 3px; transition: 0.2s;
+            /* Es <button> desde septiembre 2026 (antes <div>, que no se podía usar
+               con teclado ni lo anunciaba un lector de pantalla). */
+            width: 100%; font-family: var(--sans); line-height: 1.25;
         }
         .size-option.selected { background: var(--morado); border-color: var(--morado); }
         .size-name { font-size: 12.5px; font-weight: 500; }
@@ -1165,7 +1172,7 @@
             box-shadow: inset 2px 0 0 var(--magenta), 0 0 14px rgba(168,85,247,.14);
         }
         .total-vivo-linea { display: flex; justify-content: space-between; align-items: baseline; }
-        .total-vivo-linea span { font-size: 9.5px; font-weight: 500; text-transform: uppercase;
+        .total-vivo-linea span { font-size: 10px; font-weight: 500; text-transform: uppercase;
                                  letter-spacing: 0.28em; color: var(--morado-claro); }
         .total-vivo-linea strong { font-family: var(--serif); font-size: 34px; font-weight: 400; color: var(--blanco); }
         .total-vivo-detalle { font-size: 10.5px; color: var(--muy-tenue); margin-top: 7px; line-height: 1.6; }
@@ -1185,7 +1192,7 @@
         .resumen-extra { font-size: 12px; }
         .resumen-extra span, .resumen-extra strong { color: var(--tenue); font-weight: 400; }
         .resumen-total { border-bottom: none; padding-top: 20px; align-items: baseline; }
-        .resumen-total span { font-size: 9.5px; font-weight: 500; text-transform: uppercase;
+        .resumen-total span { font-size: 10px; font-weight: 500; text-transform: uppercase;
                               letter-spacing: 0.28em; color: var(--morado-claro); }
         .resumen-total strong { font-family: var(--serif); font-size: 34px; font-weight: 400; color: var(--blanco); }
         .resumen-nota { font-size: 11px; color: var(--muy-tenue); line-height: 1.6; text-align: left; margin-top: 16px; }
@@ -1210,7 +1217,7 @@
            En un solo renglón, "domingo, 16 de agosto de 2026" no cabe entre las
            dos flechas y se partía en dos líneas desparejas. */
         .admin-fecha-dia {
-            font-size: 9.5px; letter-spacing: 2.2px; text-transform: uppercase;
+            font-size: 10px; letter-spacing: 2.2px; text-transform: uppercase;
             color: var(--morado-claro); font-weight: 600; line-height: 1;
         }
         .admin-fecha-texto {
@@ -1360,7 +1367,7 @@
         .aviso-recordatorios b { color: var(--morado-claro); }
         .chip.verde { border-color: rgba(134, 239, 172, 0.45); color: #86efac; }
         .chip.rojo  { border-color: rgba(252, 165, 165, 0.35); color: #fca5a5; }
-        .estado-cita { font-size: 9.5px; font-weight: 700; letter-spacing: 0.22em;
+        .estado-cita { font-size: 10px; font-weight: 700; letter-spacing: 0.22em;
                        text-transform: uppercase; margin-top: 7px; }
         .cita-admin.completada { opacity: 0.55; }
         .cita-admin.cancelada  { opacity: 0.45; }
@@ -1399,7 +1406,7 @@
         .semana-cita .h { color: var(--morado-claro); font-weight: 600; min-width: 62px; }
         .semana-cita.hecha { opacity: 0.45; }
         .semana-cita.hecha .n { text-decoration: line-through; }
-        .semana-vacio { font-size: 11.5px; color: rgba(255,255,255,0.22); margin-top: 6px; }
+        .semana-vacio { font-size: 11.5px; color: var(--muy-tenue); margin-top: 6px; }
 
         /* --- EL MARCADOR DEL CLIENTE EN EL MAPA ---
            Gota morada con el logo dentro: la punta de abajo cae en el punto
@@ -1464,7 +1471,7 @@
             padding: 26px 24px 20px 24px; text-align: center;
         }
         .aviso-marca {
-            font-size: 8.5px; font-weight: 500; letter-spacing: 0.38em;
+            font-size: 10px; font-weight: 500; letter-spacing: 0.38em;
             text-transform: uppercase; color: var(--morado-claro); opacity: 0.85;
         }
         .aviso-texto {
@@ -1500,7 +1507,7 @@
             outline: none; margin-bottom: 6px;
         }
         .buscador-clientes:focus { border-bottom-color: var(--morado); }
-        .buscador-clientes::placeholder { color: rgba(255,255,255,0.22); }
+        .buscador-clientes::placeholder { color: rgba(255,255,255,0.36); }
 
         .cliente-ficha { border-bottom: 1px solid var(--linea); padding: 17px 0; text-align: left; }
         /* Los que ya les toca llevan un filo morado a la izquierda, para que salten a la vista */
@@ -1508,7 +1515,7 @@
         .cliente-cabeza { display: flex; align-items: baseline; gap: 10px; }
         .cliente-nombre { font-size: 15px; font-weight: 500; flex: 1; }
         .cliente-gastado { font-family: var(--serif); font-size: 21px; white-space: nowrap; }
-        .cliente-señal { font-size: 9.5px; font-weight: 700; letter-spacing: 0.2em;
+        .cliente-señal { font-size: 10px; font-weight: 700; letter-spacing: 0.2em;
                          text-transform: uppercase; margin-top: 7px; }
         .cliente-datos { font-size: 12px; color: var(--tenue); margin-top: 8px; line-height: 1.85; }
         .cliente-datos .campo { color: var(--muy-tenue); }
@@ -1547,9 +1554,14 @@
         /* ══ LOGIN CON FOTO DE FONDO ═════════════════════════════════════════
            La foto es una de las de Tristán: en dos segundos el cliente entiende
            qué es esto, y de paso se llena el hueco muerto que había en medio. */
+        /* El formulario vive abajo, al alcance del pulgar. Se logra con el
+           margin-bottom: auto de .hero-arriba y NO con justify-content: flex-end:
+           con flex-end, en un teléfono chico (360×640, 320×568) lo que no cabía
+           se salía por ARRIBA, fuera del alcance del dedo, y el logo y el título
+           quedaban cortados sin forma de verlos. Así, lo que no cabe se desplaza. */
         .login-hero {
             position: relative; padding: 0;
-            justify-content: flex-end;   /* el formulario vive abajo, al alcance del pulgar */
+            justify-content: flex-start;
         }
         /* La foto de fondo va cambiando sola mientras el cliente está en el
            login (ver arrancarCarruselDelLogin). Aquí queda la primera como
@@ -1626,6 +1638,22 @@
         .registro-hero .hero-logo { width: 84px; height: 84px; }
         .registro-hero .hero-titulo { font-size: 44px; }
 
+        /* En login y Crear cuenta la foto ya trae su logo grande: el logo chico
+           del encabezado y la versión sobran, y en pantallas chicas chocaban con
+           él (quedaban encimados). El botón del menú sí se queda. */
+        .app-container.en-login .marca-logo,
+        .app-container.en-login .marca-version { visibility: hidden; }
+
+        /* Teléfonos bajos (hasta 700 px de alto): la parte de arriba se compacta
+           para que el formulario quepa completo sin desplazarse en 360×640. */
+        @media (max-height: 700px) {
+            .hero-arriba { padding-top: 60px; gap: 6px; }
+            .hero-logo, .registro-hero .hero-logo { width: 64px; height: 64px; }
+            .hero-titulo, .registro-hero .hero-titulo { font-size: 34px; }
+            .hero-panel { padding: 16px 16px 12px; }
+            .hero-panel .form-group label { margin-bottom: 4px; }
+        }
+
         /* El encabezado flota ENCIMA de la foto en el login. El botón del menú
            sigue ahí — es donde un cliente que todavía no tiene cuenta encuentra
            el WhatsApp, o sea justo cuando más lo necesita. */
@@ -1700,7 +1728,7 @@
         }
         .proxima-cita:active { transform: scale(0.985); border-color: rgba(196,181,253,0.45); }
         .proxima-etiqueta {
-            font-size: 9.5px; letter-spacing: 0.20em; text-transform: uppercase;
+            font-size: 10px; letter-spacing: 0.20em; text-transform: uppercase;
             color: var(--morado-claro); font-weight: 600;
         }
         .proxima-cuando {
@@ -1928,15 +1956,23 @@
                 <p class="hero-lema">Lavado y detallado <b>a domicilio</b>,<br>en Cuauhtémoc.</p>
             </div>
 
-            <div class="hero-panel">
+            <!-- Es un <form> de verdad (septiembre 2026). Sin él, la tecla "Ir" del
+                 teclado no entraba, y Chrome/Safari ofrecían guardar la contraseña
+                 con menos confianza — justo lo que la app le promete al cliente
+                 ("tu contraseña la guarda el navegador"). preventDefault evita que
+                 el formulario navegue: la CSP (form-action 'none') no se toca.
+                 El teléfono va como "username" porque es lo que identifica la
+                 cuenta: así el administrador de contraseñas los guarda en pareja. -->
+            <form class="hero-panel" id="form-login" novalidate
+                  onsubmit="event.preventDefault(); iniciarSesionTelefono();">
                 <div class="form-group">
-                    <label>Teléfono (10 dígitos)</label>
-                    <input type="tel" id="input-login-telefono" class="form-input"
-                           placeholder="Ej. 6251234567" maxlength="10" inputmode="numeric" autocomplete="tel">
+                    <label for="input-login-telefono">Teléfono (10 dígitos)</label>
+                    <input type="tel" id="input-login-telefono" name="username" class="form-input"
+                           placeholder="Ej. 6251234567" maxlength="10" inputmode="numeric" autocomplete="username">
                 </div>
                 <div class="form-group">
-                    <label>Contraseña</label>
-                    <input type="password" id="input-login-password" class="form-input"
+                    <label for="input-login-password">Contraseña</label>
+                    <input type="password" id="input-login-password" name="password" class="form-input"
                            placeholder="Tu contraseña" autocomplete="current-password">
                 </div>
                 <label class="recordar">
@@ -1949,9 +1985,9 @@
 
                 <p id="login-phone-error" class="mensaje-error"></p>
 
-                <button class="btn-premium" id="btn-iniciar-sesion" onclick="iniciarSesionTelefono()">Entrar</button>
+                <button type="submit" class="btn-premium" id="btn-iniciar-sesion">Entrar</button>
 
-                <button class="btn-premium secundario" onclick="mostrarPantalla('screen-registro')">Crear una cuenta</button>
+                <button type="button" class="btn-premium secundario" onclick="mostrarPantalla('screen-registro')">Crear una cuenta</button>
 
                 <div class="hero-pie">
                     <!-- No hay recuperación automática, y el motivo es de raíz: el
@@ -1959,11 +1995,11 @@
                          falso Firebase no le puede mandar el mensaje de "restablecer".
                          El camino real es que le escriba a Tristán — y aquí el mensaje
                          ya va escrito con su número, para que él la reponga. -->
-                    <button class="enlace-suave" onclick="pedirAyudaConContrasena()">
+                    <button type="button" class="enlace-suave" onclick="pedirAyudaConContrasena()">
                         Olvidé mi contraseña
                     </button>
                 </div>
-            </div>
+            </form>
         </div>
 
         <!-- PANTALLA: CAMBIAR CONTRASEÑA -->
@@ -1975,18 +2011,23 @@
 
             <div class="menu-content-holder">
                 <div class="card-panel">
-                    <div class="form-container">
+                    <!-- Formulario de verdad: "Ir" guarda, y el navegador ACTUALIZA la
+                         contraseña que tenía guardada (para eso necesita saber de qué
+                         cuenta es: el campo escondido lleva el teléfono). -->
+                    <form class="form-container" id="form-contrasena" novalidate
+                          onsubmit="event.preventDefault(); guardarContrasenaNueva();">
+                        <input type="text" id="pass-usuario" name="username" autocomplete="username" hidden readonly>
                         <div class="form-group">
-                            <label>Tu contraseña de ahora</label>
-                            <input type="password" id="pass-actual" class="form-input" placeholder="La que usas hoy">
+                            <label for="pass-actual">Tu contraseña de ahora</label>
+                            <input type="password" id="pass-actual" name="current-password" class="form-input" placeholder="La que usas hoy" autocomplete="current-password">
                         </div>
                         <div class="form-group">
-                            <label>Contraseña nueva (mínimo 6)</label>
-                            <input type="password" id="pass-nueva" class="form-input" placeholder="La nueva">
+                            <label for="pass-nueva">Contraseña nueva (mínimo 6)</label>
+                            <input type="password" id="pass-nueva" name="new-password" class="form-input" placeholder="La nueva" autocomplete="new-password">
                         </div>
                         <div class="form-group">
-                            <label>Escríbela otra vez</label>
-                            <input type="password" id="pass-repetir" class="form-input" placeholder="Para no equivocarte">
+                            <label for="pass-repetir">Escríbela otra vez</label>
+                            <input type="password" id="pass-repetir" name="confirm-password" class="form-input" placeholder="Para no equivocarte" autocomplete="new-password">
                         </div>
                         <p id="pass-error" class="mensaje-error"></p>
                         <!-- ⚠️ Esta nota va DENTRO del panel a propósito:
@@ -1999,17 +2040,17 @@
                             Si alguien tomara tu teléfono desbloqueado, sin esto podría
                             cambiarte la contraseña y dejarte fuera de tu cuenta.
                         </p>
-                    </div>
+                    </form>
                 </div>
             </div>
 
             <div class="action-buttons-group">
-                <button class="btn-premium" id="btn-guardar-pass" onclick="guardarContrasenaNueva()">Guardar</button>
-                <button class="btn-premium secundario" onclick="mostrarPantalla('screen-welcome', true)">Cancelar</button>
+                <button type="submit" form="form-contrasena" class="btn-premium" id="btn-guardar-pass">Guardar</button>
+                <button type="button" class="btn-premium secundario" onclick="mostrarPantalla('screen-welcome', true)">Cancelar</button>
                 <!-- La salida para quien llegó aquí SIN acordarse de la de ahora.
                      Sin esto, esta pantalla es un callejón sin salida: le pide algo
                      que justamente no tiene. -->
-                <button class="enlace-suave" onclick="pedirAyudaConContrasena()">
+                <button type="button" class="enlace-suave" onclick="pedirAyudaConContrasena()">
                     No me acuerdo de la de ahora
                 </button>
             </div>
@@ -2210,24 +2251,27 @@
                 <p class="hero-lema">Sólo tu teléfono. <b>Ni correo ni tarjeta.</b></p>
             </div>
 
-            <div class="hero-panel">
+            <!-- Formulario de verdad, igual que el login: "Ir" en el teclado registra,
+                 y el navegador ofrece guardar la contraseña nueva. -->
+            <form class="hero-panel" id="form-registro" novalidate
+                  onsubmit="event.preventDefault(); registrarTelefono();">
                 <div class="form-group">
-                    <label>Nombre Completo</label>
-                    <input type="text" id="input-registro-nombre" class="form-input" placeholder="Ej. Juan Pérez" autocomplete="name">
+                    <label for="input-registro-nombre">Nombre Completo</label>
+                    <input type="text" id="input-registro-nombre" name="name" class="form-input" placeholder="Ej. Juan Pérez" autocomplete="name">
                 </div>
                 <div class="form-group">
-                    <label>Número de Teléfono (10 dígitos)</label>
-                    <input type="tel" id="input-registro-telefono" class="form-input" placeholder="Ej. 6251234567" maxlength="10" inputmode="numeric" autocomplete="tel">
+                    <label for="input-registro-telefono">Número de Teléfono (10 dígitos)</label>
+                    <input type="tel" id="input-registro-telefono" name="username" class="form-input" placeholder="Ej. 6251234567" maxlength="10" inputmode="numeric" autocomplete="username">
                 </div>
                 <div class="form-group">
-                    <label>Contraseña (mínimo 6 caracteres)</label>
-                    <input type="password" id="input-registro-password" class="form-input" placeholder="Crea una contraseña" autocomplete="new-password">
+                    <label for="input-registro-password">Contraseña (mínimo 6 caracteres)</label>
+                    <input type="password" id="input-registro-password" name="new-password" class="form-input" placeholder="Crea una contraseña" autocomplete="new-password">
                 </div>
 
                 <p id="registro-error" class="mensaje-error"></p>
 
-                <button class="btn-premium" id="btn-registrarme" onclick="registrarTelefono()">Registrarme</button>
-                <button class="btn-premium secundario" onclick="volverA('screen-login-phone')">Ya tengo cuenta</button>
+                <button type="submit" class="btn-premium" id="btn-registrarme">Registrarme</button>
+                <button type="button" class="btn-premium secundario" onclick="volverA('screen-login-phone')">Ya tengo cuenta</button>
 
                 <!-- Éste es el ÚNICO momento en que el cliente acepta algo, así
                      que tiene que verse y los dos textos tienen que estar a un
@@ -2237,16 +2281,15 @@
                     y el
                     <button type="button" onclick="abrirLoLegal('screen-privacidad')">Aviso de privacidad</button>.
                 </p>
-            </div>
+            </form>
         </div>
 
         <!-- PANTALLA 1: BIENVENIDA -->
         <div class="screen hidden" id="screen-welcome" style="justify-content: space-between;">
-            <div class="logo-container">
-                <div class="logo-frame">
-                    <img data-logo="1" alt="CarWashExpress" class="logo-img" onerror="usarLogoDeRespaldo(this)">
-                </div>
-            </div>
+            <!-- Sin logo grande (septiembre 2026): ya está el del encabezado, y con
+                 los dos más la marca escrita y el título, la marca se repetía tres
+                 veces y la próxima cita del cliente quedaba a media pantalla.
+                 Lujo minimalista es UNA marca y mucho aire. -->
             <!-- Sin el lema: el cliente que ve esta pantalla YA inició sesión, o sea
                  que acaba de leer casi las mismas palabras en el login ("Lavado y
                  detallado a domicilio, en Cuauhtémoc"). Repetírselo le empujaba su
@@ -2483,7 +2526,7 @@ Cera rápida protectora
                                 </div>
                                 <div class="fila-precio">$700</div>
                             </button>
-                            <button class="info-btn" id="i-exp-cm" onclick="alternarDescripcion('d-exp-cm', 'i-exp-cm')" aria-label="Qué incluye">i</button>
+                            <button type="button" class="info-btn" id="i-exp-cm" onclick="alternarDescripcion(\'d-exp-cm\', \'i-exp-cm\')" aria-label="Qué incluye" aria-expanded="false" aria-controls="d-exp-cm">i</button>
                         </div>
                         <div class="fila-descripcion hidden" id="d-exp-cm">
                             Limpieza profunda de interiores, acondicionamiento básico y abrillantado exterior.
@@ -2500,7 +2543,7 @@ Cera rápida protectora
                                 </div>
                                 <div class="fila-precio">$900</div>
                             </button>
-                            <button class="info-btn" id="i-exp-g" onclick="alternarDescripcion('d-exp-g', 'i-exp-g')" aria-label="Qué incluye">i</button>
+                            <button type="button" class="info-btn" id="i-exp-g" onclick="alternarDescripcion(\'d-exp-g\', \'i-exp-g\')" aria-label="Qué incluye" aria-expanded="false" aria-controls="d-exp-g">i</button>
                         </div>
                         <div class="fila-descripcion hidden" id="d-exp-g">
                             Lo mismo que el Express, en vehículo grande. El lavado va incluido.
@@ -2517,7 +2560,7 @@ Cera rápida protectora
                                 </div>
                                 <div class="fila-precio">$1,200</div>
                             </button>
-                            <button class="info-btn" id="i-com-cm" onclick="alternarDescripcion('d-com-cm', 'i-com-cm')" aria-label="Qué incluye">i</button>
+                            <button type="button" class="info-btn" id="i-com-cm" onclick="alternarDescripcion(\'d-com-cm\', \'i-com-cm\')" aria-label="Qué incluye" aria-expanded="false" aria-controls="d-com-cm">i</button>
                         </div>
                         <div class="fila-descripcion hidden" id="d-com-cm">
                             Desmontaje de asientos, lavado profundo de alfombras, descontaminación de cristales
@@ -2535,7 +2578,7 @@ Cera rápida protectora
                                 </div>
                                 <div class="fila-precio">$1,500</div>
                             </button>
-                            <button class="info-btn" id="i-com-g" onclick="alternarDescripcion('d-com-g', 'i-com-g')" aria-label="Qué incluye">i</button>
+                            <button type="button" class="info-btn" id="i-com-g" onclick="alternarDescripcion(\'d-com-g\', \'i-com-g\')" aria-label="Qué incluye" aria-expanded="false" aria-controls="d-com-g">i</button>
                         </div>
                         <div class="fila-descripcion hidden" id="d-com-g">
                             Lo mismo que el Completo, en vehículo grande. El lavado va incluido.
@@ -2691,7 +2734,7 @@ Cera rápida protectora
                         </div>
 
                         <div>
-                            <label class="agenda-label">El día</label>
+                            <label class="agenda-label" id="etq-dia">El día</label>
                             <div class="cal">
                                 <div class="cal-cabeza">
                                     <button class="cal-flecha" onclick="cambiarMesCalendario(-1)" aria-label="Mes anterior">‹</button>
@@ -2701,7 +2744,7 @@ Cera rápida protectora
                                 <div class="cal-semana">
                                     <span>D</span><span>L</span><span>M</span><span>M</span><span>J</span><span>V</span><span>S</span>
                                 </div>
-                                <div class="cal-grid" id="cal-grid"></div>
+                                <div class="cal-grid" id="cal-grid" role="group" aria-labelledby="etq-dia cal-mes"></div>
                                 <div class="cal-leyenda">
                                     <span><i class="pt libre"></i><i class="pt libre"></i><i class="pt libre"></i>Cada punto es un horario libre</span>
                                     <span><i class="pt lleno"></i>Último horario</span>
@@ -2726,12 +2769,12 @@ Cera rápida protectora
                         </div>
 
                         <div id="bloque-horas">
-                            <label class="agenda-label">La hora</label>
-                            <div class="time-grid">
-                                <div class="time-slot" id="slot-10" onclick="seleccionarHora('10:00 AM', 'slot-10')">10:00 AM</div>
-                                <div class="time-slot" id="slot-12" onclick="seleccionarHora('12:00 PM', 'slot-12')">12:00 PM</div>
-                                <div class="time-slot" id="slot-16" onclick="seleccionarHora('04:00 PM', 'slot-16')">4:00 PM</div>
-                                <div class="time-slot" id="slot-18" onclick="seleccionarHora('06:00 PM', 'slot-18')">6:00 PM</div>
+                            <label class="agenda-label" id="etq-hora">La hora</label>
+                            <div class="time-grid" role="group" aria-labelledby="etq-hora">
+                                <button type="button" class="time-slot" id="slot-10" onclick="seleccionarHora('10:00 AM', 'slot-10')">10:00 AM</button>
+                                <button type="button" class="time-slot" id="slot-12" onclick="seleccionarHora('12:00 PM', 'slot-12')">12:00 PM</button>
+                                <button type="button" class="time-slot" id="slot-16" onclick="seleccionarHora('04:00 PM', 'slot-16')">4:00 PM</button>
+                                <button type="button" class="time-slot" id="slot-18" onclick="seleccionarHora('06:00 PM', 'slot-18')">6:00 PM</button>
                             </div>
                         </div>
                         <p class="agenda-aviso" id="agenda-aviso">Elige primero un día para ver qué horarios siguen libres.</p>
@@ -2755,36 +2798,36 @@ Cera rápida protectora
             <div class="menu-content-holder">
                 <div class="card-panel">
                     <div class="form-container">
-                        <div class="form-group"><label>Nombre Completo</label><input type="text" id="input-nombre" class="form-input" placeholder="Ej. Juan Pérez"></div>
-                        <div class="form-group"><label>Teléfono de Contacto</label><input type="tel" id="input-telefono" class="form-input" placeholder="Ej. 6251234567"></div>
+                        <div class="form-group"><label for="input-nombre">Nombre Completo</label><input type="text" id="input-nombre" class="form-input" placeholder="Ej. Juan Pérez" autocomplete="name"></div>
+                        <div class="form-group"><label for="input-telefono">Teléfono de Contacto</label><input type="tel" id="input-telefono" class="form-input" placeholder="Ej. 6251234567" autocomplete="tel"></div>
                         <div class="form-group">
-                            <label>Referencia del domicilio (opcional)</label>
+                            <label for="input-referencia">Referencia del domicilio (opcional)</label>
                             <input type="text" id="input-referencia" class="form-input" placeholder="Ej. casa blanca, portón negro, junto a la tienda">
                         </div>
                         <div class="form-group">
-                            <label>Marca y Modelo del Vehículo</label>
+                            <label for="input-vehiculo">Marca y Modelo del Vehículo</label>
                             <input type="text" id="input-vehiculo" class="form-input" placeholder="Ej. Volkswagen Jetta 2020" oninput="detectarTamanoPorTexto()" autocomplete="off">
                             <p class="vehiculo-hint" id="hint-tamano">Tamaño del vehículo (define el precio):</p>
                             <!-- Los precios de estos botones se esconden cuando el servicio
                                  es un Detallado o una Membresía: ahí el lavado ya va incluido
                                  y mostrar "$250" haría creer que se cobra aparte. -->
-                            <div class="size-grid">
-                                <div class="size-option" id="tam-chico" onclick="seleccionarTamanoManual('chico', 'tam-chico')">
+                            <div class="size-grid" role="group" aria-labelledby="hint-tamano">
+                                <button type="button" class="size-option" id="tam-chico" onclick="seleccionarTamanoManual('chico', 'tam-chico')">
                                     <span class="size-name">Chico</span><span class="size-price" id="precio-tam-chico">$250</span>
-                                </div>
-                                <div class="size-option" id="tam-mediano" onclick="seleccionarTamanoManual('mediano', 'tam-mediano')">
+                                </button>
+                                <button type="button" class="size-option" id="tam-mediano" onclick="seleccionarTamanoManual('mediano', 'tam-mediano')">
                                     <span class="size-name">Mediano</span><span class="size-price" id="precio-tam-mediano">$300</span>
-                                </div>
-                                <div class="size-option" id="tam-grande" onclick="seleccionarTamanoManual('grande', 'tam-grande')">
+                                </button>
+                                <button type="button" class="size-option" id="tam-grande" onclick="seleccionarTamanoManual('grande', 'tam-grande')">
                                     <span class="size-name">Grande</span><span class="size-price" id="precio-tam-grande">$350</span>
-                                </div>
+                                </button>
                             </div>
                         </div>
 
                         <!-- REQUISITO DE LUZ. Sólo se pregunta en los servicios a domicilio:
                              los detallados se hacen en el taller, donde la luz es nuestra. -->
                         <div class="form-group" id="grupo-corriente">
-                            <label>¿Hay dónde conectarnos?</label>
+                            <label id="etq-corriente">¿Hay dónde conectarnos?</label>
                             <div class="callout" style="margin-top: 4px;">
                                 <div class="callout-texto">
                                     Trabajamos con aspiradora, hidrolavadora y pulidora, así que necesitamos una
@@ -2792,13 +2835,13 @@ Cera rápida protectora
                                     Un contacto normal de casa sirve.
                                 </div>
                             </div>
-                            <div class="size-grid" style="margin-top: 12px;">
-                                <div class="size-option" id="luz-si" onclick="seleccionarTomaCorriente('si', 'luz-si')">
+                            <div class="size-grid" style="margin-top: 12px;" role="group" aria-labelledby="etq-corriente">
+                                <button type="button" class="size-option" id="luz-si" onclick="seleccionarTomaCorriente('si', 'luz-si')">
                                     <span class="size-name">Sí tengo</span><span class="size-price">a menos de 40 m</span>
-                                </div>
-                                <div class="size-option" id="luz-nose" onclick="seleccionarTomaCorriente('nose', 'luz-nose')">
+                                </button>
+                                <button type="button" class="size-option" id="luz-nose" onclick="seleccionarTomaCorriente('nose', 'luz-nose')">
                                     <span class="size-name">No estoy seguro</span><span class="size-price">lo revisamos</span>
-                                </div>
+                                </button>
                             </div>
                             <p class="vehiculo-hint hidden" id="aviso-sin-luz">
                                 Sin problema: te hablamos antes de salir para confirmarlo contigo.
@@ -2820,17 +2863,17 @@ Cera rápida protectora
 
                         <!-- Sólo aplica al Lavado Básico: exterior o interior por separado cuestan el 70% -->
                         <div class="form-group hidden" id="grupo-tipo-lavado">
-                            <label>Tipo de Lavado</label>
-                            <div class="size-grid">
-                                <div class="size-option selected" id="tipo-completo" onclick="seleccionarTipoLavado('completo', 'tipo-completo')">
+                            <label id="etq-tipo">Tipo de Lavado</label>
+                            <div class="size-grid" role="group" aria-labelledby="etq-tipo">
+                                <button type="button" class="size-option selected" id="tipo-completo" onclick="seleccionarTipoLavado('completo', 'tipo-completo')">
                                     <span class="size-name">Completo</span><span class="size-price">Ext + Int</span>
-                                </div>
-                                <div class="size-option" id="tipo-exterior" onclick="seleccionarTipoLavado('exterior', 'tipo-exterior')">
+                                </button>
+                                <button type="button" class="size-option" id="tipo-exterior" onclick="seleccionarTipoLavado('exterior', 'tipo-exterior')">
                                     <span class="size-name">Sólo Ext.</span><span class="size-price">70%</span>
-                                </div>
-                                <div class="size-option" id="tipo-interior" onclick="seleccionarTipoLavado('interior', 'tipo-interior')">
+                                </button>
+                                <button type="button" class="size-option" id="tipo-interior" onclick="seleccionarTipoLavado('interior', 'tipo-interior')">
                                     <span class="size-name">Sólo Int.</span><span class="size-price">70%</span>
-                                </div>
+                                </button>
                             </div>
                         </div>
                     </div>
@@ -2975,7 +3018,7 @@ Cera rápida protectora
              Sustituye al mostrarAviso() del navegador (la ventana gris que decía
              "Esta página dice"), que rompía por completo el diseño. -->
         <div class="aviso-fondo hidden" id="aviso-fondo" onclick="cerrarAviso(event)">
-            <div class="aviso-caja cristal" role="alertdialog" aria-labelledby="aviso-texto">
+            <div class="aviso-caja cristal" role="alertdialog" aria-modal="true" aria-labelledby="aviso-texto">
                 <div class="aviso-marca">Car Wash Express</div>
                 <p class="aviso-texto" id="aviso-texto"></p>
                 <div class="aviso-botones" id="aviso-botones"></div>
@@ -3214,8 +3257,15 @@ Cera rápida protectora
         // de internet. Vale más decirle al cliente qué hacer que dejarlo picando un
         // botón que nunca va a responder.
         function mostrarPantallaSinConexion() {
+            // La pueden pedir dos lados (el arranque y el salvavidas de 15 s):
+            // si ya está puesta, no se pone otra encima.
+            if (document.getElementById('screen-sin-conexion')) return;
+            // 🐛 Si esto sale mientras se veía el login, el encabezado se quedaba
+            // flotando encima (clase en-login) y tapaba el "Sin" del título.
+            document.querySelector('.app-container').classList.remove('en-login');
             document.querySelectorAll('.screen').forEach(el => el.classList.add('hidden'));
             const aviso = document.createElement('div');
+            aviso.id = "screen-sin-conexion";
             aviso.className = "screen";
             aviso.innerHTML = `
                 <div class="text-group">
@@ -3345,11 +3395,33 @@ Cera rápida protectora
         // imagen). Con datos móviles lentos eso dejaba la app sin arrancar durante
         // segundos. DOMContentLoaded dispara en cuanto el HTML está listo y las
         // librerías con "defer" ya corrieron — que es justo lo que necesitamos.
+        // Los horarios y las opciones (tamaño, corriente, tipo de lavado) marcan su
+        // estado con clases ('selected', 'ocupado') desde muchos lugares. En vez de
+        // tocar cada uno, esto observa las clases y lo traduce a lo que entiende un
+        // lector de pantalla: aria-pressed (elegido) y aria-disabled (apartado).
+        // No se usa `disabled` a propósito: un horario apartado sigue respondiendo
+        // al toque para EXPLICAR por qué no se puede ("ya está apartado").
+        function sincronizarEstadosAccesibles() {
+            const marcar = el => {
+                el.setAttribute('aria-pressed', el.classList.contains('selected') ? 'true' : 'false');
+                if (el.classList.contains('time-slot')) {
+                    el.setAttribute('aria-disabled', el.classList.contains('ocupado') ? 'true' : 'false');
+                }
+            };
+            const observador = window.MutationObserver
+                ? new MutationObserver(cambios => cambios.forEach(c => marcar(c.target))) : null;
+            document.querySelectorAll('.time-slot, .size-option').forEach(el => {
+                marcar(el);
+                if (observador) observador.observe(el, { attributes: true, attributeFilter: ['class'] });
+            });
+        }
+
         function arrancarApp() {
             appArranco = true;
             pintarVersion();
             registrarServiceWorker();
             engancharGestoDeRegreso();
+            sincronizarEstadosAccesibles();
             // Reparte el logo (guardado una sola vez) a las etiquetas que lo necesitan
             document.querySelectorAll('img[data-logo]').forEach(img => { img.src = LOGO_DATA_URI; });
 
@@ -3422,7 +3494,6 @@ Cera rápida protectora
             usuarioActual = user;
             actualizarAccesoAdmin();
             mostrarPantalla('screen-welcome');
-            pedirUbicacionTemprano();
 
             // La base de datos se baja aparte del login. Ésta es la ÚNICA puerta por
             // la que se entra a la app, así que aquí se espera a que llegue: de este
@@ -3835,7 +3906,7 @@ Cera rápida protectora
 
         // La versión del archivo. Sirve para que Tristán confirme de un vistazo si
         // el que abrió es el nuevo — ya pasó dos veces que probaba una copia vieja.
-        const VERSION_APP = '2026.09.26c';
+        const VERSION_APP = '2026.09.26d';
 
         // La versión del AVISO DE PRIVACIDAD y los TÉRMINOS. Es distinta de la
         // versión de la app a propósito: la app cambia cada semana y lo legal
@@ -4253,7 +4324,7 @@ Cera rápida protectora
         function mensajeDeErrorAuth(error, mensajeBase) {
             const codigo = error && error.code ? error.code : "";
             if (codigo === 'auth/too-many-requests') {
-                return "Demasiados intentos seguidos. Firebase bloqueó el acceso por unos minutos por seguridad. Espera un rato y vuelve a intentar.";
+                return "Demasiados intentos seguidos. Por seguridad, el acceso quedó bloqueado unos minutos. Espera un rato y vuelve a intentar.";
             }
             if (codigo === 'auth/network-request-failed') {
                 return "No hay conexión a internet. Revisa tu wifi o tus datos.";
@@ -4262,7 +4333,7 @@ Cera rápida protectora
                 return "La contraseña es muy débil. Usa al menos 6 caracteres.";
             }
             if (codigo === 'auth/operation-not-allowed') {
-                return "El acceso por contraseña está desactivado en Firebase. Avísale a Tristán.";
+                return "No se puede entrar en este momento. Escríbenos por WhatsApp al 625 100 9755 y te ayudamos.";
             }
             return mensajeBase + " Intenta de nuevo.";
         }
@@ -4698,6 +4769,8 @@ Cera rápida protectora
             ['pass-actual', 'pass-nueva', 'pass-repetir'].forEach(id => {
                 document.getElementById(id).value = "";
             });
+            // Para que el navegador sepa DE QUÉ cuenta es la contraseña que cambia.
+            document.getElementById('pass-usuario').value = telefonoDeLaCuenta();
             document.getElementById('pass-error').textContent = "";
             mostrarPantalla('screen-password');
         }
@@ -4835,6 +4908,7 @@ Cera rápida protectora
             ubicacionEsManual = false;
             motivoUbicacionAproximada = "";
             ubicacionPrecargada = null;
+            precisionUbicacion = null;
             apagarMapa();
             salirDeModoReagenda();
             limpiarFormularioDatos();
@@ -4846,11 +4920,26 @@ Cera rápida protectora
         // 📍 GPS Y MAPA (sin cambios de lógica, solo integrado al flujo con login)
         // =====================================================================
 
-        // La Fase 1 pide el permiso de ubicación "al entrar a la app", no hasta que el
-        // cliente toca Agendar. Aquí se pide en cuanto entra: si lo concede, cuando
-        // llegue a la pantalla del mapa ya tenemos su posición y no hay que esperar.
-        // Si lo niega, no pasa nada: se le vuelve a preguntar al agendar.
-        let ubicacionPrecargada = null;
+        // 📍 LA UBICACIÓN SE PIDE AL TOCAR "AGENDAR", NO AL ENTRAR (septiembre 2026).
+        // Antes se pedía en cuanto el cliente entraba, sin decirle para qué: una
+        // ventana del sistema que sale sola se lee como "esta app me quiere
+        // rastrear", y el que dice que no tiene que ir a los ajustes para
+        // arreglarlo. Pedida al agendar, se entiende sola: es para llegar a su auto.
+        // Aquí se guarda la última posición buena, para no volver a pedirla si
+        // regresa al mapa.
+        let ubicacionPrecargada = null;   // { lat, lon, precision }
+
+        // El margen de error que reporta el GPS, en metros. Una ubicación por
+        // wifi o por antena puede fallar por cientos de metros, y antes se daba
+        // por exacta: con ella se calculaba el traslado y Tristán iba a esa
+        // puerta. Más de esto ya no cuenta como exacta.
+        const METROS_PRECISION_ACEPTABLE = 150;
+        let precisionUbicacion = null;    // metros; null si no salió del GPS
+
+        function ubicacionPocoPrecisa() {
+            return !ubicacionEsAproximada && !ubicacionEsManual
+                && precisionUbicacion != null && precisionUbicacion > METROS_PRECISION_ACEPTABLE;
+        }
 
         // Los navegadores sólo entregan el GPS a páginas servidas por https:// (o a
         // localhost). Al abrir el archivo directo desde la tablet (file:// o
@@ -4861,29 +4950,21 @@ Cera rápida protectora
                    location.hostname === '127.0.0.1';
         }
 
-        function pedirUbicacionTemprano() {
-            if (!navigator.geolocation) return;
-            navigator.geolocation.getCurrentPosition(
-                (pos) => {
-                    ubicacionPrecargada = { lat: pos.coords.latitude, lon: pos.coords.longitude };
-                    ubicacionEsAproximada = false;
-                },
-                () => { /* si dice que no, se le pregunta de nuevo al agendar */ },
-                { enableHighAccuracy: false, timeout: 10000, maximumAge: 300000 }
-            );
-        }
-
         function pedirGPS() {
             const satScreen = document.getElementById('screen-satellite');
             document.getElementById('screen-welcome').classList.add('hidden');
             satScreen.classList.remove('hidden');
             satScreen.classList.add('sky-drop');
             document.getElementById('btn-confirm-sector').style.display = 'none';
-            document.getElementById('radar-status').innerText = "Buscando dónde estás...";
+            // Lo que se lee MIENTRAS el teléfono enseña su ventana de permiso: dice
+            // para qué es, que es lo que hace que el cliente diga que sí.
+            document.getElementById('radar-status').innerText =
+                "Para llegar a tu auto necesitamos tu ubicación. Si el teléfono te pide permiso, acéptalo.";
 
-            // Si ya nos dio permiso al entrar, usamos esa posición y no lo hacemos esperar.
+            // Si ya la tenemos de hace un momento (regresó al mapa), no se vuelve a pedir.
             if (ubicacionPrecargada) {
                 ubicacionEsAproximada = false;
+                precisionUbicacion = ubicacionPrecargada.precision;
                 setTimeout(() => { iniciarMapaReal(ubicacionPrecargada.lat, ubicacionPrecargada.lon); }, 300);
                 return;
             }
@@ -4892,7 +4973,9 @@ Cera rápida protectora
                 navigator.geolocation.getCurrentPosition(
                     (position) => {
                         ubicacionEsAproximada = false;
-                        ubicacionPrecargada = { lat: position.coords.latitude, lon: position.coords.longitude };
+                        precisionUbicacion = Math.round(position.coords.accuracy || 0) || null;
+                        ubicacionPrecargada = { lat: position.coords.latitude, lon: position.coords.longitude,
+                                                precision: precisionUbicacion };
                         setTimeout(() => { iniciarMapaReal(position.coords.latitude, position.coords.longitude); }, 400);
                     },
                     (error) => {
@@ -4900,6 +4983,7 @@ Cera rápida protectora
                         // se guardaba con una dirección falsa. Ahora se marca y se avisa
                         // diciendo el motivo real, para no adivinar qué salió mal.
                         ubicacionEsAproximada = true;
+                        precisionUbicacion = null;
                         if (error && error.code === 1 && !origenSeguro()) {
                             // Chrome devuelve "permiso denegado" cuando la página no viene
                             // de https://, aunque el cliente nunca haya dicho que no. Decir
@@ -4932,6 +5016,13 @@ Cera rápida protectora
             // la vista de administrador sólo sabría el sector, no a dónde ir.
             ubicacionLat = lat;
             ubicacionLon = lon;
+
+            // La zona y el cargo por traslado sólo dependen de las coordenadas, así
+            // que se calculan YA, sin esperar al mapa. 🐛 Antes se calculaban hasta
+            // que el mapa terminaba de cargar: si Mapbox fallaba (señal floja, token
+            // vencido), el botón "Confirmar y ver servicios" nunca aparecía y el
+            // cliente se quedaba atorado en esta pantalla sin poder agendar.
+            calcularSectorCuauhtemoc(lat, lon);
 
             // Mapbox se baja bajo demanda (1,477 KB). Normalmente ya llegó de segundo
             // plano y esto no espera nada; si no, se espera aquí.
@@ -5014,7 +5105,7 @@ Cera rápida protectora
                 // borrado/privado, sin conexión), antes esto fallaba en silencio y la
                 // pantalla se quedaba pegada en "Buscando..." para siempre.
                 const avisoTardanza = setTimeout(() => {
-                    document.getElementById('radar-status').innerText = "El mapa está tardando. Revisa tu conexión a internet.";
+                    document.getElementById('radar-status').innerText = "El mapa está tardando. Mientras, puedes continuar: tu zona ya está calculada.";
                 }, 12000);
 
                 // Sólo avisamos del error si el mapa NO alcanzó a cargar. Después de
@@ -5026,9 +5117,13 @@ Cera rápida protectora
                 map.on('error', (e) => {
                     if (mapaCargado) { console.warn("Aviso de Mapbox (el mapa ya estaba cargado):", e); return; }
                     clearTimeout(avisoTardanza);
-                    const detalle = (e && e.error && e.error.message) ? e.error.message : "motivo desconocido";
+                    // El detalle técnico va a la consola, NUNCA a la pantalla: antes se
+                    // le enseñaba al cliente "Error de Mapbox: Failed to fetch
+                    // https://api.mapbox.com/...access_token=pk..." — jerga, y además
+                    // exhibía el token del mapa.
                     console.error("Error de Mapbox:", e);
-                    document.getElementById('radar-status').innerText = "Error de Mapbox: " + detalle;
+                    document.getElementById('radar-status').innerText =
+                        "No pudimos cargar el mapa, pero puedes continuar: tu zona ya está calculada.";
                 });
 
                 map.on('load', () => {
@@ -5040,14 +5135,18 @@ Cera rápida protectora
                     // y se contradecía con el aviso amarillo de abajo.
                     document.getElementById('radar-status').innerText = ubicacionEsAproximada
                         ? "Ubicación aproximada."
-                        : "Ubicación encontrada.";
+                        : ubicacionPocoPrecisa()
+                            ? "Ubicación aproximada (± " + precisionUbicacion + " m)."
+                            : "Ubicación encontrada.";
                     // Los edificios en 3D sólo tienen sentido con la cámara inclinada.
                     if (!esGamaBaja()) agregarEdificios3D();
                     ponerMarcadorDeMarca(lat, lon);
                     calcularSectorCuauhtemoc(lat, lon);
                 });
             } catch (err) {
-                document.getElementById('radar-status').innerText = "Error al inicializar el mapa: " + err.message;
+                console.error("No se pudo iniciar el mapa:", err);
+                document.getElementById('radar-status').innerText =
+                    "No pudimos cargar el mapa, pero puedes continuar: tu zona ya está calculada.";
             }
         }
 
@@ -5069,11 +5168,19 @@ Cera rápida protectora
 
         function activarAjusteManual() {
             if (!map) {
-                mostrarAviso("El mapa no cargó", "Sin el mapa no se puede marcar la ubicación a mano. Revisa tu internet y vuelve a entrar.");
+                // 🐛 Antes se le pasaban DOS textos, y el segundo se tomaba como un
+                // botón: salía un botón morado vacío. El segundo parámetro es la
+                // salida (un enlace); aquí la salida real es escribirnos.
+                mostrarAviso("El mapa no cargó, así que no se puede marcar la ubicación a mano.\n\n"
+                    + "Revisa tu internet y vuelve a intentar, o mándanos tu ubicación por WhatsApp.",
+                    { etiqueta: "Mandar mi ubicación por WhatsApp",
+                      enlace: "https://wa.me/52" + ADMIN_TELEFONO + "?text=" + encodeURIComponent(
+                          "Hola, quiero agendar pero el mapa de la app no me cargó. Te mando mi ubicación:") });
                 return;
             }
             ubicacionAntesDeAjustar = { lat: ubicacionLat, lon: ubicacionLon,
-                                        aprox: ubicacionEsAproximada, manual: ubicacionEsManual };
+                                        aprox: ubicacionEsAproximada, manual: ubicacionEsManual,
+                                        precision: precisionUbicacion };
             document.getElementById('mira-ajuste').classList.remove('hidden');
             document.getElementById('hoja-normal').classList.add('hidden');
             document.getElementById('hoja-ajuste').classList.remove('hidden');
@@ -5090,6 +5197,7 @@ Cera rápida protectora
             if (!a) return;
             ubicacionLat = a.lat; ubicacionLon = a.lon;
             ubicacionEsAproximada = a.aprox; ubicacionEsManual = a.manual;
+            precisionUbicacion = a.precision;
             map.easeTo(Object.assign({ center: [a.lon, a.lat], zoom: 16.5, duration: 700 }, camaraDelMapa()));
         }
 
@@ -5102,6 +5210,7 @@ Cera rápida protectora
             // sepa de dónde salió el punto.
             ubicacionEsAproximada = false;
             ubicacionEsManual = true;
+            precisionUbicacion = null;
 
             salirDelAjuste();
             ponerMarcadorDeMarca(ubicacionLat, ubicacionLon);
@@ -5297,7 +5406,10 @@ Cera rápida protectora
             document.getElementById('sector-detected').textContent = sectorNombre;
             document.getElementById('sector-message').textContent = ubicacionEsAproximada
                 ? "⚠️ " + motivoUbicacionAproximada + " Estamos usando el centro de Cuauhtémoc, así que tu sector puede estar mal. Si no es correcto, corrígelo con nosotros al confirmar."
-                : sectorMsg;
+                : ubicacionPocoPrecisa()
+                    ? sectorMsg + " Tu teléfono te ubicó con un margen de unos " + precisionUbicacion
+                      + " m: revisa que el marcador esté en tu casa, o toca «No es aquí · marcarla yo»."
+                    : sectorMsg;
             document.getElementById('fuel-notice').textContent = recargoGasolina > 0
                 ? `${sectorNombre} · Traslado +${dinero(recargoGasolina)}`
                 : `${sectorNombre} · Sin cargo por traslado`;
@@ -5341,6 +5453,8 @@ Cera rápida protectora
         function actualizarAccesoAdmin() {
             const fila = document.getElementById('fila-admin');
             if (fila) fila.classList.toggle('hidden', !esAdministrador());
+            // La marca de versión sólo la ve Tristán (ver .marca-version).
+            document.querySelector('.app-container').classList.toggle('es-admin', esAdministrador());
 
             // La vista previa del feed sigue existiendo (alternarVistaPreviaDelFeed),
             // pero ya no cuelga de un botón en la bienvenida: a Tristán le estorbaba
@@ -5406,6 +5520,10 @@ Cera rápida protectora
                 if (!row) return;
                 const precioEl = row.querySelector('.extra-price');
                 if (precioEl) precioEl.textContent = etiquetaDePrecioExtra(extra);
+                // El interruptor no tenía nombre: un lector de pantalla sólo decía
+                // "casilla, no marcada". Ahora dice qué extra es y cuánto cuesta.
+                const chk = document.getElementById('chk-' + id);
+                if (chk) chk.setAttribute('aria-label', extra.nombre + ', ' + etiquetaDePrecioExtra(extra));
             });
         }
 
@@ -5672,11 +5790,15 @@ Cera rápida protectora
 
             // Sólo una abierta a la vez, para que la lista no crezca de golpe
             document.querySelectorAll('.fila-descripcion').forEach(d => d.classList.add('hidden'));
-            document.querySelectorAll('.info-btn').forEach(b => b.classList.remove('abierto'));
+            document.querySelectorAll('.info-btn').forEach(b => {
+                b.classList.remove('abierto');
+                b.setAttribute('aria-expanded', 'false');
+            });
 
             if (seAbre) {
                 bloque.classList.remove('hidden');
                 boton.classList.add('abierto');
+                boton.setAttribute('aria-expanded', 'true');   // el lector dice "expandido"
             }
         }
 
@@ -5835,8 +5957,8 @@ Cera rápida protectora
             const codigo = (err && (err.code || err.message)) ? String(err.code || err.message) : "";
 
             if (/permission|denied/i.test(codigo)) {
-                pintarAviso(encabezado + " El servidor no nos dejó consultar la agenda "
-                    + "(permisos). Avísanos por WhatsApp: es algo que arreglamos nosotros, no tú.", true);
+                pintarAviso(encabezado + " Es un problema de nuestro lado, no tuyo. "
+                    + "Escríbenos por WhatsApp al 625 100 9755 y te agendamos.", true);
                 return;
             }
 
@@ -5845,8 +5967,9 @@ Cera rápida protectora
                     pintarAviso(encabezado + " El servidor tardó demasiado en contestar. "
                         + "Vuelve a intentar en un momento.", true);
                 } else {
-                    pintarAviso(encabezado + " Tu teléfono no logró conectarse a nuestra base de datos. "
-                        + "Revisa tu internet y vuelve a entrar." + (codigo ? " (" + codigo + ")" : ""), true);
+                    pintarAviso(encabezado + " Tu teléfono no logró conectarse con nuestro servidor. "
+                        + "Revisa tu internet y vuelve a entrar."
+                        + (esAdministrador() && codigo ? " (" + codigo + ")" : ""), true);
                 }
             });
         }
@@ -6285,7 +6408,7 @@ Cera rápida protectora
             horaSeleccionada = horaPrevia;
 
             if (!baseLista()) {
-                pintarAviso("Sin conexión a la base de datos: no se puede confirmar qué horarios están libres.", true);
+                pintarAviso("Sin conexión: no podemos confirmar qué horarios están libres. Revisa tu internet.", true);
                 return;
             }
 
@@ -6921,6 +7044,9 @@ Cera rápida protectora
                 lat: ubicacionLat,
                 lon: ubicacionLon,
                 ubicacionAproximada: ubicacionEsAproximada,
+                // Margen del GPS en metros (sólo si el punto salió del GPS). Con un
+                // margen grande, en la agenda sale el aviso de confirmar la dirección.
+                precisionMetros: (ubicacionEsAproximada || ubicacionEsManual) ? null : precisionUbicacion,
                 // El cliente la señaló con la mira: es más confiable que el GPS,
                 // y en la agenda vale la pena distinguirlo.
                 ubicacionManual: ubicacionEsManual,
@@ -7003,19 +7129,27 @@ Cera rápida protectora
         // Traduce el error de la base de datos a algo que un cliente entienda — y que
         // a Tristán le diga qué revisar. Sin esto, "revisa tu conexión" sale igual
         // cuando el problema son las Reglas de Firebase, y nadie sabe dónde buscar.
+        // El cliente lee qué hacer, en su idioma; el detalle técnico (código y
+        // mensaje de Firebase) sólo se le añade al ADMINISTRADOR, que es quien
+        // puede hacer algo con él. Antes todos veían "las Reglas de Firebase…
+        // Mándale captura de esto a Tristán" y el mensaje crudo del error.
         function motivoDeFirebase(error) {
             const codigo = (error && (error.code || error.message) || "").toString().toUpperCase();
+            let texto;
             if (codigo.includes("PERMISSION_DENIED")) {
-                return "El servidor rechazó el permiso. Suele ser que las Reglas de Firebase "
-                     + "no dejan guardar algún dato de la cita. Mándale captura de esto a Tristán.";
+                texto = "No pudimos guardarlo por un problema de nuestro lado, no tuyo. "
+                      + "Escríbenos por WhatsApp al 625 100 9755 y lo resolvemos contigo.";
+            } else if (codigo.includes("NETWORK") || codigo.includes("UNAVAILABLE") || codigo.includes("DISCONNECT")) {
+                texto = "No hay conexión con el servidor. Revisa tu wifi o tus datos e intenta de nuevo.";
+            } else if (codigo.includes("TIMEOUT") || codigo.includes("TARDÓ")) {
+                texto = "El servidor tardó demasiado. Intenta de nuevo en un momento.";
+            } else {
+                texto = "Revisa tu conexión e intenta de nuevo.";
             }
-            if (codigo.includes("NETWORK") || codigo.includes("UNAVAILABLE") || codigo.includes("DISCONNECT")) {
-                return "No hay conexión con el servidor. Revisa tu wifi o tus datos e intenta de nuevo.";
+            if (esAdministrador() && error) {
+                texto += "\n\n(Detalle técnico: " + (error.code || "") + " " + (error.message || "") + ")";
             }
-            if (codigo.includes("TIMEOUT") || codigo.includes("TARDÓ")) {
-                return "El servidor tardó demasiado. Intenta de nuevo en un momento.";
-            }
-            return "Revisa tu conexión e intenta de nuevo.\n\n(" + (error && error.message ? error.message : "sin detalle") + ")";
+            return texto;
         }
 
         // Llena y muestra la pantalla de confirmación con el resumen completo de la cita.
@@ -7387,7 +7521,7 @@ Cera rápida protectora
             // La vista de clientes no depende de ninguna fecha, por eso se exceptúa
             if (!fecha && vistaAdmin !== 'clientes') { resumen.textContent = "Elige una fecha."; lista.innerHTML = ""; return; }
             if (!baseLista() || !usuarioActual) {
-                resumen.textContent = "Sin conexión a la base de datos.";
+                resumen.textContent = "Sin conexión con el servidor. Revisa tu internet.";
                 lista.innerHTML = "";
                 return;
             }
@@ -7600,6 +7734,8 @@ Cera rápida protectora
                     </div>
                     ${cita.ubicacionAproximada ? `<div class="aviso-aprox">⚠️ Este cliente no dio permiso de ubicación. La dirección es aproximada (centro de Cuauhtémoc) — confírmasela antes de salir.</div>` : ''}
                     ${cita.ubicacionManual ? `<div class="aviso-ok">📍 El cliente marcó su domicilio a mano en el mapa.</div>` : ''}
+                    ${(!cita.ubicacionAproximada && !cita.ubicacionManual && Number(cita.precisionMetros) > METROS_PRECISION_ACEPTABLE)
+                        ? `<div class="aviso-aprox">📍 El GPS del cliente tenía un margen de unos ${Math.round(Number(cita.precisionMetros))} m. Confírmale la dirección antes de salir.</div>` : ''}
                     ${cita.tomaCorriente === 'nose' ? `<div class="aviso-aprox">🔌 El cliente NO está seguro de tener corriente cerca. Háblale antes de salir: sin luz no se puede lavar.</div>` : ''}
                     <div class="cita-admin-acciones"></div>
                 `;
