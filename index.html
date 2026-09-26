@@ -618,7 +618,9 @@
             position: absolute; bottom: 8px; z-index: 2; pointer-events: none;
             font-size: 8.5px; letter-spacing: 0.14em; text-transform: uppercase;
             padding: 3px 7px; border-radius: 999px; color: #fff;
-            background: rgba(9,9,11,0.62); backdrop-filter: blur(4px);
+            /* Sin desenfoque: va sobre las fotos del carrusel, que se desplaza,
+               y cada etiqueta obligaba a re-difuminar al mover el dedo. */
+            background: rgba(9,9,11,0.74);
         }
         .cmp-etiqueta.izq { left: 8px; }
         .cmp-etiqueta.der { right: 8px; }
@@ -840,20 +842,27 @@
             transform: translateX(-50%); width: 12px; height: 5px; border-radius: 50%;
             background: rgba(0,0,0,0.45);
         }
+        /* ⚡ SIN DESENFOQUE, a propósito (septiembre 2026). Antes llevaba
+           backdrop-filter: blur(12px), y detrás de esta hoja está el MAPA, que
+           se redibuja en cada cuadro mientras el cliente lo arrastra o gira: la
+           tarjeta gráfica tenía que volver a difuminar ese pedazo 60 veces por
+           segundo. En un Android de gama baja era lo que más tironeaba el mapa.
+           Un fondo casi sólido se ve igual de elegante y cuesta cero. */
         .hoja-mapa {
             position: absolute; left: 0; right: 0; bottom: 0; z-index: 30;
             display: flex; flex-direction: column; align-items: stretch; gap: 3px;
             padding: 8px 18px 16px; text-align: left;
             border-top: 1px solid rgba(196,181,253,0.20);
             border-radius: 20px 20px 17px 17px;
-            background: rgba(11, 8, 17, 0.90);
+            background: rgba(11, 8, 17, 0.93);
+            box-shadow: 0 -10px 28px rgba(0, 0, 0, 0.35);
         }
-        /* El desenfoque va detrás de un @supports: donde no exista, el panel se
-           queda SÓLIDO. Un panel semitransparente sin desenfoque deja el mapa
-           encimado con el texto y no se lee nada. */
-        @supports (backdrop-filter: blur(12px)) {
-            .hoja-mapa { background: rgba(11, 8, 17, 0.62); backdrop-filter: blur(12px); }
-        }
+        /* El logo y la atribución de Mapbox van ABAJO del mapa, justo donde flota
+           esta hoja, y quedaban tapados. Los términos de Mapbox piden que se vean
+           (sin ellos se incumple la licencia del mapa). Se suben al alto real de
+           la hoja, que se mide en JavaScript porque cambia en el ajuste manual. */
+        .mapa-grande .mapboxgl-ctrl-bottom-left,
+        .mapa-grande .mapboxgl-ctrl-bottom-right { bottom: var(--alto-hoja, 0px); }
         /* El asa no hace nada: es la señal de "esto es un panel", que es lo que
            hace que se lea como app y no como texto encima de una imagen. */
         .hoja-asa {
@@ -3620,8 +3629,8 @@ Cera rápida protectora
             //   0. App Check, para que la credencial esté puesta antes de la
             //      primera consulta a la base
             //   1. la base de datos, que se usa apenas el cliente entra
-            //   2. Mapbox, cuando toque "Agendar mi lavado"
-            //   3. Three.js, para el personaje sobre ese mapa
+            //   2. Mapbox, adelantado al ENTRAR (no aquí) o al tocar "Agendar"
+            //   3. Three.js, sólo con el personaje prendido
             // Se encadenan en vez de dispararse todas juntas: peleando por el
             // mismo internet, la que se necesita primero llegaría al final.
             //
@@ -3629,9 +3638,15 @@ Cera rápida protectora
             // llega aquí, la pantalla de login ya se está viendo. Por eso App Check
             // se mudó de una etiqueta <script> del <head> a esta cadena — colgado
             // del <head> podía dejar al cliente sin poder entrar.
-            prepararBaseDeDatos()
-                .then(() => cargarMapbox())
-                .then(() => cargarThree());
+            //
+            // ⚡ Septiembre 2026: en el arranque ya SÓLO va la base de datos.
+            //   · Mapbox (1.5 MB) se bajaba aquí aunque el cliente no hubiera
+            //     entrado, o sea que un visitante que sólo veía el login pagaba
+            //     1.5 MB de datos por nada. Ahora se adelanta al ENTRAR (ver
+            //     precargarMapboxSiConviene) y nunca con "Ahorro de datos".
+            //   · Three.js (600 KB) sólo sirve para el personaje, que está
+            //     apagado: se bajaba en cada apertura para nadie.
+            prepararBaseDeDatos();
 
             if (!firebaseListo) {
                 mostrarPantallaSinConexion();
@@ -3668,7 +3683,32 @@ Cera rápida protectora
             // atorado en la bienvenida sin poder hacer nada.
             conTiempoLimite(prepararBaseDeDatos(), ESPERA_MAXIMA_LOGIN)
                 .catch(() => false)
-                .then(() => { if (usuarioActual) cargarPersonajeDelUsuario(); });
+                .then(() => {
+                    if (!usuarioActual) return;
+                    cargarPersonajeDelUsuario();
+                    precargarMapboxSiConviene();
+                });
+        }
+
+        // ¿El cliente pidió gastar pocos datos? (el "Ahorro de datos" de Chrome o
+        // una conexión 2G). Safari no lo informa: ahí se asume que no.
+        function quiereAhorrarDatos() {
+            const c = navigator.connection;
+            return !!(c && (c.saveData || /(^|-)2g$/.test(c.effectiveType || '')));
+        }
+
+        // Mapbox se ADELANTA mientras el cliente ve la bienvenida, para que el mapa
+        // abra al instante cuando toque "Agendar". Tres condiciones:
+        //   · sólo con sesión (el visitante del login no lo necesita);
+        //   · cuando el teléfono está desocupado, para no pelear con la bienvenida;
+        //   · nunca con Ahorro de datos: ahí se baja hasta que de verdad toca el
+        //     mapa, y quien sólo entró a ver su cita no gasta 1.5 MB.
+        function precargarMapboxSiConviene() {
+            if (quiereAhorrarDatos()) return;
+            const cuandoPueda = window.requestIdleCallback
+                ? (fn => window.requestIdleCallback(fn, { timeout: 4000 }))
+                : (fn => setTimeout(fn, 1500));
+            cuandoPueda(() => { if (usuarioActual) cargarMapbox(); });
         }
 
         // Firebase guarda la sesión en IndexedDB (el almacén del navegador) para que no
@@ -4565,7 +4605,7 @@ Cera rápida protectora
 
         // La versión del archivo. Sirve para que Tristán confirme de un vistazo si
         // el que abrió es el nuevo — ya pasó dos veces que probaba una copia vieja.
-        const VERSION_APP = '2026.09.26a';
+        const VERSION_APP = '2026.09.26b';
 
         // La versión del AVISO DE PRIVACIDAD y los TÉRMINOS. Es distinta de la
         // versión de la app a propósito: la app cambia cada semana y lo legal
@@ -4627,9 +4667,23 @@ Cera rápida protectora
         // hoy no hay ninguno subido, así que el carrusel arrancaba con 6 tarjetas
         // fantasma.
         //
-        // Preguntar con `new Image()` no está sujeto a loading="lazy" y no dibuja
-        // nada: sólo pide el archivo. Lo que existe se pinta; lo que no, ni aparece.
+        // ⚡ SE PREGUNTA CON "HEAD", NO BAJANDO LA FOTO (septiembre 2026).
+        // Antes se preguntaba con `new Image()`, que DESCARGA la foto completa: las
+        // 13 que hay (~600 KB) se bajaban enteras sólo para saber si existían, y
+        // como eso se salta el loading="lazy", se bajaban todas aunque el cliente
+        // sólo viera las dos primeras. Y el menú lo repetía para enseñar UNA.
+        // Una petición HEAD le pregunta al servidor "¿existe?" y él contesta sin
+        // mandar la foto: unos cientos de bytes. Las fotos de verdad las baja cada
+        // <img loading="lazy"> cuando su tarjeta entra en pantalla.
+        // Sigue sin haber lista que mantener: Tristán sube trabajos/15.jpg y aparece.
+        // Abriendo el archivo suelto (file://) no hay servidor que conteste HEAD,
+        // así que ahí se queda el método de antes.
         function existeLaFoto(url) {
+            if (origenSeguro()) {
+                return fetch(url, { method: 'HEAD' })
+                    .then(r => r.ok)
+                    .catch(() => false);
+            }
             return new Promise(resolve => {
                 const img = new Image();
                 img.onload  = () => resolve(true);
@@ -4638,7 +4692,21 @@ Cera rápida protectora
             });
         }
 
+        // La búsqueda se hace UNA vez por sesión y la comparten el feed y el
+        // mosaico del menú. Si no encontró nada (p. ej. sin señal), se vuelve a
+        // intentar la próxima vez en vez de quedarse vacía para siempre.
+        let busquedaDeFotos = null;
         function fotosDeTrabajos() {
+            if (!busquedaDeFotos) {
+                busquedaDeFotos = buscarFotosDeTrabajos().then(lista => {
+                    if (!Object.keys(lista).length) busquedaDeFotos = null;
+                    return lista;
+                });
+            }
+            return busquedaDeFotos;
+        }
+
+        function buscarFotosDeTrabajos() {
             // Los PARES antes/después van primero (orden positivo): son los que más
             // venden, porque enseñan el cambio y no sólo el resultado.
             const pares = [];
@@ -5347,16 +5415,16 @@ Cera rápida protectora
             if (!caja) return;
             fotosDelMosaicoListas = true;
 
-            const candidatas = [];
-            for (let i = 1; i <= CUANTAS_FOTOS_BUSCAR; i++) candidatas.push('trabajos/' + i + '.jpg');
-
-            Promise.all(candidatas.map(url => existeLaFoto(url).then(hay => hay ? url : null)))
-                .then(resultados => {
-                    const buenas = resultados.filter(Boolean);
+            // Reusa la búsqueda del feed: antes volvía a pedir las 24 candidatas y
+            // bajaba completas las 13 fotos para enseñar una sola.
+            fotosDeTrabajos()
+                .then(lista => {
+                    const buenas = Object.values(lista).filter(r => r.foto).map(r => r.foto);
                     caja.innerHTML = "";
-                    if (!buenas.length) return;   // sin fotos queda oscuro y limpio
-                    // Va una distinta cada vez que se abre el menú, para que no
-                    // sea siempre la misma imagen.
+                    // Sin fotos queda oscuro y limpio, y se vuelve a intentar la
+                    // próxima vez que se abra (puede que no hubiera señal).
+                    if (!buenas.length) { fotosDelMosaicoListas = false; return; }
+                    // Va una al azar, para que no sea siempre la misma imagen.
                     const celda = document.createElement('i');
                     celda.style.backgroundImage =
                         "url('" + buenas[Math.floor(Math.random() * buenas.length)] + "')";
@@ -5581,8 +5649,9 @@ Cera rápida protectora
             // Three.js se pide AQUÍ, en cuanto el cliente entra al flujo de
             // agendado, no al final de la cola de librerías. Le da varios segundos
             // de ventaja mientras el mapa se acomoda — que es justo lo que le
-            // faltaba para llegar a tiempo.
-            cargarThree();
+            // faltaba para llegar a tiempo. SÓLO si el personaje está prendido:
+            // con él apagado eran 600 KB que nadie usaba.
+            if (PERSONAJE_ACTIVO) cargarThree();
             yaHay3D = false;
 
             const satScreen = document.getElementById('screen-satellite');
@@ -5651,6 +5720,41 @@ Cera rápida protectora
                 .then(() => dibujarElMapa(lat, lon));
         }
 
+        // ¿Es un teléfono modesto? 2 GB de memoria o menos, 4 núcleos o menos, o
+        // con Ahorro de datos. El corte es a propósito conservador: un gama media
+        // de 4 GB y 8 núcleos (un Galaxy A, por ejemplo) SÍ ve el mapa en 3D, que
+        // es la firma de la app. (Safari no informa memoria ni núcleos: ahí se
+        // asume que no es gama baja.)
+        function esGamaBaja() {
+            return !!((navigator.deviceMemory && navigator.deviceMemory <= 2)
+                || (navigator.hardwareConcurrency && navigator.hardwareConcurrency <= 4)
+                || quiereAhorrarDatos());
+        }
+
+        // La cámara "de lujo" (inclinada, con edificios en 3D) cuesta: con el mapa
+        // inclinado se ve hasta el horizonte y hay que bajar y dibujar MUCHOS más
+        // mosaicos. En gama baja el mapa va cenital y plano: se ve limpio, carga
+        // menos datos y se mueve fluido. Un solo lugar, para que la cámara inicial
+        // y la de regresar del ajuste manual nunca se contradigan.
+        function camaraDelMapa() {
+            return esGamaBaja() ? { pitch: 0, bearing: 0 } : { pitch: 55, bearing: -10 };
+        }
+
+        // Mantiene el logo y la atribución de Mapbox justo ENCIMA de la hoja
+        // inferior (ver .mapa-grande .mapboxgl-ctrl-bottom-*). La hoja cambia de
+        // alto (modo normal, ajuste manual, fuera de zona), así que se observa.
+        function subirControlesSobreLaHoja() {
+            const hoja = document.querySelector('.hoja-mapa');
+            const visor = document.querySelector('.mapa-grande');
+            if (!hoja || !visor) return;
+            const poner = () => visor.style.setProperty('--alto-hoja', hoja.offsetHeight + 'px');
+            poner();
+            if (window.ResizeObserver && !hoja.dataset.observada) {
+                hoja.dataset.observada = '1';
+                new window.ResizeObserver(poner).observe(hoja);
+            }
+        }
+
         function dibujarElMapa(lat, lon) {
             // Si la librería del mapa no cargó, seguimos adelante sin mapa: el sector
             // y el precio sí se pueden calcular, así que el cliente no se queda varado.
@@ -5664,14 +5768,27 @@ Cera rápida protectora
             try {
                 if (map) { map.remove(); map = null; }
 
+                const camara = camaraDelMapa();
                 map = new mapboxgl.Map({
                     container: 'map',
                     style: 'mapbox://styles/tristan22/cmrmjntvf002q01s1ep52h6bw',
                     center: [lon, lat],
                     zoom: 16.5,
-                    pitch: 55,
-                    bearing: -10
+                    pitch: camara.pitch,
+                    bearing: camara.bearing,
+                    // Sin tope, Mapbox deja inclinar hasta 85°: casi viendo el
+                    // horizonte, con cientos de mosaicos lejanos que nadie necesita
+                    // para ubicar su casa. 60° se sigue viendo en 3D.
+                    maxPitch: 60,
+                    // Las etiquetas aparecen de golpe en vez de desvanecerse: son
+                    // cuadros de trabajo de menos mientras el cliente arrastra.
+                    fadeDuration: 0,
+                    // Apaga la medición de rendimiento que Mapbox manda a sus
+                    // servidores. NO toca el conteo de cargas del plan (ése es otro
+                    // evento, "map.load", y sigue igual): sólo son peticiones de menos.
+                    performanceMetricsCollection: false
                 });
+                subirControlesSobreLaHoja();
 
                 // Si Mapbox no puede cargar el estilo o los tiles (token inválido, estilo
                 // borrado/privado, sin conexión), antes esto fallaba en silencio y la
@@ -5704,7 +5821,8 @@ Cera rápida protectora
                     document.getElementById('radar-status').innerText = ubicacionEsAproximada
                         ? "Ubicación aproximada."
                         : "Ubicación encontrada.";
-                    agregarEdificios3D();
+                    // Los edificios en 3D sólo tienen sentido con la cámara inclinada.
+                    if (!esGamaBaja()) agregarEdificios3D();
                     colocarPersonaje(lat, lon);
                     calcularSectorCuauhtemoc(lat, lon);
                 });
@@ -5752,7 +5870,7 @@ Cera rápida protectora
             if (!a) return;
             ubicacionLat = a.lat; ubicacionLon = a.lon;
             ubicacionEsAproximada = a.aprox; ubicacionEsManual = a.manual;
-            map.easeTo({ center: [a.lon, a.lat], zoom: 16.5, pitch: 55, bearing: -10, duration: 700 });
+            map.easeTo(Object.assign({ center: [a.lon, a.lat], zoom: 16.5, duration: 700 }, camaraDelMapa()));
         }
 
         function confirmarAjusteManual() {
@@ -5769,7 +5887,7 @@ Cera rápida protectora
             colocarPersonaje(ubicacionLat, ubicacionLon);
             calcularSectorCuauhtemoc(ubicacionLat, ubicacionLon);
             document.getElementById('radar-status').innerText = "Ubicación marcada por ti.";
-            map.easeTo({ center: [ubicacionLon, ubicacionLat], zoom: 16.5, pitch: 55, bearing: -10, duration: 700 });
+            map.easeTo(Object.assign({ center: [ubicacionLon, ubicacionLat], zoom: 16.5, duration: 700 }, camaraDelMapa()));
         }
 
         function salirDelAjuste() {
@@ -9177,15 +9295,24 @@ Cera rápida protectora
             ajustarBloqueCorrienteAlServicio();
             actualizarTotalEnVivo();
 
-            // Prellenamos nombre y teléfono con los datos guardados al registrarse
+            // Prellenamos nombre y teléfono con los datos guardados al registrarse.
+            // 🐛 La respuesta llega un momento DESPUÉS de abrir la pantalla: si el
+            // cliente ya había empezado a escribir, se le borraba lo escrito y sus
+            // siguientes teclas se pegaban al final (salía un teléfono de 20
+            // dígitos). Ahora sólo se llena un campo VACÍO que no esté usando.
             if (baseLista() && usuarioActual) {
-                firebase.database().ref('usuarios/' + usuarioActual.uid).once('value').then((snap) => {
-                    const perfil = snap.val();
-                    if (perfil) {
-                        document.getElementById('input-nombre').value = perfil.nombre || "";
-                        document.getElementById('input-telefono').value = perfil.telefono || "";
-                    }
-                });
+                conTiempoLimite(firebase.database().ref('usuarios/' + usuarioActual.uid).once('value'), ESPERA_MAXIMA_CITAS)
+                    .then((snap) => {
+                        const perfil = snap.val();
+                        if (!perfil) return;
+                        const llenarSiVacio = (id, valor) => {
+                            const el = document.getElementById(id);
+                            if (el && !el.value && document.activeElement !== el) el.value = valor || "";
+                        };
+                        llenarSiVacio('input-nombre', perfil.nombre);
+                        llenarSiVacio('input-telefono', perfil.telefono);
+                    })
+                    .catch(() => { /* sin perfil a la mano, el cliente lo escribe */ });
             }
         }
 
