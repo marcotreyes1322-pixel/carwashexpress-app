@@ -7,15 +7,16 @@
 
    Para qué sirve aquí: hoy, sin internet, la app no abre. Con esto, una
    vez que el cliente la abrió una vez, vuelve a abrir aunque esté en un
-   sótano — y arranca al instante, sin volver a bajar los 390 KB.
+   sótano — y arranca al instante, sin volver a bajar la app.
 
-   ⚠️ REGLA IMPORTANTE: la caché guarda el archivo VIEJO. Si no se sube el
-   número de VERSION en cada entrega, Tristán y sus clientes seguirían
-   viendo la versión anterior aunque el servidor ya tenga la nueva. Es el
-   error clásico de las PWA y es justo el problema que ya nos pasó a mano.
+   La caché guarda el archivo VIEJO, y lo que la renueva es que cambie la
+   VERSION de aquí abajo. Ya NO se sube a mano: al publicar, GitHub Actions
+   (scripts/construir.mjs) le pone la fecha y el commit, la MISMA que ve la
+   app. Así nunca se vuelven a desfasar, que fue el error que ya nos pasó.
+   (Sólo si se publicara SIN construir habría que cambiarla a mano.)
    ===================================================================== */
 
-const VERSION = 'cwe-2026.09.26d';
+const VERSION = 'cwe-2026.09.26e';
 
 // Lo mínimo para que la app abra sin red. Las librerías (Mapbox, Firebase,
 // Three.js) NO se guardan a propósito: pesan 2 MB, cambian por su cuenta, y

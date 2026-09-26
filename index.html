@@ -3000,6 +3000,7 @@ Cera rápida protectora
                 <button class="admin-flecha" onclick="moverDiaAdmin(1)" aria-label="Siguiente">›</button>
             </div>
             <input type="text" id="buscador-clientes" class="buscador-clientes hidden"
+                   aria-label="Buscar cliente por nombre, teléfono o auto" autocomplete="off"
                    placeholder="Buscar por nombre, teléfono o auto..." oninput="pintarClientesAdmin()">
             <div class="admin-resumen" id="admin-resumen">Cargando...</div>
 
@@ -3906,7 +3907,10 @@ Cera rápida protectora
 
         // La versión del archivo. Sirve para que Tristán confirme de un vistazo si
         // el que abrió es el nuevo — ya pasó dos veces que probaba una copia vieja.
-        const VERSION_APP = '2026.09.26d';
+        // Al publicar, GitHub Actions la reemplaza sola por fecha + commit (la
+        // misma que el Service Worker): este valor sólo se ve probando el archivo
+        // del repo sin construir.
+        const VERSION_APP = '2026.09.26e';
 
         // La versión del AVISO DE PRIVACIDAD y los TÉRMINOS. Es distinta de la
         // versión de la app a propósito: la app cambia cada semana y lo legal
@@ -4007,7 +4011,37 @@ Cera rápida protectora
             return busquedaDeFotos;
         }
 
+        // ⚡ PRIMERO LA LISTA (septiembre 2026). Al publicar, GitHub Actions revisa
+        // la carpeta trabajos/ y escribe trabajos/lista.json con las fotos que hay
+        // (ver scripts/construir.mjs). Así la app hace UNA petición en vez de 36
+        // preguntas HEAD, y además acepta fotos .jpeg, .png o .webp. Si la lista
+        // no existe —probando en la tablet con el archivo del repo, sin construir—
+        // se pregunta foto por foto como antes. Para Tristán no cambia nada: sube
+        // trabajos/15.jpg y aparece.
         function buscarFotosDeTrabajos() {
+            return leerListaDeFotos().then(lista => lista || buscarFotosUnaPorUna());
+        }
+
+        function leerListaDeFotos() {
+            if (!origenSeguro()) return Promise.resolve(null);
+            return fetch('trabajos/lista.json')
+                .then(r => r.ok ? r.json() : null)
+                .then(datos => {
+                    if (!datos || !Array.isArray(datos.pares) || !Array.isArray(datos.sueltas)) return null;
+                    // Mismo formato y mismo orden que buscarFotosUnaPorUna.
+                    const lista = {};
+                    datos.pares.forEach(p => {
+                        lista['par' + p.n] = { antes: 'trabajos/' + p.antes, despues: 'trabajos/' + p.despues, orden: 100 - p.n };
+                    });
+                    datos.sueltas.forEach(s => {
+                        lista['trabajo' + s.n] = { foto: 'trabajos/' + s.foto, orden: s.n };
+                    });
+                    return lista;
+                })
+                .catch(() => null);
+        }
+
+        function buscarFotosUnaPorUna() {
             // Los PARES antes/después van primero (orden positivo): son los que más
             // venden, porque enseñan el cambio y no sólo el resultado.
             const pares = [];

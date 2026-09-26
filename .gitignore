@@ -1,0 +1,9 @@
+# Se instalan con `npm install`
+node_modules/
+
+# Los genera `npm run construir` (la versión que se publica y el JS para el lint)
+dist/
+.construccion/
+
+# Las capturas de `npm run humo`
+capturas/

@@ -1,0 +1,23 @@
+{
+  "name": "carwashexpress-app",
+  "private": true,
+  "type": "module",
+  "description": "App de CarWashExpress. Ver PUBLICAR.md para probar y publicar.",
+  "scripts": {
+    "servir": "node scripts/servidor.mjs . 3000",
+    "construir": "node scripts/construir.mjs",
+    "ver-construida": "node scripts/servidor.mjs dist 3001",
+    "lint": "eslint .construccion/app-fuente.js sw.js scripts",
+    "humo": "node scripts/humo.mjs",
+    "revisar": "npm run construir && npm run lint",
+    "revisar-todo": "npm run construir && npm run lint && npm run humo"
+  },
+  "devDependencies": {
+    "esbuild": "0.28.2",
+    "eslint": "10.11.0",
+    "playwright": "1.56.1"
+  },
+  "engines": {
+    "node": ">=20.19"
+  }
+}

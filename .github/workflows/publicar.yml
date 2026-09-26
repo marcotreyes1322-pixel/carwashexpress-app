@@ -1,0 +1,115 @@
+# =====================================================================
+# REVISAR Y PUBLICAR
+#
+# En CADA push (a cualquier rama) y en cada Pull Request:
+#   construye la versión optimizada, revisa el código y abre la app en un
+#   Chrome de verdad (prueba de humo). Si algo falla, sale una ❌ en la
+#   pestaña Actions y NO se publica nada.
+#
+# Sólo en `main`, y sólo si todo salió bien: publica en GitHub Pages.
+#
+# ⚠️ UNA SOLA VEZ: Settings → Pages → Build and deployment → Source:
+#    "GitHub Actions". Mientras no se cambie, Pages sigue publicando la rama
+#    tal cual (sin optimizar) y aquí sale un aviso amarillo explicándolo.
+# =====================================================================
+name: Revisar y publicar
+
+on:
+  push:
+  pull_request:
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+# Si llegan dos push seguidos a la misma rama, el viejo se cancela. En main no:
+# una publicación a medias es peor que esperar un minuto.
+concurrency:
+  group: revisar-${{ github.ref }}
+  cancel-in-progress: ${{ github.ref != 'refs/heads/main' }}
+
+jobs:
+  revisar:
+    name: Construir y probar
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    steps:
+      - uses: actions/checkout@v5
+
+      - uses: actions/setup-node@v5
+        with:
+          node-version: 22
+          cache: npm
+
+      - name: Instalar herramientas
+        run: npm ci
+
+      - name: Construir (minificar, sellar versión, lista de fotos)
+        run: npm run construir
+
+      - name: Revisar el código
+        run: npm run lint
+
+      - name: Instalar Chrome para la prueba
+        run: npx playwright install --with-deps chromium
+
+      - name: Prueba de humo
+        run: npm run humo
+
+      - name: Guardar capturas
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: capturas
+          path: capturas/
+          retention-days: 14
+          if-no-files-found: ignore
+
+      # Se empaqueta en todas las ramas (así este paso también se prueba antes
+      # de llegar a main), pero sólo se publica desde main.
+      - name: Empaquetar para Pages
+        uses: actions/upload-pages-artifact@v4
+        with:
+          path: dist/
+          retention-days: 1
+
+  modo-de-pages:
+    name: ¿Pages publica desde Actions?
+    needs: revisar
+    if: github.event_name != 'pull_request' && github.ref == 'refs/heads/main'
+    runs-on: ubuntu-latest
+    permissions:
+      pages: read
+    outputs:
+      listo: ${{ steps.modo.outputs.listo }}
+    steps:
+      - id: modo
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          tipo=$(gh api "repos/${GITHUB_REPOSITORY}/pages" --jq .build_type 2>/dev/null || echo "sin-pages")
+          echo "Modo de GitHub Pages: $tipo"
+          if [ "$tipo" = "workflow" ]; then
+            echo "listo=si" >> "$GITHUB_OUTPUT"
+          else
+            echo "::warning title=Falta un paso (una sola vez)::La versión optimizada pasó todas las pruebas, pero GitHub Pages sigue publicando la rama tal cual. Para publicar la optimizada: Settings → Pages → Build and deployment → Source: GitHub Actions."
+            echo "listo=no" >> "$GITHUB_OUTPUT"
+          fi
+
+  publicar:
+    name: Publicar en GitHub Pages
+    needs: [revisar, modo-de-pages]
+    if: needs.modo-de-pages.outputs.listo == 'si'
+    runs-on: ubuntu-latest
+    permissions:
+      pages: write
+      id-token: write
+    concurrency:
+      group: pages
+      cancel-in-progress: false
+    environment:
+      name: github-pages
+      url: ${{ steps.despliegue.outputs.page_url }}
+    steps:
+      - id: despliegue
+        uses: actions/deploy-pages@v4
