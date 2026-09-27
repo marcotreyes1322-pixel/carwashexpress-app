@@ -1,6 +1,7 @@
 /* global firebase, performance, prepararBaseDeDatos */
-// DIAGNÓSTICO TEMPORAL: abre la versión construida en un Chrome con internet de
-// verdad (el de GitHub Actions) y mide qué frena la conexión con Firebase.
+// DIAGNÓSTICO DE FIREBASE (se corre a mano desde Actions, ver diagnostico.yml):
+// abre la versión construida en un Chrome con internet de verdad y mide qué
+// frena la conexión con Firebase.
 // No inicia sesión ni escribe nada en la base: sólo mira .info/connected,
 // el permiso de App Check y una lectura sin sesión (que DEBE ser rechazada).
 import { chromium } from 'playwright';

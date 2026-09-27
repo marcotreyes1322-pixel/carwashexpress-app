@@ -1,9 +1,15 @@
-# TEMPORAL: diagnóstico de la conexión con Firebase desde un Chrome con internet.
-# Se borra en cuanto se encuentre la causa; no publica nada.
+# DIAGNÓSTICO DE FIREBASE (manual)
+#
+# Abre la versión construida en un Chrome con internet de verdad y dice si
+# reCAPTCHA, App Check y la base de datos conectan, y en cuánto tiempo. No
+# inicia sesión ni escribe nada. Sirve cuando la app se queda "cargando" o
+# dice que no se pudo conectar: si aquí todo sale bien, el problema está en el
+# teléfono (versión vieja guardada, red, bloqueador), no en la app.
+#
+# Cómo correrlo: pestaña Actions → "Diagnóstico Firebase" → Run workflow.
 name: Diagnóstico Firebase
 on:
-  push:
-    branches: [claude/car-wash-express-audit-0cic1t]
+  workflow_dispatch:
 permissions:
   contents: read
 jobs:

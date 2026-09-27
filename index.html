@@ -1439,50 +1439,32 @@
         .semana-vacio { font-size: 11.5px; color: var(--muy-tenue); margin-top: 6px; }
 
         /* --- EL MARCADOR DEL CLIENTE EN EL MAPA ---
-           Gota morada con el logo dentro: la punta de abajo cae en el punto
-           exacto, que es lo que un círculo suelto no puede señalar. Cae desde
-           arriba y aterriza con un rebote corto, con su sombrita en el piso. */
-        @keyframes aterrizar {
-            0%   { transform: translateY(-260px) scale(0.55); opacity: 0; }
-            55%  { opacity: 1; }
-            72%  { transform: translateY(0) scale(1); }
-            82%  { transform: translateY(-14px) scale(0.98); }
-            100% { transform: translateY(0) scale(1); opacity: 1; }
+           Un punto morado con aro blanco y un halo que late, como el "estás
+           aquí" de cualquier mapa. Antes era una gota de 46×56 con el logo:
+           tapaba media calle y la casa del cliente (Tristán: "ocupa mucho
+           espacio"). El punto marca el lugar exacto sin esconder nada. */
+        .marcador-punto { position: relative; width: 22px; height: 22px; }
+        .marcador-punto .nucleo {
+            position: absolute; inset: 0; border-radius: 50%; z-index: 2;
+            background: radial-gradient(circle at 35% 30%, #c4b5fd 0%, var(--morado) 45%, #6d28d9 100%);
+            border: 3px solid #fff;
+            box-shadow: 0 2px 8px rgba(0,0,0,0.45), 0 0 14px rgba(139,92,246,0.65);
+            animation: puntoAparece 0.45s cubic-bezier(.3,1.6,.5,1) both;
         }
-        .marcador-marca {
-            width: 46px; height: 56px; position: relative;
-            background: linear-gradient(160deg, var(--morado), #6d3ff0);
-            border-radius: 50% 50% 50% 50% / 46% 46% 60% 60%;
-            border: 2px solid rgba(255,255,255,0.92);
-            box-shadow: 0 8px 18px rgba(0,0,0,0.55), 0 0 22px rgba(139,92,246,0.55);
-            display: flex; align-items: center; justify-content: center;
+        .marcador-punto .halo {
+            position: absolute; left: 50%; top: 50%; width: 22px; height: 22px;
+            margin: -11px 0 0 -11px; border-radius: 50%; z-index: 1;
+            background: rgba(139, 92, 246, 0.45);
+            animation: haloLate 2.2s ease-out 0.45s infinite;
         }
-        .marcador-marca::after {
-            content: ""; position: absolute; bottom: -7px; left: 50%;
-            transform: translateX(-50%) rotate(45deg);
-            width: 14px; height: 14px; background: #6d3ff0;
-            border-right: 2px solid rgba(255,255,255,0.92);
-            border-bottom: 2px solid rgba(255,255,255,0.92);
-            border-bottom-right-radius: 3px;
-        }
-        .marcador-marca img {
-            width: 30px; height: 30px; border-radius: 50%;
-            position: relative; z-index: 1; margin-top: -3px;
-        }
-        .marcador-marca.cayendo { animation: aterrizar 1.1s cubic-bezier(.4,.02,.2,1) both; }
-
-        /* La sombrita que aparece al tocar el piso */
-        @keyframes sombraAterrizaje {
-            0%, 60% { transform: scale(0.2); opacity: 0; }
-            75%     { transform: scale(1.25); opacity: 0.5; }
-            100%    { transform: scale(1); opacity: 0.35; }
-        }
-        .marcador-sombra {
-            width: 30px; height: 8px; border-radius: 50%; background: #000;
-            margin: -4px auto 0 auto; animation: sombraAterrizaje 1.1s ease-out both;
+        @keyframes puntoAparece { from { transform: scale(0); } to { transform: scale(1); } }
+        @keyframes haloLate {
+            0%   { transform: scale(1);   opacity: 0.75; }
+            100% { transform: scale(3.4); opacity: 0; }
         }
         @media (prefers-reduced-motion: reduce) {
-            .marcador-marca.cayendo, .marcador-sombra { animation: none; opacity: 1; }
+            .marcador-punto .nucleo { animation: none; }
+            .marcador-punto .halo { animation: none; transform: scale(2); opacity: 0.25; }
         }
 
         /* El saludo de la bienvenida, con el nombre del cliente */
@@ -1566,12 +1548,6 @@
         /* La cita, dentro del panel: un recuadro más claro, sin otro cristal encima. */
         #screen-welcome .proxima-cita { margin-top: 12px; background: rgba(139, 92, 246, 0.14); }
         #screen-welcome .feed-bloque { margin-top: 12px; }
-        .btn-con-flecha { display: flex; align-items: center; justify-content: center; gap: 12px; }
-        .btn-con-flecha .flecha {
-            font-size: 16px; letter-spacing: 0; line-height: 1;
-            transition: transform 0.25s ease;
-        }
-        .btn-con-flecha:active .flecha { transform: translateX(4px); }
         @media (prefers-reduced-motion: reduce) {
             .bienvenida-panel { animation: none; }
             .bienvenida-barra i.corre { animation: none; transform: scaleX(1); }
@@ -2466,7 +2442,7 @@
             </div>
 
             <div class="action-buttons-group">
-                <button class="btn-premium btn-con-flecha" onclick="pedirGPS()">Agendar mi lavado<span class="flecha" aria-hidden="true">→</span></button>
+                <button class="btn-premium" onclick="pedirGPS()">Agendar mi lavado</button>
             </div>
             </div>
         </div>
@@ -3581,6 +3557,7 @@ Cera rápida protectora
             appArranco = true;
             pintarVersion();
             registrarServiceWorker();
+            revisarVersionNueva();
             engancharGestoDeRegreso();
             sincronizarEstadosAccesibles();
             // Reparte el logo (guardado una sola vez) a las etiquetas que lo necesitan
@@ -4092,7 +4069,7 @@ Cera rápida protectora
         // Al publicar, GitHub Actions la reemplaza sola por fecha + commit (la
         // misma que el Service Worker): este valor sólo se ve probando el archivo
         // del repo sin construir.
-        const VERSION_APP = '2026.09.27k';
+        const VERSION_APP = '2026.09.27l';
 
         // La versión del AVISO DE PRIVACIDAD y los TÉRMINOS. Es distinta de la
         // versión de la app a propósito: la app cambia cada semana y lo legal
@@ -4110,6 +4087,31 @@ Cera rápida protectora
         function pintarVersion() {
             const el = document.getElementById('marca-version');
             if (el) el.textContent = 'v' + VERSION_APP;
+        }
+
+        // ¿HAY UNA VERSIÓN MÁS NUEVA PUBLICADA? (septiembre 2026)
+        // Tristán publicaba un arreglo y en su tablet seguía la versión vieja
+        // aunque cerrara y abriera la app (copias guardadas del navegador y del
+        // Service Worker). Al arrancar se pregunta a version.json, sin caché; si
+        // dice otra versión, se recarga UNA vez (sessionStorage evita el ciclo si
+        // el servidor todavía no termina de publicar). Sólo en el login o en la
+        // bienvenida, para no borrarle a nadie lo que está escribiendo.
+        function revisarVersionNueva() {
+            if (!origenSeguro() || !window.fetch) return;
+            fetch('version.json?t=' + Date.now(), { cache: 'no-store' })
+                .then(r => r.ok ? r.json() : null)
+                .then(d => {
+                    if (!d || !d.version || d.version === VERSION_APP) return;
+                    const visible = document.querySelector('.screen:not(.hidden)');
+                    if (visible && !/^screen-(login-phone|welcome|sin-conexion)$/.test(visible.id)) return;
+                    let intentada = null;
+                    try { intentada = sessionStorage.getItem('cwe-recarga'); } catch (e) { return; }
+                    if (intentada === d.version) return;
+                    try { sessionStorage.setItem('cwe-recarga', d.version); } catch (e) { return; }
+                    console.info('Hay versión nueva (' + d.version + '): recargando.');
+                    location.reload();
+                })
+                .catch(() => {});   // sin red o sin version.json (prueba local): nada que hacer
         }
 
         // Enciende el modo "app instalable": abre sin internet y arranca al
@@ -5459,16 +5461,14 @@ Cera rápida protectora
                 // debajo de ella y el cliente tenía que arrastrar el mapa para
                 // encontrarse (lo reportó Tristán en su iPhone). Con este margen,
                 // Mapbox toma como centro el pedazo que SÍ se ve, arriba de la hoja.
-                // Lo que se centra es la GOTA completa (su punta cae en el punto),
-                // no sólo la punta: así no se encima con el letrero de arriba. En un
-                // teléfono muy bajo, donde casi no queda mapa, la punta se acerca a
-                // la hoja lo más posible sin quedar debajo.
+                // El punto va al centro de lo visible, sin encimarse con el letrero
+                // de arriba ni quedar pegado a la hoja en un teléfono muy bajo.
                 const H = visor.clientHeight;
                 const visible = Math.max(0, H - alto);
-                const GOTA = 56;
+                const MEDIO_PUNTO = 20;   // medio punto con su aro, y un poco de aire
                 const pista = document.getElementById('map-pista');
                 const libreArriba = pista ? pista.offsetTop + pista.offsetHeight + 4 : 4;
-                const centro = Math.round(Math.min(visible - 6, Math.max(GOTA + libreArriba, visible / 2 + GOTA / 2)));
+                const centro = Math.round(Math.min(visible - MEDIO_PUNTO, Math.max(libreArriba + MEDIO_PUNTO, visible / 2)));
                 visor.style.setProperty('--centro-mapa', centro + 'px');
                 if (map) {
                     map.setPadding(2 * centro <= H
@@ -5656,8 +5656,8 @@ Cera rápida protectora
         // =====================================================================
         // 📍 EL MARCADOR DEL CLIENTE EN EL MAPA
         //
-        // Una gota de la marca con el logo dentro, que cae del cielo y aterriza
-        // sobre su ubicación. (Aquí vivía el personaje 2D/3D con Three.js; se
+        // Un punto morado con halo que late, en el lugar exacto. (Antes fue una
+        // gota con el logo, que tapaba media calle; y antes aún vivía el personaje 2D/3D con Three.js; se
         // quitó en septiembre 2026, a petición del negocio, para aligerar la
         // app. Si algún día se quiere de vuelta, está en el historial de git,
         // antes de la versión 2026.09.26c.)
@@ -5679,22 +5679,18 @@ Cera rápida protectora
             quitarMarcadorDeUbicacion();
 
             const contenedor = document.createElement('div');
+            contenedor.className = "marcador-punto";
+            contenedor.setAttribute('role', 'img');
+            contenedor.setAttribute('aria-label', 'Tu ubicación');
+            const halo = document.createElement('span');
+            halo.className = "halo";
+            const nucleo = document.createElement('span');
+            nucleo.className = "nucleo";
+            contenedor.appendChild(halo);
+            contenedor.appendChild(nucleo);
 
-            const pin = document.createElement('div');
-            pin.className = "marcador-marca cayendo";
-            const img = document.createElement('img');
-            img.src = LOGO_DATA_URI;
-            img.alt = "Tu ubicación";
-            pin.appendChild(img);
-
-            const sombra = document.createElement('div');
-            sombra.className = "marcador-sombra";
-
-            contenedor.appendChild(pin);
-            contenedor.appendChild(sombra);
-
-            // anchor 'bottom': la punta de la gota cae en el punto exacto.
-            marcadorUbicacion = new mapboxgl.Marker({ element: contenedor, anchor: 'bottom' })
+            // anchor 'center': el centro del punto es el lugar exacto.
+            marcadorUbicacion = new mapboxgl.Marker({ element: contenedor, anchor: 'center' })
                 .setLngLat([lon, lat]).addTo(map);
         }
 
