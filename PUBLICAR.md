@@ -81,16 +81,41 @@ cwp() { git add -A && git commit -m "$*" && git push; }   # uso: cwp "cambié el
 
 ## Fotos de trabajos
 
-Se suben a la carpeta `trabajos/` y aparecen solas:
+Van en la carpeta **`trabajos/`**. Salen en el fondo del inicio (una cada
+3 segundos, la más nueva primero) y en el menú.
 
-| Nombre | Qué es |
+**Sube las fotos ORIGINALES del teléfono, tal cual**, aunque sean HEIC del
+iPhone. No hace falta achicarlas, convertirlas ni renombrarlas. Antes de
+publicar, GitHub:
+- convierte las HEIC a JPG;
+- las deja del tamaño de una pantalla de teléfono en vertical (1296×2304):
+  nítidas a pantalla completa y sin pesar de más (la original se queda
+  guardada en el repositorio). Las horizontales se recortan a vertical
+  quedándose con la parte más llamativa de la foto;
+- las endereza si el teléfono las guardó de lado;
+- les **borra la ubicación GPS** que guardan los celulares (así no se publica
+  dónde se tomó la foto, que suele ser la casa del cliente).
+
+**Cómo subirlas desde el teléfono:** en el navegador (en modo escritorio),
+entra a `github.com/marcotreyes1322-pixel/carwashexpress-app/tree/main/trabajos`
+→ **Add file → Upload files** → elige las fotos → **Commit changes**. En unos
+2 minutos ya salen en la app.
+
+| Nombre | Qué pasa |
 |---|---|
-| `15.jpg` | Foto suelta. El número más alto sale primero (la más reciente) |
-| `3-antes.jpg` + `3-despues.jpg` | Par antes/después. Van primero en el carrusel |
+| Cualquiera, por ejemplo `IMG_4521.JPG` | Se acomoda por fecha de subida: la más nueva sale primero |
+| `15.jpg` | El número manda: el más alto sale primero |
+| `3-antes.jpg` + `3-despues.jpg` | Par antes/después |
 
-Sirven `.jpg`, `.jpeg`, `.png` y `.webp`. Si un nombre no sigue la regla, si
-a un par le falta su otra mitad o si una foto pesa más de 450 KB, la corrida
-deja un aviso amarillo que dice cuál. Los avisos no impiden publicar.
+- Sirven `.jpg`, `.jpeg`, `.png`, `.webp` y `.heic`.
+- **Fotos chicas** (menos de 1000 px en su lado largo): no se usan de fondo
+  en el inicio, porque estiradas a toda la pantalla se verían borrosas (sí
+  salen en el menú). La corrida de Actions avisa cuáles son.
+- Para quitar una foto: ábrela en GitHub → ícono del bote de basura →
+  **Commit changes**.
+
+Las fotos del login están en `fondos/` (`1.jpg` a `6.jpg`). Para cambiar
+una, sube la nueva con el mismo nombre.
 
 ---
 
