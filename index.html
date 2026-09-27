@@ -3249,9 +3249,10 @@ Cera rápida protectora
         // número para que le aparezca la agenda del día.
         // =====================================================================
         const ADMIN_TELEFONO = "6251009755";
-        // Para el saludo del inicio: la cuenta de administrador no pasó por el
-        // registro, así que no tiene nombre guardado en usuarios/.
-        const ADMIN_NOMBRE = "Tristán";
+        // La cuenta de administrador no pasó por el registro, así que no tiene
+        // nombre guardado en usuarios/: éste sale en el saludo del inicio y ya
+        // llenado en "Tus datos" cuando agenda desde su cuenta.
+        const ADMIN_NOMBRE = "Tristán Reyes";
 
         // ✅ CONFIRMADO por Tristán en agosto 2026, con captura de su pantalla de
         // "Editar perfil". Ojo con las TRES ESES del final: yo había puesto
@@ -3825,7 +3826,8 @@ Cera rápida protectora
         // formulario), las fotos de trabajos y su próxima cita.
         function cargarDatosDelUsuario() {
             datosConocidos = datosVacios();
-            pintarSaludo();
+            if (esAdministrador()) datosConocidos.nombre = ADMIN_NOMBRE;
+            pintarSaludo(datosConocidos.nombre);
             cargarFeedDeResenas();        // el feed va por su cuenta: si falla, no estorba
             pintarProximaCita();          // también recuerda su última cita (auto, tamaño…)
             traerPerfil();
@@ -3855,7 +3857,7 @@ Cera rápida protectora
         // que no pasó por el registro), no se queda un "Hola" pelón.
         function pintarSaludo(nombre) {
             let primero = nombre ? String(nombre).trim().split(/\s+/)[0] : "";
-            if (!primero && esAdministrador()) primero = ADMIN_NOMBRE;
+            if (!primero && esAdministrador()) primero = ADMIN_NOMBRE.split(' ')[0];
             const saludo = document.getElementById('saludo-simple');
             saludo.textContent = primero ? "Hola, " : "¡Qué gusto verte!";
             if (primero) {
@@ -4090,7 +4092,7 @@ Cera rápida protectora
         // Al publicar, GitHub Actions la reemplaza sola por fecha + commit (la
         // misma que el Service Worker): este valor sólo se ve probando el archivo
         // del repo sin construir.
-        const VERSION_APP = '2026.09.27i';
+        const VERSION_APP = '2026.09.27j';
 
         // La versión del AVISO DE PRIVACIDAD y los TÉRMINOS. Es distinta de la
         // versión de la app a propósito: la app cambia cada semana y lo legal
