@@ -16,7 +16,7 @@
    (Sólo si se publicara SIN construir habría que cambiarla a mano.)
    ===================================================================== */
 
-const VERSION = 'cwe-2026.09.27j';
+const VERSION = 'cwe-2026.09.27k';
 
 // Lo mínimo para que la app abra sin red. Las librerías (Mapbox, Firebase,
 // Three.js) NO se guardan a propósito: pesan 2 MB, cambian por su cuenta, y
@@ -95,9 +95,16 @@ self.addEventListener('fetch', evento => {
   //    "/index.html" o por un enlace con ?algo al final.
   //    (Antes, sin red, a CUALQUIER cosa que faltara —hasta a una foto— se le
   //    contestaba con index.html, y eso era una imagen rota.)
+  //    🐛 GitHub Pages manda la página con "guárdala 10 minutos" (max-age=600),
+  //    así que un fetch normal podía contestar con la copia del navegador y la
+  //    versión recién publicada no se veía hasta 10 minutos después, aunque
+  //    se cerrara y abriera la app. Con cache: 'no-cache' SIEMPRE se le
+  //    pregunta al servidor si cambió (si no cambió, contesta rápido, sin bajar
+  //    nada). Va por URL y no con el pedido original porque a un pedido de
+  //    navegación no se le pueden cambiar opciones: el navegador lo rechaza.
   if (pedido.mode === 'navigate') {
     evento.respondWith(
-      fetch(pedido)
+      fetch(pedido.url, { cache: 'no-cache', credentials: 'same-origin' })
         .then(respuesta => {
           if (respuesta.status === 200) {
             const copia = respuesta.clone();
