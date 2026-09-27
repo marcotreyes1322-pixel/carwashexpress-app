@@ -4090,7 +4090,7 @@ Cera rápida protectora
         // Al publicar, GitHub Actions la reemplaza sola por fecha + commit (la
         // misma que el Service Worker): este valor sólo se ve probando el archivo
         // del repo sin construir.
-        const VERSION_APP = '2026.09.27h';
+        const VERSION_APP = '2026.09.27i';
 
         // La versión del AVISO DE PRIVACIDAD y los TÉRMINOS. Es distinta de la
         // versión de la app a propósito: la app cambia cada semana y lo legal
@@ -6615,6 +6615,50 @@ Cera rápida protectora
         //
         // En los tres casos la app sigue funcionando: se pierde la protección,
         // no el servicio. Dejar a un cliente sin poder agendar sería peor.
+        // El permiso de App Check, pedido a mano: token de reCAPTCHA Enterprise y
+        // canje en Firebase. Hace lo mismo que el proveedor de Firebase, pero NUNCA
+        // se queda colgado: pasado APPCHECK_ESPERA_MAXIMA se rinde y la base de datos
+        // se conecta sin permiso en vez de esperar para siempre.
+        const APPCHECK_ESPERA_MAXIMA = 5000;
+        let recaptchaCargando = null;
+
+        function cargarRecaptchaEnterprise() {
+            if (recaptchaCargando) return recaptchaCargando;
+            recaptchaCargando = new Promise((listo, fallo) => {
+                const s = document.createElement('script');
+                s.src = 'https://www.google.com/recaptcha/enterprise.js?render=' + encodeURIComponent(APPCHECK_SITE_KEY);
+                s.async = true;
+                s.onload = () => window.grecaptcha && window.grecaptcha.enterprise
+                    ? window.grecaptcha.enterprise.ready(listo)
+                    : fallo(new Error('reCAPTCHA cargó sin window.grecaptcha.enterprise'));
+                s.onerror = () => fallo(new Error('No se pudo bajar reCAPTCHA'));
+                document.head.appendChild(s);
+            });
+            // Si falló, la próxima vez se vuelve a intentar bajar.
+            recaptchaCargando.catch(() => { recaptchaCargando = null; });
+            return recaptchaCargando;
+        }
+
+        function permisoDeAppCheck() {
+            const pedir = cargarRecaptchaEnterprise()
+                .then(() => window.grecaptcha.enterprise.execute(APPCHECK_SITE_KEY, { action: 'fire_app_check' }))
+                .then(tokenRecaptcha => fetch(
+                    'https://firebaseappcheck.googleapis.com/v1/projects/' + firebaseConfig.projectId
+                    + '/apps/' + firebaseConfig.appId + ':exchangeRecaptchaEnterpriseToken?key=' + firebaseConfig.apiKey,
+                    { method: 'POST', headers: { 'Content-Type': 'application/json' },
+                      body: JSON.stringify({ recaptchaEnterpriseToken: tokenRecaptcha }) }))
+                .then(r => r.ok ? r.json() : r.text().then(t => { throw new Error('Canje ' + r.status + ': ' + t.slice(0, 160)); }))
+                .then(d => ({
+                    token: d.token,
+                    // "3600s" → milisegundos. Sin ttl, se asume una hora.
+                    expireTimeMillis: Date.now() + (parseFloat(d.ttl) || 3600) * 1000
+                }));
+            const tope = new Promise((_, fallo) => setTimeout(
+                () => fallo(new Error('reCAPTCHA no contestó en ' + APPCHECK_ESPERA_MAXIMA / 1000 + ' s')),
+                APPCHECK_ESPERA_MAXIMA));
+            return Promise.race([pedir, tope]);
+        }
+
         function activarAppCheck() {
             if (!APPCHECK_SITE_KEY) return;
             if (typeof firebase === 'undefined' || !firebase.appCheck) return;
@@ -6622,9 +6666,15 @@ Cera rápida protectora
                 // El segundo parámetro es la renovación automática del permiso:
                 // sin él, se vence a la hora y el cliente se queda a medias.
                 const appCheck = firebase.appCheck();
-                // Enterprise, que es el proveedor registrado en la consola. Pasar
-                // la clave sola (como antes) la trata como reCAPTCHA v3.
-                appCheck.activate(new firebase.appCheck.ReCaptchaEnterpriseProvider(APPCHECK_SITE_KEY), true);
+                // 🐛 (septiembre 2026) Con el ReCaptchaEnterpriseProvider de Firebase,
+                // si reCAPTCHA no contestaba (señal floja, un bloqueador, un script
+                // que no llega), la BASE DE DATOS SE QUEDABA ESPERANDO el permiso sin
+                // límite y nunca se conectaba: el calendario tardaba y acababa en
+                // "no logró conectarse (app/timeout)", sin puntitos ni horarios.
+                // Ahora el permiso se pide a mano, con un tope de tiempo: si no llega,
+                // la app sigue sin él (App Check está en "Supervisión", así que
+                // Firebase deja pasar igual) y lo vuelve a intentar después.
+                appCheck.activate(new firebase.appCheck.CustomProvider({ getToken: permisoDeAppCheck }), true);
 
                 // ⚠️ Este try/catch NO alcanza a ver el fallo más común. reCAPTCHA
                 // no truena en el momento: arranca y contesta después, cuando la
