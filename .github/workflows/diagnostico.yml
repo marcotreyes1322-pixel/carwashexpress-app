@@ -1,0 +1,30 @@
+# DIAGNÓSTICO DE FIREBASE (manual)
+#
+# Abre la versión construida en un Chrome con internet de verdad y dice si
+# reCAPTCHA, App Check y la base de datos conectan, y en cuánto tiempo. No
+# inicia sesión ni escribe nada. Sirve cuando la app se queda "cargando" o
+# dice que no se pudo conectar: si aquí todo sale bien, el problema está en el
+# teléfono (versión vieja guardada, red, bloqueador), no en la app.
+#
+# Cómo correrlo: pestaña Actions → "Diagnóstico Firebase" → Run workflow.
+name: Diagnóstico Firebase
+on:
+  workflow_dispatch:
+permissions:
+  contents: read
+jobs:
+  diagnostico:
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    steps:
+      - uses: actions/checkout@v5
+        with:
+          fetch-depth: 0
+      - uses: actions/setup-node@v5
+        with:
+          node-version: 22
+          cache: npm
+      - run: npm ci
+      - run: npm run construir
+      - run: npx playwright install --with-deps chromium
+      - run: node scripts/diagnostico-firebase.mjs

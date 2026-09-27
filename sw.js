@@ -16,7 +16,7 @@
    (Sólo si se publicara SIN construir habría que cambiarla a mano.)
    ===================================================================== */
 
-const VERSION = 'cwe-2026.09.27k';
+const VERSION = 'cwe-2026.09.27n';
 
 // Lo mínimo para que la app abra sin red. Las librerías (Mapbox, Firebase,
 // Three.js) NO se guardan a propósito: pesan 2 MB, cambian por su cuenta, y
@@ -76,6 +76,10 @@ self.addEventListener('fetch', evento => {
   // pasar derecho: guardar una respuesta de la base de datos serviría citas
   // viejas, que es peor que no servir nada.
   if (url.origin !== self.location.origin) return;
+
+  // version.json dice qué versión está publicada: guardarla haría que la app
+  // nunca se enterara de que hay una nueva. Pasa siempre directo a la red.
+  if (url.pathname.endsWith('/version.json')) return;
 
   // 1) HEAD: así pregunta la app si existe una foto de trabajos, sin bajarla.
   //    Con red contesta el servidor. Sin red, si esa foto ya está guardada, se

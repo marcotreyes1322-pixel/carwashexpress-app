@@ -73,6 +73,10 @@ cwp() { git add -A && git commit -m "$*" && git push; }   # uso: cwp "cambié el
 - Un aviso amarillo que dice **"Node.js 20 is deprecated"** es de las
   herramientas de GitHub (se arregla solo cuando GitHub las actualice), no de
   la app: se puede ignorar.
+- ¿La app se queda "cargando" o dice que no se pudo conectar? En **Actions →
+  Diagnóstico Firebase → Run workflow** GitHub abre la app con internet de
+  verdad y dice si reCAPTCHA, App Check y la base de datos conectan. Si ahí
+  todo sale bien, el problema está en el teléfono, no en la app.
 - Para confirmar qué versión está publicada, abre
   `https://marcotreyes1322-pixel.github.io/carwashexpress-app/version.json`.
   Es la misma que ve Tristán junto al logo al entrar con su número.
