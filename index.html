@@ -1536,9 +1536,9 @@
             animation: panelEntra 0.7s cubic-bezier(0.22, 1, 0.30, 1) both;
         }
         @keyframes panelEntra { from { opacity: 0; transform: translateY(18px); } to { opacity: 1; transform: none; } }
-        /* La rayita que avanza con cada foto, y "04 / 29": dice sin palabras
-           que las fotos van pasando y que hay muchos trabajos que ver. */
-        .bienvenida-progreso { display: flex; align-items: center; gap: 10px; margin-bottom: 14px; }
+        /* La rayita que avanza con cada foto: dice sin palabras que las fotos van
+           pasando. (Llevaba un contador "04 / 29" a un lado; Tristán lo quitó.) */
+        .bienvenida-progreso { display: flex; align-items: center; margin-bottom: 14px; }
         .bienvenida-progreso:empty, .bienvenida-progreso.sin-fotos { display: none; }
         .bienvenida-barra {
             flex: 1; height: 2px; border-radius: 2px; overflow: hidden;
@@ -1551,10 +1551,6 @@
         }
         .bienvenida-barra i.corre { animation: barraFoto var(--dura, 3s) linear forwards; }
         @keyframes barraFoto { from { transform: scaleX(0); } to { transform: scaleX(1); } }
-        .bienvenida-cuenta {
-            font-size: 10px; letter-spacing: 0.16em; color: rgba(255, 255, 255, 0.6);
-            font-variant-numeric: tabular-nums; min-width: 44px; text-align: right;
-        }
         .bienvenida-hora {
             font-size: 10px; font-weight: 600; letter-spacing: 0.30em; text-transform: uppercase;
             color: var(--morado-claro); margin: 0 0 4px;
@@ -2441,7 +2437,6 @@
             <div class="bienvenida-panel" id="bienvenida-panel">
             <div class="bienvenida-progreso sin-fotos" aria-hidden="true">
                 <span class="bienvenida-barra"><i id="bienvenida-barra"></i></span>
-                <span class="bienvenida-cuenta" id="bienvenida-cuenta"></span>
             </div>
             <p class="bienvenida-hora" id="bienvenida-hora"></p>
 
@@ -4098,7 +4093,7 @@ Cera rápida protectora
         // Al publicar, GitHub Actions la reemplaza sola por fecha + commit (la
         // misma que el Service Worker): este valor sólo se ve probando el archivo
         // del repo sin construir.
-        const VERSION_APP = '2026.09.27g';
+        const VERSION_APP = '2026.09.27h';
 
         // La versión del AVISO DE PRIVACIDAD y los TÉRMINOS. Es distinta de la
         // versión de la app a propósito: la app cambia cada semana y lo legal
@@ -4968,16 +4963,13 @@ Cera rápida protectora
             marcarProgresoDelFondo();
         }
 
-        // "04 / 29" y la rayita del panel, que se llena en los 3 s de cada foto.
+        // La rayita del panel, que se llena en los 3 s de cada foto.
         function marcarProgresoDelFondo() {
             const barra = document.getElementById('bienvenida-barra');
-            const cuenta = document.getElementById('bienvenida-cuenta');
-            if (!barra || !cuenta) return;
+            if (!barra) return;
             const total = fotosDelFondo.length;
             barra.parentNode.parentNode.classList.toggle('sin-fotos', total < 2);
             if (total < 2) return;
-            const dos = n => (n < 10 ? '0' : '') + n;
-            cuenta.textContent = dos(fotoDelFondo + 1) + ' / ' + dos(total);
             barra.style.setProperty('--dura', MS_ENTRE_FOTOS_BIENVENIDA + 'ms');
             barra.classList.remove('corre');
             void barra.offsetWidth;          // reinicia la animación
