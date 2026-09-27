@@ -1385,9 +1385,6 @@
             font-variant-numeric: tabular-nums;
         }
         .clima-detalle b { color: var(--morado-claro); font-weight: 700; }
-        /* Sólo cuando de verdad conviene avisar: el aviso pierde fuerza si sale siempre. */
-        .clima-aviso { color: #fcd34d; }
-        .clima.tormenta .clima-aviso { color: #fca5a5; }
         /* Aviso de recordatorios pendientes para mañana. Va arriba de la lista del
            día y sólo aparece parado en HOY, porque ahí sí es una tarea del día. */
         .aviso-recordatorios {
@@ -1536,9 +1533,9 @@
             animation: panelEntra 0.7s cubic-bezier(0.22, 1, 0.30, 1) both;
         }
         @keyframes panelEntra { from { opacity: 0; transform: translateY(18px); } to { opacity: 1; transform: none; } }
-        /* La rayita que avanza con cada foto, y "04 / 29": dice sin palabras
-           que las fotos van pasando y que hay muchos trabajos que ver. */
-        .bienvenida-progreso { display: flex; align-items: center; gap: 10px; margin-bottom: 14px; }
+        /* La rayita que avanza con cada foto: dice sin palabras que las fotos van
+           pasando. (Llevaba un contador "04 / 29" a un lado; Tristán lo quitó.) */
+        .bienvenida-progreso { display: flex; align-items: center; margin-bottom: 14px; }
         .bienvenida-progreso:empty, .bienvenida-progreso.sin-fotos { display: none; }
         .bienvenida-barra {
             flex: 1; height: 2px; border-radius: 2px; overflow: hidden;
@@ -1551,10 +1548,6 @@
         }
         .bienvenida-barra i.corre { animation: barraFoto var(--dura, 3s) linear forwards; }
         @keyframes barraFoto { from { transform: scaleX(0); } to { transform: scaleX(1); } }
-        .bienvenida-cuenta {
-            font-size: 10px; letter-spacing: 0.16em; color: rgba(255, 255, 255, 0.6);
-            font-variant-numeric: tabular-nums; min-width: 44px; text-align: right;
-        }
         .bienvenida-hora {
             font-size: 10px; font-weight: 600; letter-spacing: 0.30em; text-transform: uppercase;
             color: var(--morado-claro); margin: 0 0 4px;
@@ -2441,7 +2434,6 @@
             <div class="bienvenida-panel" id="bienvenida-panel">
             <div class="bienvenida-progreso sin-fotos" aria-hidden="true">
                 <span class="bienvenida-barra"><i id="bienvenida-barra"></i></span>
-                <span class="bienvenida-cuenta" id="bienvenida-cuenta"></span>
             </div>
             <p class="bienvenida-hora" id="bienvenida-hora"></p>
 
@@ -3257,9 +3249,10 @@ Cera rápida protectora
         // número para que le aparezca la agenda del día.
         // =====================================================================
         const ADMIN_TELEFONO = "6251009755";
-        // Para el saludo del inicio: la cuenta de administrador no pasó por el
-        // registro, así que no tiene nombre guardado en usuarios/.
-        const ADMIN_NOMBRE = "Tristán";
+        // La cuenta de administrador no pasó por el registro, así que no tiene
+        // nombre guardado en usuarios/: éste sale en el saludo del inicio y ya
+        // llenado en "Tus datos" cuando agenda desde su cuenta.
+        const ADMIN_NOMBRE = "Tristán Reyes";
 
         // ✅ CONFIRMADO por Tristán en agosto 2026, con captura de su pantalla de
         // "Editar perfil". Ojo con las TRES ESES del final: yo había puesto
@@ -3833,7 +3826,8 @@ Cera rápida protectora
         // formulario), las fotos de trabajos y su próxima cita.
         function cargarDatosDelUsuario() {
             datosConocidos = datosVacios();
-            pintarSaludo();
+            if (esAdministrador()) datosConocidos.nombre = ADMIN_NOMBRE;
+            pintarSaludo(datosConocidos.nombre);
             cargarFeedDeResenas();        // el feed va por su cuenta: si falla, no estorba
             pintarProximaCita();          // también recuerda su última cita (auto, tamaño…)
             traerPerfil();
@@ -3863,7 +3857,7 @@ Cera rápida protectora
         // que no pasó por el registro), no se queda un "Hola" pelón.
         function pintarSaludo(nombre) {
             let primero = nombre ? String(nombre).trim().split(/\s+/)[0] : "";
-            if (!primero && esAdministrador()) primero = ADMIN_NOMBRE;
+            if (!primero && esAdministrador()) primero = ADMIN_NOMBRE.split(' ')[0];
             const saludo = document.getElementById('saludo-simple');
             saludo.textContent = primero ? "Hola, " : "¡Qué gusto verte!";
             if (primero) {
@@ -4098,7 +4092,7 @@ Cera rápida protectora
         // Al publicar, GitHub Actions la reemplaza sola por fecha + commit (la
         // misma que el Service Worker): este valor sólo se ve probando el archivo
         // del repo sin construir.
-        const VERSION_APP = '2026.09.27g';
+        const VERSION_APP = '2026.09.27j';
 
         // La versión del AVISO DE PRIVACIDAD y los TÉRMINOS. Es distinta de la
         // versión de la app a propósito: la app cambia cada semana y lo legal
@@ -4968,16 +4962,13 @@ Cera rápida protectora
             marcarProgresoDelFondo();
         }
 
-        // "04 / 29" y la rayita del panel, que se llena en los 3 s de cada foto.
+        // La rayita del panel, que se llena en los 3 s de cada foto.
         function marcarProgresoDelFondo() {
             const barra = document.getElementById('bienvenida-barra');
-            const cuenta = document.getElementById('bienvenida-cuenta');
-            if (!barra || !cuenta) return;
+            if (!barra) return;
             const total = fotosDelFondo.length;
             barra.parentNode.parentNode.classList.toggle('sin-fotos', total < 2);
             if (total < 2) return;
-            const dos = n => (n < 10 ? '0' : '') + n;
-            cuenta.textContent = dos(fotoDelFondo + 1) + ' / ' + dos(total);
             barra.style.setProperty('--dura', MS_ENTRE_FOTOS_BIENVENIDA + 'ms');
             barra.classList.remove('corre');
             void barra.offsetWidth;          // reinicia la animación
@@ -6521,7 +6512,7 @@ Cera rápida protectora
         // el promedio histórico como si fuera pronóstico— sería mentirle al
         // cliente sobre algo con lo que va a tomar una decisión.
         const CLIMA_DIAS = 16;                 // hasta dónde llega el pronóstico
-        const CLIMA_LLUVIA_AVISO = 45;         // % de probabilidad para avisar
+        const CLIMA_LLUVIA_AVISO = 45;         // % de lluvia desde el que el filo sale amarillo
         let climaDelMes = null;                // { fecha: {...} }, se pide UNA vez
         let climaPidiendo = null;              // la promesa en curso, para no repetir
 
@@ -6626,6 +6617,50 @@ Cera rápida protectora
         //
         // En los tres casos la app sigue funcionando: se pierde la protección,
         // no el servicio. Dejar a un cliente sin poder agendar sería peor.
+        // El permiso de App Check, pedido a mano: token de reCAPTCHA Enterprise y
+        // canje en Firebase. Hace lo mismo que el proveedor de Firebase, pero NUNCA
+        // se queda colgado: pasado APPCHECK_ESPERA_MAXIMA se rinde y la base de datos
+        // se conecta sin permiso en vez de esperar para siempre.
+        const APPCHECK_ESPERA_MAXIMA = 5000;
+        let recaptchaCargando = null;
+
+        function cargarRecaptchaEnterprise() {
+            if (recaptchaCargando) return recaptchaCargando;
+            recaptchaCargando = new Promise((listo, fallo) => {
+                const s = document.createElement('script');
+                s.src = 'https://www.google.com/recaptcha/enterprise.js?render=' + encodeURIComponent(APPCHECK_SITE_KEY);
+                s.async = true;
+                s.onload = () => window.grecaptcha && window.grecaptcha.enterprise
+                    ? window.grecaptcha.enterprise.ready(listo)
+                    : fallo(new Error('reCAPTCHA cargó sin window.grecaptcha.enterprise'));
+                s.onerror = () => fallo(new Error('No se pudo bajar reCAPTCHA'));
+                document.head.appendChild(s);
+            });
+            // Si falló, la próxima vez se vuelve a intentar bajar.
+            recaptchaCargando.catch(() => { recaptchaCargando = null; });
+            return recaptchaCargando;
+        }
+
+        function permisoDeAppCheck() {
+            const pedir = cargarRecaptchaEnterprise()
+                .then(() => window.grecaptcha.enterprise.execute(APPCHECK_SITE_KEY, { action: 'fire_app_check' }))
+                .then(tokenRecaptcha => fetch(
+                    'https://firebaseappcheck.googleapis.com/v1/projects/' + firebaseConfig.projectId
+                    + '/apps/' + firebaseConfig.appId + ':exchangeRecaptchaEnterpriseToken?key=' + firebaseConfig.apiKey,
+                    { method: 'POST', headers: { 'Content-Type': 'application/json' },
+                      body: JSON.stringify({ recaptchaEnterpriseToken: tokenRecaptcha }) }))
+                .then(r => r.ok ? r.json() : r.text().then(t => { throw new Error('Canje ' + r.status + ': ' + t.slice(0, 160)); }))
+                .then(d => ({
+                    token: d.token,
+                    // "3600s" → milisegundos. Sin ttl, se asume una hora.
+                    expireTimeMillis: Date.now() + (parseFloat(d.ttl) || 3600) * 1000
+                }));
+            const tope = new Promise((_, fallo) => setTimeout(
+                () => fallo(new Error('reCAPTCHA no contestó en ' + APPCHECK_ESPERA_MAXIMA / 1000 + ' s')),
+                APPCHECK_ESPERA_MAXIMA));
+            return Promise.race([pedir, tope]);
+        }
+
         function activarAppCheck() {
             if (!APPCHECK_SITE_KEY) return;
             if (typeof firebase === 'undefined' || !firebase.appCheck) return;
@@ -6633,9 +6668,15 @@ Cera rápida protectora
                 // El segundo parámetro es la renovación automática del permiso:
                 // sin él, se vence a la hora y el cliente se queda a medias.
                 const appCheck = firebase.appCheck();
-                // Enterprise, que es el proveedor registrado en la consola. Pasar
-                // la clave sola (como antes) la trata como reCAPTCHA v3.
-                appCheck.activate(new firebase.appCheck.ReCaptchaEnterpriseProvider(APPCHECK_SITE_KEY), true);
+                // 🐛 (septiembre 2026) Con el ReCaptchaEnterpriseProvider de Firebase,
+                // si reCAPTCHA no contestaba (señal floja, un bloqueador, un script
+                // que no llega), la BASE DE DATOS SE QUEDABA ESPERANDO el permiso sin
+                // límite y nunca se conectaba: el calendario tardaba y acababa en
+                // "no logró conectarse (app/timeout)", sin puntitos ni horarios.
+                // Ahora el permiso se pide a mano, con un tope de tiempo: si no llega,
+                // la app sigue sin él (App Check está en "Supervisión", así que
+                // Firebase deja pasar igual) y lo vuelve a intentar después.
+                appCheck.activate(new firebase.appCheck.CustomProvider({ getToken: permisoDeAppCheck }), true);
 
                 // ⚠️ Este try/catch NO alcanza a ver el fallo más común. reCAPTCHA
                 // no truena en el momento: arranca y contesta después, cuando la
@@ -6750,13 +6791,8 @@ Cera rápida protectora
 
                 let detalle = '';
                 if (prob != null) detalle = 'Probabilidad de lluvia: <b>' + prob + '%</b>';
-                // El aviso sólo sale cuando de verdad conviene. Si saliera siempre,
-                // dejaría de significar algo. Y NO promete nada que Tristán no
-                // haya acordado: sólo recuerda que reagendar ya es gratis y solo.
-                if (info.fuerte || (prob != null && prob >= CLIMA_LLUVIA_AVISO)) {
-                    detalle += '<br><span class="clima-aviso">Si se descompone el día, '
-                             + 'puedes cambiar tu cita desde "Mis citas".</span>';
-                }
+                // Sólo el clima: grados, lluvia y el dibujo. El aviso amarillo de
+                // "si se descompone el día…" se quitó a pedido de Tristán.
                 document.getElementById('clima-detalle').innerHTML = detalle;
 
                 bloque.classList.remove('lluvia', 'tormenta');
