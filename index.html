@@ -991,17 +991,6 @@
         .cal-dia.vacio { visibility: hidden; }
         .cal-dia:disabled { color: rgba(255,255,255,0.16); cursor: not-allowed; }
         .cal-dia.seleccionado { background: var(--morado); border-color: var(--morado); font-weight: 700; }
-        /* Disponibilidad debajo del número: UN PUNTO POR HORARIO LIBRE.
-           Antes era un solo punto de 4px que cambiaba de color. Dos problemas:
-           a 4px no se ve en una tablet, y un color solo no distingue "quedan 3"
-           de "queda 1". Contando puntos se entiende sin leyenda y sin leer nada. */
-        .pt-fila { display: flex; gap: 2px; height: 5px; align-items: center; }
-        .pt { width: 5px; height: 5px; border-radius: 50%; display: inline-block; }
-        .pt.libre { background: #86efac; }
-        .pt.medio { background: #fbbf24; }
-        .pt.lleno { background: #fca5a5; box-shadow: 0 0 5px rgba(252,165,165,0.7); }
-        .cal-dia.seleccionado .pt { background: #fff; box-shadow: none; }
-        .cal-dia:disabled .pt-fila { display: none; }
         /* La insignia flotante de reCAPTCHA ("protected by reCAPTCHA") sale abajo
            a la derecha en TODAS las pantallas, justo encima del botón fijo de
            "Agendar mi lavado" de la bienvenida. Google permite esconderla a
@@ -1150,10 +1139,6 @@
             .ticket { transition: none; }
             .impresora-estado::before { animation: none; }
         }
-
-        .cal-leyenda { display: flex; gap: 14px; justify-content: center; margin-top: 12px;
-                       font-size: 10px; color: var(--muy-tenue); flex-wrap: wrap; }
-        .cal-leyenda span { display: flex; align-items: center; gap: 5px; }
 
         /* --- FORMULARIOS --- */
         .form-container { width: 100%; display: flex; flex-direction: column; gap: 22px; text-align: left; }
@@ -2865,10 +2850,6 @@ Cera rápida protectora
                                     <span>D</span><span>L</span><span>M</span><span>M</span><span>J</span><span>V</span><span>S</span>
                                 </div>
                                 <div class="cal-grid" id="cal-grid" role="group" aria-labelledby="etq-dia cal-mes"></div>
-                                <div class="cal-leyenda">
-                                    <span><i class="pt libre"></i><i class="pt libre"></i><i class="pt libre"></i>Cada punto es un horario libre</span>
-                                    <span><i class="pt lleno"></i>Último horario</span>
-                                </div>
 
                                 <!-- EL CLIMA DEL DÍA QUE ELIGIÓ: una burbuja que sale
                                      PEGADA AL DÍA que tocó, con su piquito apuntándole.
@@ -4069,7 +4050,7 @@ Cera rápida protectora
         // Al publicar, GitHub Actions la reemplaza sola por fecha + commit (la
         // misma que el Service Worker): este valor sólo se ve probando el archivo
         // del repo sin construir.
-        const VERSION_APP = '2026.09.27l';
+        const VERSION_APP = '2026.09.27m';
 
         // La versión del AVISO DE PRIVACIDAD y los TÉRMINOS. Es distinta de la
         // versión de la app a propósito: la app cambia cada semana y lo legal
@@ -6267,7 +6248,6 @@ Cera rápida protectora
 
         let mesCalendario = null;          // primer día del mes que se está viendo
         let ocupacionPorFecha = {};        // { '2026-08-14': ['10-00-AM', ...] }
-        let disponibilidadCargada = false;
 
         function abrirCalendario() {
             mesCalendario = new Date();
@@ -6340,7 +6320,6 @@ Cera rápida protectora
                     Object.entries(todo).forEach(([fecha, horas]) => {
                         ocupacionPorFecha[fecha] = Object.keys(horas || {});
                     });
-                    disponibilidadCargada = true;
                     pintarCalendario();
 
                     // 🐛 Si el cliente tocó un día ANTES de que llegara esto (internet
@@ -6425,7 +6404,7 @@ Cera rápida protectora
             // estaría apuntando a un día que ya no se ve.
             esconderClima();
             // Ahora que se lee mes por mes, hay que pedir el del mes nuevo: si no,
-            // los días de ese mes se pintarían sin puntitos.
+            // los días llenos de ese mes no saldrían apagados.
             cargarDisponibilidadDelMes();
         }
 
@@ -6449,7 +6428,6 @@ Cera rápida protectora
                 grid.appendChild(hueco);
             }
 
-            const totalFranjas = SLOTS.length;
             for (let n = 1; n <= diasEnMes; n++) {
                 const fechaISO = fechaLocalISO(new Date(mesCalendario.getFullYear(), mesCalendario.getMonth(), n));
                 const boton = document.createElement('button');
@@ -6463,24 +6441,9 @@ Cera rápida protectora
                 const elegible = diaEsElegible(fechaISO);
                 boton.disabled = !elegible;
 
-                if (elegible && disponibilidadCargada) {
-                    const libres = franjasLibresEn(fechaISO);
-                    // Un punto por horario libre, y el color avisa cuando se está
-                    // acabando. Los cortes de antes decían que un día con 3 de 4
-                    // franjas libres estaba "Casi lleno" — o sea que un día casi
-                    // vacío se pintaba de amarillo, y con la agenda floja TODOS
-                    // los días salían amarillos: el color dejaba de decir nada.
-                    const clase = libres >= 3 ? "libre" : libres === 2 ? "medio" : "lleno";
-                    const fila = document.createElement('span');
-                    fila.className = "pt-fila";
-                    for (let k = 0; k < libres; k++) {
-                        const punto = document.createElement('i');
-                        punto.className = "pt " + clase;
-                        fila.appendChild(punto);
-                    }
-                    boton.title = libres === 1 ? "Queda 1 horario" : "Quedan " + libres + " horarios";
-                    boton.appendChild(fila);
-                }
+                // (Aquí iban los puntitos de horarios libres debajo de cada día. Se
+                // quitaron en septiembre 2026: con dos vehículos serían ocho por día.
+                // Un día sin lugar sigue saliendo apagado, con diaEsElegible.)
 
                 if (fechaISO === fechaSeleccionada) boton.classList.add('seleccionado');
                 if (elegible) boton.onclick = () => elegirDiaCalendario(fechaISO);
