@@ -1,4 +1,4 @@
-/* global firebase, performance, prepararBaseDeDatos */
+/* global firebase, performance, prepararBaseDeDatos, localStorage */
 // DIAGNÓSTICO DE FIREBASE (se corre a mano desde Actions, ver diagnostico.yml):
 // abre la versión construida en un Chrome con internet de verdad y mide qué
 // frena la conexión con Firebase.
@@ -11,7 +11,7 @@ const PUERTO = 4173;
 const servidor = await servir('dist', PUERTO);
 const navegador = await chromium.launch();
 
-async function probar(nombre, { sinAppCheck = false } = {}) {
+async function probar(nombre, { sinAppCheck = false, notaWebSocket = false } = {}) {
     console.log(`\n══ ${nombre} ══`);
     const ctx = await navegador.newContext({ serviceWorkers: 'block' });
     const p = await ctx.newPage();
@@ -22,6 +22,10 @@ async function probar(nombre, { sinAppCheck = false } = {}) {
     p.on('requestfailed', r => console.log(`  [${seg()}] FALLÓ ${r.url().slice(0, 120)} → ${r.failure() && r.failure().errorText}`));
     p.on('response', r => { if (/recaptcha|firebaseappcheck|securetoken|identitytoolkit/.test(r.url())) console.log(`  [${seg()}] ${r.status()} ${r.url().split('?')[0].slice(0, 120)}`); });
     if (sinAppCheck) await p.route(/firebase-app-check-compat/, r => r.abort());
+    // Como un teléfono al que se le quedó la nota "el WebSocket falló": Firebase
+    // entra por long polling (scripts y un marco de *.firebaseio.com).
+    if (notaWebSocket) await p.addInitScript(() => { try { localStorage.setItem('firebase:previous_websocket_failure', 'true'); } catch (e) { /* sin almacenamiento */ } });
+    p.on('console', m => { if (/Content Security Policy|Refused to/i.test(m.text())) console.log(`  [${seg()}] BLOQUEO CSP: ${m.text().slice(0, 200)}`); });
     await p.route(/(mapbox|open-meteo|three)/, r => r.abort());
     await p.goto(`http://localhost:${PUERTO}/`, { waitUntil: 'domcontentloaded' });
     await p.waitForFunction(() => typeof firebase !== 'undefined' && firebase.apps && firebase.apps.length, null, { timeout: 30000 }).catch(() => {});
@@ -60,6 +64,7 @@ async function probar(nombre, { sinAppCheck = false } = {}) {
 
 try {
     await probar('La app tal cual (con App Check)');
+    await probar('Con la nota de "WebSocket falló" (long polling)', { notaWebSocket: true });
     await probar('Sin App Check (para comparar)', { sinAppCheck: true });
 } finally {
     await navegador.close();
