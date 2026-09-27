@@ -3148,8 +3148,14 @@ Cera rápida protectora
         // registered" y cada petición quedaba como "no válida": App Check nunca
         // funcionó. Si algún día se cambia el proveedor en la consola (App Check
         // → Apps), hay que cambiar aquí la clave Y el tipo (ver activarAppCheck).
+        //
+        // Además, aquella clave (…L0m5) no estaba en el proyecto carwashexpress
+        // de Google Cloud, así que Firebase no podía comprobarla. Esta se creó
+        // AHÍ (Seguridad → Fraud Defense → Claves, "CarWashExpress web"), con los
+        // dominios marcotreyes1322-pixel.github.io y localhost. Un dominio nuevo
+        // (el propio, por ejemplo) hay que agregarlo en esa misma clave.
         // =====================================================================
-        const APPCHECK_SITE_KEY = "6LfcWagtAAAAAO7OhfZuRVRznKdBHXLpn_l2L0m5";
+        const APPCHECK_SITE_KEY = "6LdgcNItAAAAAHT1u3cDBH_OjnzpneM1I-pZeXIO";
 
         const firebaseConfig = {
             apiKey: "AIzaSyCYLI5lpPECCtSqosMo6bsWApG2-GLpRsE",
@@ -4000,7 +4006,7 @@ Cera rápida protectora
         // Al publicar, GitHub Actions la reemplaza sola por fecha + commit (la
         // misma que el Service Worker): este valor sólo se ve probando el archivo
         // del repo sin construir.
-        const VERSION_APP = '2026.09.27d';
+        const VERSION_APP = '2026.09.27e';
 
         // La versión del AVISO DE PRIVACIDAD y los TÉRMINOS. Es distinta de la
         // versión de la app a propósito: la app cambia cada semana y lo legal
