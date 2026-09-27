@@ -84,10 +84,14 @@ cwp() { git add -A && git commit -m "$*" && git push; }   # uso: cwp "cambié el
 Van en la carpeta **`trabajos/`**. Salen en el fondo del inicio (una cada
 3 segundos, la más nueva primero) y en el menú.
 
-**Sube las fotos ORIGINALES del teléfono, tal cual.** No hace falta achicarlas
-ni renombrarlas. Antes de publicar, GitHub:
-- las achica a un tamaño que se ve nítido a pantalla completa sin pesar de más
-  (la original se queda guardada en el repositorio);
+**Sube las fotos ORIGINALES del teléfono, tal cual**, aunque sean HEIC del
+iPhone. No hace falta achicarlas, convertirlas ni renombrarlas. Antes de
+publicar, GitHub:
+- convierte las HEIC a JPG;
+- las deja del tamaño de una pantalla de teléfono en vertical (1296×2304):
+  nítidas a pantalla completa y sin pesar de más (la original se queda
+  guardada en el repositorio). Las horizontales se recortan a vertical
+  quedándose con la parte más llamativa de la foto;
 - las endereza si el teléfono las guardó de lado;
 - les **borra la ubicación GPS** que guardan los celulares (así no se publica
   dónde se tomó la foto, que suele ser la casa del cliente).
@@ -103,13 +107,10 @@ entra a `github.com/marcotreyes1322-pixel/carwashexpress-app/tree/main/trabajos`
 | `15.jpg` | El número manda: el más alto sale primero |
 | `3-antes.jpg` + `3-despues.jpg` | Par antes/después |
 
-- Sirven `.jpg`, `.jpeg`, `.png` y `.webp`. Las **.HEIC** del iPhone no se
-  pueden mostrar. Al subirlas desde el navegador, el iPhone casi siempre las
-  convierte solo; si no, sale un aviso amarillo que dice cuál.
-- **Fotos chicas** (menos de 1000 px en su lado largo): en el inicio salen
-  **enmarcadas** en el centro, porque estiradas a toda la pantalla se verían
-  borrosas. Las grandes salen a pantalla completa. La corrida de Actions
-  avisa cuáles son chicas.
+- Sirven `.jpg`, `.jpeg`, `.png`, `.webp` y `.heic`.
+- **Fotos chicas** (menos de 1000 px en su lado largo): no se usan de fondo
+  en el inicio, porque estiradas a toda la pantalla se verían borrosas (sí
+  salen en el menú). La corrida de Actions avisa cuáles son.
 - Para quitar una foto: ábrela en GitHub → ícono del bote de basura →
   **Commit changes**.
 

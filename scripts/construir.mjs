@@ -170,27 +170,39 @@ async function construirIndex(version) {
 
 // ── 3. Las fotos ─────────────────────────────────────────────────────────
 // Tristán puede subir las fotos TAL CUAL salen del teléfono (4000 px, 3-5 MB,
-// con cualquier nombre, como IMG_4521.JPG). Aquí, antes de publicar:
-//   · se achican a un tamaño que se ve nítido a pantalla completa sin pesar de
-//     más (las originales no se tocan: se quedan en el repositorio);
+// HEIC del iPhone, con cualquier nombre, como IMG_4521.HEIC). Aquí, antes de
+// publicar:
+//   · las HEIC se convierten a JPG (ningún navegador fuera de Safari las abre);
+//   · se dejan del tamaño de una pantalla de teléfono, en vertical: nítidas a
+//     pantalla completa sin pesar de más (las originales no se tocan: se
+//     quedan en el repositorio). Las horizontales se recortan a vertical con
+//     "recorte inteligente": se queda la parte más llamativa (el auto), no
+//     siempre el centro;
 //   · se giran si el teléfono las guardó "acostadas";
 //   · se les BORRAN los datos ocultos (EXIF), que en una foto de celular
 //     incluyen la ubicación GPS exacta de donde se tomó: la casa del cliente.
 // Nombres: 15.jpg (el número manda el orden: el más alto sale primero),
 // 3-antes.jpg + 3-despues.jpg (par antes/después), o cualquier otro nombre:
 // ésas se acomodan por fecha de subida, la más nueva primero.
-const ES_FOTO = /\.(jpe?g|png|webp)$/i;
+const ES_FOTO = /\.(jpe?g|png|webp|heic|heif)$/i;
 const ES_HEIC = /\.(heic|heif)$/i;
-const FOTO_NUMERO = /^(\d+)\.(jpe?g|png|webp)$/i;
-const FOTO_PAR = /^(\d+)-(antes|despues)\.(jpe?g|png|webp)$/i;
-const PESO_MAXIMO_FOTO_KB = 450;
+const FOTO_NUMERO = /^(\d+)\.(jpe?g|png|webp|heic|heif)$/i;
+const FOTO_PAR = /^(\d+)-(antes|despues)\.(jpe?g|png|webp|heic|heif)$/i;
+// Son fotos de pantalla completa en calidad alta: hasta ~700 KB es normal.
+const PESO_MAXIMO_FOTO_KB = 700;
 // Menos que esto en su lado largo y la foto se ve borrosa a pantalla completa:
-// en el inicio sale enmarcada (nítida, más chica) en vez de estirada.
+// la app no la usa de fondo en el inicio (sí en el menú).
 const LADO_MINIMO_PANTALLA_COMPLETA = 1000;
+// 1296×2304 es una pantalla de iPhone en vertical (9:16) a tamaño real: la foto
+// se ve nítida de orilla a orilla y pesa ~300 KB en vez de 2-3 MB.
 const LIMITES = {
-    trabajos: { ancho: 1440, alto: 1920, calidad: 80 },
+    trabajos: { ancho: 1296, alto: 2304, calidad: 80, vertical: true },
     fondos:   { ancho: 1080, alto: 2340, calidad: 78 }
 };
+
+async function cargarHeic() {
+    try { return (await import('heic-decode')).default; } catch { return null; }
+}
 
 async function cargarSharp() {
     try { return (await import('sharp')).default; } catch { return null; }
@@ -204,40 +216,72 @@ function fechaDeSubida(ruta) {
     return Math.floor(statSync(path.join(RAIZ, ruta)).mtimeMs / 1000);
 }
 
-// Achica, gira y limpia las fotos YA copiadas en dist/. Devuelve sus medidas.
+// Achica, gira, convierte y limpia las fotos YA copiadas en dist/.
+// Devuelve, por cada original, el nombre con que se publica y sus medidas.
 async function optimizarFotos(sharp, carpeta) {
     const dir = path.join(DIST, carpeta);
     const medidas = new Map();
     if (!existsSync(dir)) return medidas;
     const limite = LIMITES[carpeta];
+    const heic = await cargarHeic();
     let antes = 0, despues = 0, tocadas = 0;
     for (const archivo of readdirSync(dir).sort()) {
         if (!ES_FOTO.test(archivo)) continue;
         const ruta = path.join(dir, archivo);
         const original = readFileSync(ruta);
         antes += original.length;
-        if (!sharp) { medidas.set(archivo, {}); despues += original.length; continue; }
-        const meta = await sharp(original, { failOn: 'none' }).metadata();
-        const acostada = (meta.orientation || 1) >= 5;          // EXIF 5-8: vienen de lado
-        const ancho = acostada ? meta.height : meta.width;
-        const alto = acostada ? meta.width : meta.height;
-        const excede = ancho > limite.ancho || alto > limite.alto;
-        const conDatos = !!(meta.exif || meta.xmp || meta.iptc) || (meta.orientation || 1) !== 1;
-        if (!excede && !conDatos) {
-            medidas.set(archivo, { w: ancho, h: alto });
+        const esHeic = ES_HEIC.test(archivo);
+        if (!sharp || (esHeic && !heic)) {
+            if (esHeic) {
+                // Sin herramientas no hay cómo convertirla: se quita para no publicar una foto rota.
+                rmSync(ruta);
+                avisar(`"${archivo}" es HEIC y aquí no se puede convertir (falta sharp o heic-decode): no sale en esta prueba local.`, `${carpeta}/${archivo}`);
+                continue;
+            }
+            medidas.set(archivo, { archivo });
+            despues += original.length;
+            continue;
+        }
+        // HEIC → píxeles (ya derechos: libheif aplica el giro al decodificar).
+        let entrada = sharp(original, { failOn: 'none' });
+        let orientacion = 1, ancho, alto, conDatos;
+        if (esHeic) {
+            const px = await heic({ buffer: original });
+            entrada = sharp(Buffer.from(px.data.buffer), { raw: { width: px.width, height: px.height, channels: 4 } });
+            ancho = px.width; alto = px.height; conDatos = true;
+        } else {
+            const meta = await entrada.metadata();
+            orientacion = meta.orientation || 1;
+            const acostada = orientacion >= 5;                  // EXIF 5-8: vienen de lado
+            ancho = acostada ? meta.height : meta.width;
+            alto = acostada ? meta.width : meta.height;
+            conDatos = !!(meta.exif || meta.xmp || meta.iptc) || orientacion !== 1;
+        }
+        const horizontal = ancho > alto;
+        const excede = limite.vertical
+            ? (horizontal ? alto > limite.ancho : ancho > limite.ancho || alto > limite.alto)
+            : ancho > limite.ancho || alto > limite.alto;
+        const nombre = esHeic ? archivo.replace(/(\.(heic|heif))+$/i, '') + '.jpg' : archivo;
+        if (!excede && !conDatos && !esHeic) {
+            medidas.set(archivo, { archivo, w: ancho, h: alto });
             despues += original.length;
             continue;                                            // ya está bien: no se re-comprime
         }
         const calidad = excede ? limite.calidad : 90;            // si no se achica, casi sin pérdida
-        let proceso = sharp(original, { failOn: 'none' }).rotate()
-            .resize({ width: limite.ancho, height: limite.alto, fit: 'inside', withoutEnlargement: true });
-        const tipo = archivo.toLowerCase().split('.').pop();
+        let proceso = entrada.rotate();
+        proceso = (limite.vertical && horizontal)
+            // Horizontal → vertical, quedándose con lo más llamativo de la foto.
+            ? proceso.resize({ width: Math.min(limite.ancho, Math.round(alto * 9 / 16)), height: Math.min(limite.alto, alto),
+                               fit: 'cover', position: 'attention', withoutEnlargement: true })
+            : proceso.resize({ width: limite.ancho, height: limite.alto, fit: 'inside', withoutEnlargement: true });
+        const tipo = esHeic ? 'jpg' : archivo.toLowerCase().split('.').pop();
         proceso = tipo === 'png' ? proceso.png({ compressionLevel: 9 })
                 : tipo === 'webp' ? proceso.webp({ quality: calidad })
                 : proceso.jpeg({ quality: calidad, mozjpeg: true, progressive: true });
         const { data, info } = await proceso.toBuffer({ resolveWithObject: true });
-        writeFileSync(ruta, data);
-        medidas.set(archivo, { w: info.width, h: info.height });
+        if (nombre !== archivo) rmSync(ruta);
+        writeFileSync(path.join(dir, nombre), data);
+        medidas.set(archivo, { archivo: nombre, w: info.width, h: info.height });
         despues += data.length;
         tocadas++;
     }
@@ -251,14 +295,11 @@ function listaDeFotos(medidas) {
     const numeradas = new Map(), antes = new Map(), despues = new Map(), libres = [];
     for (const archivo of archivos) {
         if (archivo === 'lista.json' || archivo.startsWith('.')) continue;
-        if (ES_HEIC.test(archivo)) {
-            avisar(`"${archivo}" está en formato HEIC del iPhone y la página no lo puede mostrar. Súbela como JPG (en el iPhone: Configuración → Cámara → Formatos → Más compatible).`, `trabajos/${archivo}`);
-            continue;
-        }
         if (!ES_FOTO.test(archivo)) {
-            avisar(`"${archivo}" no es una foto (sirven .jpg, .jpeg, .png y .webp).`, `trabajos/${archivo}`);
+            avisar(`"${archivo}" no es una foto (sirven .jpg, .jpeg, .png, .webp y .heic).`, `trabajos/${archivo}`);
             continue;
         }
+        if (!medidas.has(archivo)) continue;                    // HEIC que no se pudo convertir (ya avisado)
         const par = archivo.match(FOTO_PAR), num = archivo.match(FOTO_NUMERO);
         const destino = par ? (par[2].toLowerCase() === 'antes' ? antes : despues) : num ? numeradas : null;
         if (!destino) { libres.push(archivo); continue; }
@@ -277,19 +318,21 @@ function listaDeFotos(medidas) {
         .sort((x, y) => x.fecha - y.fecha || x.archivo.localeCompare(y.archivo))
         .forEach(({ archivo }) => numeradas.set(siguiente++, archivo));
 
+    // Con el nombre con que se PUBLICA (las HEIC salen como .jpg) y sus medidas.
+    const publicada = (archivo) => (medidas.get(archivo) || {}).archivo || archivo;
     const conMedidas = (datos, archivo) => {
         const m = medidas.get(archivo) || {};
         return m.w ? Object.assign(datos, { w: m.w, h: m.h }) : datos;
     };
     const pares = [];
     for (const [n, a] of antes) {
-        if (despues.has(n)) pares.push(conMedidas({ n, antes: a, despues: despues.get(n) }, despues.get(n)));
+        if (despues.has(n)) pares.push(conMedidas({ n, antes: publicada(a), despues: publicada(despues.get(n)) }, despues.get(n)));
         else avisar(`"${a}" no tiene su "${n}-despues": media comparación no se muestra.`, `trabajos/${a}`);
     }
     for (const [n, d] of despues) {
         if (!antes.has(n)) avisar(`"${d}" no tiene su "${n}-antes": media comparación no se muestra.`, `trabajos/${d}`);
     }
-    const sueltas = [...numeradas].map(([n, foto]) => conMedidas({ n, foto }, foto));
+    const sueltas = [...numeradas].map(([n, foto]) => conMedidas({ n, foto: publicada(foto) }, foto));
 
     // Avisos útiles: las que pesan de más (sin sharp) y las que son chicas.
     const chicas = [];
@@ -300,7 +343,7 @@ function listaDeFotos(medidas) {
         if (f.w && Math.max(f.w, f.h) < LADO_MINIMO_PANTALLA_COMPLETA) chicas.push(archivo);
     }
     if (chicas.length) {
-        avisar(`${chicas.length} foto(s) miden menos de ${LADO_MINIMO_PANTALLA_COMPLETA} px (${chicas.slice(0, 6).join(', ')}${chicas.length > 6 ? '…' : ''}): en el inicio salen enmarcadas en vez de a pantalla completa. Sube las originales del teléfono para que se vean grandes.`);
+        avisar(`${chicas.length} foto(s) miden menos de ${LADO_MINIMO_PANTALLA_COMPLETA} px (${chicas.slice(0, 6).join(', ')}${chicas.length > 6 ? '…' : ''}): no se usan de fondo en el inicio porque se verían borrosas (sí salen en el menú). Sube la original del teléfono si quieres que salgan.`);
     }
     return {
         pares: pares.sort((x, y) => x.n - y.n),

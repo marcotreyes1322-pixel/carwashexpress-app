@@ -1500,12 +1500,12 @@
             position: absolute; inset: 0; z-index: 0; overflow: hidden;
             border-radius: inherit; pointer-events: none;
             opacity: 0; transition: opacity 0.6s ease;
-            /* El velo: oscuro arriba (encabezado y título) y más oscuro abajo (la
-               cita y el botón), con la foto viva en medio. Sin él, el texto blanco
-               se perdía sobre las partes claras de las fotos. */
+            /* El velo: oscuro arriba (encabezado y título) y abajo (la cita y el
+               botón) para que el texto se lea, y casi transparente en medio para
+               que la foto se luzca completa. */
             --velo: linear-gradient(180deg,
-                rgba(9, 9, 11, 0.74) 0%, rgba(9, 9, 11, 0.30) 34%,
-                rgba(9, 9, 11, 0.42) 58%, rgba(9, 9, 11, 0.90) 100%);
+                rgba(9, 9, 11, 0.66) 0%, rgba(9, 9, 11, 0.14) 30%,
+                rgba(9, 9, 11, 0.18) 52%, rgba(9, 9, 11, 0.86) 100%);
         }
         .app-container.en-bienvenida .bienvenida-fondo { opacity: 1; }
         .bienvenida-capa {
@@ -1514,25 +1514,6 @@
             background-image: var(--velo), var(--foto, none);
             background-position: center; background-size: cover; background-repeat: no-repeat;
             transition: transform 0.9s cubic-bezier(0.22, 1, 0.30, 1);
-        }
-        /* Foto CHICA: nítida y enmarcada en el hueco libre, sobre ella misma
-           difuminada. Estirada a toda la pantalla se veía borrosa. */
-        .bienvenida-capa.enmarcada { background-image: none; }
-        .bienvenida-capa.enmarcada::before {
-            content: ""; position: absolute; inset: -40px;
-            background-image: var(--velo), var(--foto, none);
-            background-position: center; background-size: cover;
-            filter: blur(22px) saturate(1.15);
-        }
-        .bienvenida-capa.enmarcada::after {
-            content: ""; position: absolute; left: 50%;
-            top: var(--marco-top, 28%); height: var(--marco-alto, 36%);
-            aspect-ratio: var(--proporcion, 3 / 4); max-width: 84%;
-            transform: translateX(-50%);
-            background: var(--foto, none) center / cover no-repeat;
-            border-radius: 18px;
-            box-shadow: 0 18px 44px rgba(0, 0, 0, 0.55), 0 0 0 1px rgba(255, 255, 255, 0.12);
-            transition: top 0.4s ease, height 0.4s ease;
         }
         .bienvenida-capa.visible { transform: translateX(0); }
         .bienvenida-capa.se-va   { transform: translateX(-100%); }
@@ -4013,7 +3994,7 @@ Cera rápida protectora
         // Al publicar, GitHub Actions la reemplaza sola por fecha + commit (la
         // misma que el Service Worker): este valor sólo se ve probando el archivo
         // del repo sin construir.
-        const VERSION_APP = '2026.09.27b';
+        const VERSION_APP = '2026.09.27c';
 
         // La versión del AVISO DE PRIVACIDAD y los TÉRMINOS. Es distinta de la
         // versión de la app a propósito: la app cambia cada semana y lo legal
@@ -4134,7 +4115,7 @@ Cera rápida protectora
                     // Mismo formato y mismo orden que buscarFotosUnaPorUna.
                     const lista = {};
                     datos.pares.forEach(p => {
-                        lista['par' + p.n] = { antes: 'trabajos/' + p.antes, despues: 'trabajos/' + p.despues, orden: 100 - p.n, w: p.w, h: p.h };
+                        lista['par' + p.n] = { antes: 'trabajos/' + p.antes, despues: 'trabajos/' + p.despues, orden: 1000 - p.n, w: p.w, h: p.h };
                     });
                     datos.sueltas.forEach(s => {
                         lista['trabajo' + s.n] = { foto: 'trabajos/' + s.foto, orden: s.n, w: s.w, h: s.h };
@@ -4155,7 +4136,7 @@ Cera rápida protectora
                 ]).then(([a, d]) => (a && d) ? ['par' + i, {
                     antes:   'trabajos/' + i + '-antes.jpg',
                     despues: 'trabajos/' + i + '-despues.jpg',
-                    orden:   100 - i
+                    orden:   1000 - i
                 }] : null));
                 // Ojo: se exigen LAS DOS. Media comparación no es una comparación.
             }
@@ -4768,32 +4749,31 @@ Cera rápida protectora
         }
 
         // ── FONDO DE LA BIENVENIDA ───────────────────────────────────────────
-        // Usa las mismas fotos de trabajos que ya se buscan una vez por sesión
-        // (fotosDeTrabajos), la más reciente primero, y se desliza cada 3 s en
-        // TODOS los teléfonos (Tristán: nada de foto fija). Para que cada cambio
-        // caiga justo a tiempo, las dos fotos que siguen se bajan por adelantado
+        // Las fotos de trabajos A PANTALLA COMPLETA, deslizándose cada 3 s en
+        // todos los teléfonos, la más reciente primero. Para que cada cambio
+        // caiga justo a tiempo, las dos que siguen se bajan por adelantado
         // mientras se ve la actual; si alguna no existe, se salta.
         //
-        // 🐛 CALIDAD: una foto chica (las de hoy miden 420×558) estirada a toda la
-        // pantalla de un iPhone se agranda casi 4 veces y se ve borrosa. Ésas
-        // salen ENMARCADAS: nítidas, en el espacio libre entre el título y el
-        // saludo, sobre la misma foto difuminada. Las grandes (1000 px o más en su
-        // lado largo, como las originales del teléfono) van a pantalla completa.
+        // CALIDAD: sólo van de fondo las fotos nítidas a pantalla completa (1000 px
+        // o más en su lado largo; las que sube Tristán del teléfono salen de
+        // 1296×2304, ver scripts/construir.mjs). Las chicas de antes (420×558)
+        // estiradas se veían borrosas: se quedan para el menú. Si todavía no hay
+        // al menos dos grandes, se usan todas para que el fondo nunca quede vacío.
         const MS_ENTRE_FOTOS_BIENVENIDA = 3000;
-        const LADO_MINIMO_PANTALLA_COMPLETA = 1000;
-        let fotosDelFondo = [];                  // [{ url, w, h }]
+        const LADO_MINIMO_DE_FONDO = 1000;
+        let fotosDelFondo = [];                  // urls
         let fotoDelFondo = 0;
         let capaDelFondo = 'a';
         let relojDelFondo = null;
-        const fotosDelFondoListas = new Map();   // url → { ok, w, h } (ok: null mientras baja)
+        const fotosDelFondoListas = new Map();   // url → true (bajó) / false (falló) / null (bajando)
 
-        function adelantarFotoDelFondo(foto) {
-            if (!foto || fotosDelFondoListas.has(foto.url)) return;
-            fotosDelFondoListas.set(foto.url, { ok: null });
+        function adelantarFotoDelFondo(url) {
+            if (!url || fotosDelFondoListas.has(url)) return;
+            fotosDelFondoListas.set(url, null);
             const img = new Image();
-            img.onload  = () => fotosDelFondoListas.set(foto.url, { ok: true, w: img.naturalWidth, h: img.naturalHeight });
-            img.onerror = () => fotosDelFondoListas.set(foto.url, { ok: false });
-            img.src = foto.url;
+            img.onload  = () => fotosDelFondoListas.set(url, true);
+            img.onerror = () => fotosDelFondoListas.set(url, false);
+            img.src = url;
         }
 
         function adelantarLasQueSiguen() {
@@ -4802,56 +4782,25 @@ Cera rápida protectora
             }
         }
 
-        // Pone la foto en una capa y decide si va a pantalla completa o enmarcada.
-        function ponerFotoEnCapa(capa, foto) {
-            const bajada = fotosDelFondoListas.get(foto.url) || {};
-            const w = foto.w || bajada.w, h = foto.h || bajada.h;
-            capa.style.setProperty('--foto', "url('" + foto.url + "')");
-            capa.style.setProperty('--proporcion', (w && h) ? (w + ' / ' + h) : '3 / 4');
-            // Sin medidas todavía (sin lista, recién empieza a bajar) se enmarca:
-            // es la opción que nunca se ve borrosa.
-            capa.classList.toggle('enmarcada', !(w && h) || Math.max(w, h) < LADO_MINIMO_PANTALLA_COMPLETA);
+        function ponerFotoEnCapa(capa, url) {
+            capa.style.setProperty('--foto', "url('" + url + "')");
         }
-
-        // El marco va en el hueco que queda entre el título y el saludo, que cambia
-        // según el teléfono y según si hay una cita que enseñar.
-        function medirMarcoDelFondo() {
-            const fondo = document.getElementById('bienvenida-fondo');
-            const titulo = document.querySelector('#screen-welcome .titulo');
-            const saludo = document.getElementById('saludo-simple');
-            if (!fondo || !titulo || !saludo) return;
-            const caja = fondo.getBoundingClientRect();
-            const arriba = titulo.getBoundingClientRect().bottom - caja.top + 14;
-            const alto = saludo.getBoundingClientRect().top - caja.top - 14 - arriba;
-            if (alto < 90) return;                               // no cabe: se queda el anterior
-            fondo.style.setProperty('--marco-top', Math.round(arriba) + 'px');
-            fondo.style.setProperty('--marco-alto', Math.round(alto) + 'px');
-        }
-        window.addEventListener('resize', () => { if (relojDelFondo) medirMarcoDelFondo(); });
 
         function arrancarFondoDeBienvenida() {
             fotosDeTrabajos().then(lista => {
-                const fotos = Object.values(lista || {})
+                const todas = Object.values(lista || {})
                     .sort((x, y) => (y.orden || 0) - (x.orden || 0))
-                    .map(f => ({ url: f.foto || f.despues, w: f.w, h: f.h }))
+                    .map(f => ({ url: f.foto || f.despues, lado: Math.max(f.w || 0, f.h || 0) }))
                     .filter(f => f.url);
-                if (!fotos.length) return;
+                if (!todas.length) return;
+                const grandes = todas.filter(f => f.lado >= LADO_MINIMO_DE_FONDO);
+                const fotos = (grandes.length >= 2 ? grandes : todas).map(f => f.url);
                 const pantalla = document.getElementById('screen-welcome');
                 if (!pantalla || pantalla.classList.contains('hidden')) return;
-                medirMarcoDelFondo();
                 if (!fotosDelFondo.length) {
                     fotosDelFondo = fotos;
                     fotoDelFondo = 0;
-                    const capa = document.getElementById('bienvenida-capa-' + capaDelFondo);
-                    ponerFotoEnCapa(capa, fotos[0]);
-                    // Si la lista no trajo medidas, se corrige en cuanto baje.
-                    if (!(fotos[0].w && fotos[0].h)) {
-                        adelantarFotoDelFondo(fotos[0]);
-                        const revisar = setInterval(() => {
-                            const b = fotosDelFondoListas.get(fotos[0].url);
-                            if (b && b.ok !== null) { clearInterval(revisar); if (b.ok && fotoDelFondo === 0) ponerFotoEnCapa(capa, fotos[0]); }
-                        }, 150);
-                    }
+                    ponerFotoEnCapa(document.getElementById('bienvenida-capa-' + capaDelFondo), fotos[0]);
                 }
                 adelantarLasQueSiguen();
                 if (relojDelFondo || fotosDelFondo.length < 2) return;
@@ -4872,12 +4821,11 @@ Cera rápida protectora
             let siguiente = -1;
             for (let paso = 1; paso < fotosDelFondo.length; paso++) {
                 const i = (fotoDelFondo + paso) % fotosDelFondo.length;
-                const estado = fotosDelFondoListas.get(fotosDelFondo[i].url);
-                if (estado && estado.ok === true) { siguiente = i; break; }
-                if (!estado || estado.ok !== false) { adelantarFotoDelFondo(fotosDelFondo[i]); break; }
+                const estado = fotosDelFondoListas.get(fotosDelFondo[i]);
+                if (estado === true) { siguiente = i; break; }
+                if (estado !== false) { adelantarFotoDelFondo(fotosDelFondo[i]); break; }
             }
             if (siguiente < 0) return;
-            medirMarcoDelFondo();
             const sale  = document.getElementById('bienvenida-capa-' + capaDelFondo);
             const otra  = capaDelFondo === 'a' ? 'b' : 'a';
             const entra = document.getElementById('bienvenida-capa-' + otra);
@@ -4887,9 +4835,8 @@ Cera rápida protectora
             ponerFotoEnCapa(entra, fotosDelFondo[siguiente]);
             void entra.offsetWidth;          // el navegador la acomoda ANTES de moverla
             // …y las dos se deslizan juntas hacia la izquierda.
-            entra.classList.replace('espera', 'visible');
-            sale.classList.remove('visible');
-            sale.classList.add('se-va');
+            entra.className = 'bienvenida-capa visible';
+            sale.className = 'bienvenida-capa se-va';
             capaDelFondo = otra;
             fotoDelFondo = siguiente;
             adelantarLasQueSiguen();
