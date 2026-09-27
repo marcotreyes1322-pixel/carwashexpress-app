@@ -1,3 +1,4 @@
+/* global firebase, performance, prepararBaseDeDatos */
 // DIAGNÓSTICO TEMPORAL: abre la versión construida en un Chrome con internet de
 // verdad (el de GitHub Actions) y mide qué frena la conexión con Firebase.
 // No inicia sesión ni escribe nada en la base: sólo mira .info/connected,
@@ -21,21 +22,17 @@ async function probar(nombre, { sinAppCheck = false } = {}) {
     p.on('response', r => { if (/recaptcha|firebaseappcheck|securetoken|identitytoolkit/.test(r.url())) console.log(`  [${seg()}] ${r.status()} ${r.url().split('?')[0].slice(0, 120)}`); });
     if (sinAppCheck) await p.route(/firebase-app-check-compat/, r => r.abort());
     await p.route(/(mapbox|open-meteo|three)/, r => r.abort());
-    await p.addInitScript(() => {
-        window.__logs = [];
-        const t = setInterval(() => {
-            if (window.firebase && window.firebase.database && window.firebase.database.enableLogging) {
-                clearInterval(t);
-                window.firebase.database.enableLogging(m => window.__logs.push(((performance.now() / 1000).toFixed(1)) + 's ' + m));
-            }
-        }, 5);
-    });
     await p.goto(`http://localhost:${PUERTO}/`, { waitUntil: 'domcontentloaded' });
     await p.waitForFunction(() => typeof firebase !== 'undefined' && firebase.apps && firebase.apps.length, null, { timeout: 30000 }).catch(() => {});
     const r = await p.evaluate(async () => {
         const out = {};
         const t0 = performance.now();
         const ms = () => Math.round(performance.now() - t0);
+        // La base se carga hasta que alguien entra (prepararBaseDeDatos): se fuerza aquí.
+        const listo = await prepararBaseDeDatos();
+        out.cargaDeLaBase = (listo ? 'lista' : 'NO cargó') + ' a los ' + ms() + ' ms';
+        window.__logs = [];
+        firebase.database.enableLogging(m => window.__logs.push(((performance.now() / 1000).toFixed(1)) + 's ' + m));
         const db = firebase.database();
         out.conectado = await new Promise(res => {
             const ref = db.ref('.info/connected');
@@ -51,6 +48,7 @@ async function probar(nombre, { sinAppCheck = false } = {}) {
         out.logs = (window.__logs || []).filter(l => /connect|token|appcheck|App Check|websocket|Websocket|long-?poll|error|fail|interrupt/i.test(l)).slice(0, 60);
         return out;
     });
+    console.log('  → Carga de la base:', r.cargaDeLaBase);
     console.log('  → Base conectada:', r.conectado);
     console.log('  → App Check:', r.appCheck);
     console.log('  → Lectura sin sesión:', r.lecturaSinSesion);
