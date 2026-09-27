@@ -1385,9 +1385,6 @@
             font-variant-numeric: tabular-nums;
         }
         .clima-detalle b { color: var(--morado-claro); font-weight: 700; }
-        /* Sólo cuando de verdad conviene avisar: el aviso pierde fuerza si sale siempre. */
-        .clima-aviso { color: #fcd34d; }
-        .clima.tormenta .clima-aviso { color: #fca5a5; }
         /* Aviso de recordatorios pendientes para mañana. Va arriba de la lista del
            día y sólo aparece parado en HOY, porque ahí sí es una tarea del día. */
         .aviso-recordatorios {
@@ -6513,7 +6510,7 @@ Cera rápida protectora
         // el promedio histórico como si fuera pronóstico— sería mentirle al
         // cliente sobre algo con lo que va a tomar una decisión.
         const CLIMA_DIAS = 16;                 // hasta dónde llega el pronóstico
-        const CLIMA_LLUVIA_AVISO = 45;         // % de probabilidad para avisar
+        const CLIMA_LLUVIA_AVISO = 45;         // % de lluvia desde el que el filo sale amarillo
         let climaDelMes = null;                // { fecha: {...} }, se pide UNA vez
         let climaPidiendo = null;              // la promesa en curso, para no repetir
 
@@ -6742,13 +6739,8 @@ Cera rápida protectora
 
                 let detalle = '';
                 if (prob != null) detalle = 'Probabilidad de lluvia: <b>' + prob + '%</b>';
-                // El aviso sólo sale cuando de verdad conviene. Si saliera siempre,
-                // dejaría de significar algo. Y NO promete nada que Tristán no
-                // haya acordado: sólo recuerda que reagendar ya es gratis y solo.
-                if (info.fuerte || (prob != null && prob >= CLIMA_LLUVIA_AVISO)) {
-                    detalle += '<br><span class="clima-aviso">Si se descompone el día, '
-                             + 'puedes cambiar tu cita desde "Mis citas".</span>';
-                }
+                // Sólo el clima: grados, lluvia y el dibujo. El aviso amarillo de
+                // "si se descompone el día…" se quitó a pedido de Tristán.
                 document.getElementById('clima-detalle').innerHTML = detalle;
 
                 bloque.classList.remove('lluvia', 'tormenta');
