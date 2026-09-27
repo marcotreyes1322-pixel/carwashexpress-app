@@ -75,20 +75,31 @@
         Firebase App Check con reCAPTCHA. Van desde ya para que el día que
         Tristán lo active en la consola, no truene nada.
       · blob: en worker-src es de Mapbox: dibuja el mapa en hilos aparte.
+      · *.firebaseio.com en script-src es el RESPALDO de la base de datos.
+        🐛 (septiembre 2026) Firebase se conecta por WebSocket, pero antes de
+        intentarlo apunta en el teléfono "falló" y sólo lo borra cuando la
+        conexión ya está sana. Si la app se cerraba, se recargaba o se cortaba
+        la señal antes de eso, la nota se quedaba, y en las siguientes aperturas
+        Firebase entraba por "long polling": scripts que baja de
+        *.firebaseio.com (y un marco invisible, por eso también va en
+        frame-src). Sin este permiso esos scripts se bloqueaban y la base
+        NUNCA conectaba: calendario sin horarios y citas que no se guardaban
+        ("no logró conectarse (app/timeout)"). En un navegador nuevo (las
+        pruebas) la nota no existe, por eso ahí sí funcionaba.
       · "frame-ancestors" (impedir que otro sitio meta la app en un marco) NO se
         puede poner desde aquí — sólo desde el servidor. Queda anotado para
         cuando la app se publique con un hosting propio.
     -->
     <meta http-equiv="Content-Security-Policy" content="
         default-src 'self';
-        script-src 'self' 'unsafe-inline' https://www.gstatic.com https://api.mapbox.com https://www.google.com;
+        script-src 'self' 'unsafe-inline' https://www.gstatic.com https://api.mapbox.com https://www.google.com https://*.firebaseio.com;
         style-src 'self' 'unsafe-inline' https://fonts.googleapis.com https://api.mapbox.com;
         font-src 'self' data: https://fonts.gstatic.com;
         img-src 'self' data: blob: https://*.mapbox.com;
         connect-src 'self' data: blob: https://*.firebaseio.com wss://*.firebaseio.com https://*.googleapis.com https://api.mapbox.com https://events.mapbox.com https://api.open-meteo.com https://www.google.com;
         worker-src 'self' blob:;
         child-src 'self' blob:;
-        frame-src https://www.google.com;
+        frame-src https://www.google.com https://*.firebaseio.com;
         media-src 'self' data: blob:;
         object-src 'none';
         base-uri 'self';
@@ -4094,7 +4105,7 @@ Cera rápida protectora
         // Al publicar, GitHub Actions la reemplaza sola por fecha + commit (la
         // misma que el Service Worker): este valor sólo se ve probando el archivo
         // del repo sin construir.
-        const VERSION_APP = '2026.09.27n';
+        const VERSION_APP = '2026.09.27o';
 
         // La versión del AVISO DE PRIVACIDAD y los TÉRMINOS. Es distinta de la
         // versión de la app a propósito: la app cambia cada semana y lo legal
