@@ -1,0 +1,24 @@
+# TEMPORAL: diagnóstico de la conexión con Firebase desde un Chrome con internet.
+# Se borra en cuanto se encuentre la causa; no publica nada.
+name: Diagnóstico Firebase
+on:
+  push:
+    branches: [claude/car-wash-express-audit-0cic1t]
+permissions:
+  contents: read
+jobs:
+  diagnostico:
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    steps:
+      - uses: actions/checkout@v5
+        with:
+          fetch-depth: 0
+      - uses: actions/setup-node@v5
+        with:
+          node-version: 22
+          cache: npm
+      - run: npm ci
+      - run: npm run construir
+      - run: npx playwright install --with-deps chromium
+      - run: node scripts/diagnostico-firebase.mjs
