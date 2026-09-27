@@ -962,7 +962,7 @@
         .time-slot.selected { background: var(--morado); border-color: var(--morado); font-weight: 700; }
         .time-slot.ocupado { opacity: 0.24; cursor: not-allowed; text-decoration: line-through;
                              border-color: rgba(255,255,255,0.06); }
-        .agenda-aviso { font-size: 11px; color: var(--muy-tenue); margin-top: 12px; line-height: 1.5; }
+        .agenda-aviso { font-size: 11px; color: var(--muy-tenue); margin-top: 12px; line-height: 1.5; white-space: pre-line; }
         .agenda-aviso.error { color: #fca5a5; }
 
         /* --- CALENDARIO PROPIO (el de Android no se puede pintar con la marca) --- */
@@ -3486,11 +3486,55 @@ Cera rápida protectora
         }
 
         function cargarBaseDeDatos() {
-            if (typeof firebase !== 'undefined' && firebase.database) { baseDeDatosLista = true; return Promise.resolve(true); }
+            if (typeof firebase !== 'undefined' && firebase.database) { baseDeDatosLista = true; vigilarConexion(); return Promise.resolve(true); }
             return cargarScript('firebaseDb', URL_FIREBASE_DB).then(ok => {
                 baseDeDatosLista = ok && typeof firebase !== 'undefined' && !!firebase.database;
+                if (baseDeDatosLista) vigilarConexion();
                 return baseDeDatosLista;
             });
+        }
+
+        // 🩺 DIAGNÓSTICO PARA EL ADMINISTRADOR (septiembre 2026)
+        // "No me deja guardar la cita" y nadie podía ver POR QUÉ desde afuera. Ahora
+        // la app lleva la cuenta de lo que pasa con la conexión y, cuando algo falla
+        // en la cuenta de Tristán, el aviso trae el detalle: versión, si la base
+        // está conectada, qué contestó App Check y las últimas líneas del registro
+        // de Firebase. Los clientes no ven nada de esto. Del registro sólo se
+        // guardan las líneas de conexión y permisos (nunca datos), y sólo las 40
+        // últimas, en memoria.
+        const diagnostico = { conectada: false, vecesConectada: 0, appCheck: 'sin pedir todavía', registro: [] };
+        let conexionVigilada = false;
+
+        function vigilarConexion() {
+            if (conexionVigilada) return;
+            conexionVigilada = true;
+            try {
+                firebase.database.enableLogging(m => {
+                    const linea = String(m);
+                    if (!/token|connect|websocket|long-?poll|error|fail|interrupt|app ?check|disconnect|permission/i.test(linea)) return;
+                    diagnostico.registro.push(new Date().toTimeString().slice(0, 8) + ' ' + linea.slice(0, 140));
+                    if (diagnostico.registro.length > 40) diagnostico.registro.shift();
+                });
+                firebase.database().ref('.info/connected').on('value', s => {
+                    diagnostico.conectada = s.val() === true;
+                    if (diagnostico.conectada) diagnostico.vecesConectada++;
+                });
+            } catch (e) { diagnostico.registro.push('No se pudo vigilar la conexión: ' + e.message); }
+        }
+
+        function detalleParaAdmin() {
+            if (!esAdministrador()) return "";
+            const d = diagnostico;
+            const lineas = [
+                "Versión: " + VERSION_APP,
+                "Internet del teléfono: " + (navigator.onLine === false ? "NO" : "sí"),
+                "Base de datos: " + (d.conectada ? "conectada" : "SIN conexión") + " · conexiones logradas: " + d.vecesConectada,
+                "App Check: " + d.appCheck,
+                "Sesión: " + (usuarioActual ? "iniciada" : "NO")
+            ];
+            const ultimas = d.registro.slice(-5);
+            return "\n\n— Detalle técnico (sólo lo ves tú) —\n" + lineas.join("\n")
+                 + (ultimas.length ? "\n" + ultimas.join("\n") : "");
         }
 
         // App Check PRIMERO y la base DESPUÉS, siempre en ese orden y una sola vez.
@@ -4050,7 +4094,7 @@ Cera rápida protectora
         // Al publicar, GitHub Actions la reemplaza sola por fecha + commit (la
         // misma que el Service Worker): este valor sólo se ve probando el archivo
         // del repo sin construir.
-        const VERSION_APP = '2026.09.27m';
+        const VERSION_APP = '2026.09.27n';
 
         // La versión del AVISO DE PRIVACIDAD y los TÉRMINOS. Es distinta de la
         // versión de la app a propósito: la app cambia cada semana y lo legal
@@ -6366,7 +6410,7 @@ Cera rápida protectora
                 } else {
                     pintarAviso(encabezado + " Tu teléfono no logró conectarse con nuestro servidor. "
                         + "Revisa tu internet y vuelve a entrar."
-                        + (esAdministrador() && codigo ? " (" + codigo + ")" : ""), true);
+                        + (esAdministrador() && codigo ? " (" + codigo + ")" : "") + detalleParaAdmin(), true);
                 }
             });
         }
@@ -6617,7 +6661,10 @@ Cera rápida protectora
             const tope = new Promise((_, fallo) => setTimeout(
                 () => fallo(new Error('reCAPTCHA no contestó en ' + APPCHECK_ESPERA_MAXIMA / 1000 + ' s')),
                 APPCHECK_ESPERA_MAXIMA));
-            return Promise.race([pedir, tope]);
+            const inicio = Date.now();
+            return Promise.race([pedir, tope]).then(
+                permiso => { diagnostico.appCheck = 'ok (' + (Date.now() - inicio) + ' ms)'; return permiso; },
+                e => { diagnostico.appCheck = 'falló: ' + ((e && e.message) || e).toString().slice(0, 120); throw e; });
         }
 
         function activarAppCheck() {
@@ -7518,7 +7565,8 @@ Cera rápida protectora
                 if (yaSeDestrabo) return;
                 restaurarBoton();
                 mostrarAviso("⚠️ La conexión está muy lenta y no pudimos confirmar tu cita.\n\n"
-                    + "Antes de intentar de nuevo, revisa \"Mis citas\": puede que sí se haya guardado.");
+                    + "Antes de intentar de nuevo, revisa \"Mis citas\": puede que sí se haya guardado."
+                    + detalleParaAdmin());
             }, RENDIRSE_AL_GUARDAR);
 
             // Qué huecos aparta: un lavado ocupa una franja; un detallado, el día
@@ -7575,7 +7623,7 @@ Cera rápida protectora
                 texto = "Revisa tu conexión e intenta de nuevo.";
             }
             if (esAdministrador() && error) {
-                texto += "\n\n(Detalle técnico: " + (error.code || "") + " " + (error.message || "") + ")";
+                texto += "\n\n(Detalle técnico: " + (error.code || "") + " " + (error.message || "") + ")" + detalleParaAdmin();
             }
             return texto;
         }
