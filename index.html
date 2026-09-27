@@ -192,7 +192,15 @@
                 radial-gradient(75% 45% at 50% 100%, rgba(232,121,201,0.11), transparent 66%);
             background-attachment: fixed;
             display: flex; justify-content: center; align-items: center;
-            min-height: 100vh; font-family: var(--sans); overflow: hidden;
+            /* 🐛 Con sólo 100vh, en iPhone (Safari y Chrome) el body medía la
+               pantalla COMPLETA, contando lo que tapan las barras del navegador,
+               y la app —que mide lo visible— quedaba centrada en ese alto de más:
+               recorrida hacia abajo, con un hueco arriba y el final DEBAJO de la
+               barra de Chrome. Como aquí no hay desplazamiento, lo último de cada
+               pantalla —el botón "Confirmar" de Tus datos— quedaba inalcanzable.
+               100dvh es lo visible; 100vh queda de respaldo para navegadores viejos. */
+            min-height: 100vh; min-height: 100dvh;
+            font-family: var(--sans); overflow: hidden;
             -webkit-font-smoothing: antialiased;
         }
 
@@ -209,6 +217,11 @@
             height: 100vh;          /* respaldo para navegadores viejos */
             height: 100dvh;
             max-height: 844px;
+            /* Instalada en el iPhone (pantalla de inicio), la app se dibuja
+               DEBAJO de la barra de estado (black-translucent) y de la rayita de
+               abajo: estos márgenes la mantienen a salvo. En el navegador valen 0. */
+            padding-top: env(safe-area-inset-top, 0px);
+            padding-bottom: env(safe-area-inset-bottom, 0px);
             background: var(--negro);
             border-radius: 36px; overflow: hidden; position: relative;
             box-shadow: 0 0 60px rgba(0, 0, 0, 0.9);
@@ -851,20 +864,27 @@
             transform: translateX(-50%); width: 12px; height: 5px; border-radius: 50%;
             background: rgba(0,0,0,0.45);
         }
-        /* ⚡ SIN DESENFOQUE, a propósito (septiembre 2026). Antes llevaba
-           backdrop-filter: blur(12px), y detrás de esta hoja está el MAPA, que
-           se redibuja en cada cuadro mientras el cliente lo arrastra o gira: la
-           tarjeta gráfica tenía que volver a difuminar ese pedazo 60 veces por
-           segundo. En un Android de gama baja era lo que más tironeaba el mapa.
-           Un fondo casi sólido se ve igual de elegante y cuesta cero. */
+        /* Una tarjeta chica y traslúcida que FLOTA sobre el mapa (con aire a los
+           lados y abajo), en vez de una caja negra de orilla a orilla: Tristán la
+           encontró pesada. El mapa se sigue viendo detrás.
+           ⚡ El desenfoque (cristal) sólo va donde el teléfono puede con él
+           (clase con-cristal, ver dibujarElMapa): detrás está el MAPA, que se
+           redibuja en cada cuadro al arrastrarlo, y en un Android de gama baja
+           re-difuminar ese pedazo 60 veces por segundo es lo que más lo tironea.
+           Ahí va sin desenfoque y un poco más oscura, para que se lea igual. */
         .hoja-mapa {
-            position: absolute; left: 0; right: 0; bottom: 0; z-index: 30;
-            display: flex; flex-direction: column; align-items: stretch; gap: 3px;
-            padding: 8px 18px 16px; text-align: left;
-            border-top: 1px solid rgba(196,181,253,0.20);
-            border-radius: 20px 20px 17px 17px;
-            background: rgba(11, 8, 17, 0.93);
-            box-shadow: 0 -10px 28px rgba(0, 0, 0, 0.35);
+            position: absolute; left: 10px; right: 10px; bottom: 10px; z-index: 30;
+            display: flex; flex-direction: column; align-items: stretch; gap: 2px;
+            padding: 6px 14px 12px; text-align: left;
+            border: 1px solid rgba(196,181,253,0.18);
+            border-radius: 16px;
+            background: rgba(11, 8, 17, 0.78);
+            box-shadow: 0 8px 24px rgba(0, 0, 0, 0.35);
+        }
+        .mapa-grande.con-cristal .hoja-mapa {
+            background: rgba(11, 8, 17, 0.55);
+            -webkit-backdrop-filter: blur(10px) saturate(1.2);
+            backdrop-filter: blur(10px) saturate(1.2);
         }
         /* El logo y la atribución de Mapbox van ABAJO del mapa, justo donde flota
            esta hoja, y quedaban tapados. Los términos de Mapbox piden que se vean
@@ -875,18 +895,21 @@
         /* El asa no hace nada: es la señal de "esto es un panel", que es lo que
            hace que se lea como app y no como texto encima de una imagen. */
         .hoja-asa {
-            width: 38px; height: 4px; border-radius: 999px; margin: 0 auto 8px;
+            width: 34px; height: 4px; border-radius: 999px; margin: 0 auto 6px;
             background: rgba(255,255,255,0.22);
         }
+        .hoja-mapa .hoja-estado { margin-bottom: 2px; }
         .hoja-sector {
-            font-family: var(--serif); font-weight: 400; font-size: 26px;
-            color: var(--blanco); margin: 4px 0 0; line-height: 1.15; min-height: 30px;
+            font-family: var(--serif); font-weight: 400; font-size: 21px;
+            color: var(--blanco); margin: 2px 0 0; line-height: 1.15; min-height: 24px;
         }
         .hoja-nota {
-            font-size: 12px; color: var(--tenue); line-height: 1.55;
-            margin: 4px 0 0; min-height: 18px;
+            font-size: 11.5px; color: rgba(255,255,255,0.72); line-height: 1.45;
+            margin: 3px 0 0; min-height: 16px;
         }
-        .hoja-mapa .btn-premium { margin-top: 12px; }
+        .hoja-mapa .enlace-suave { padding: 6px 2px 0; align-self: flex-start; }
+        .hoja-enlaces { display: flex; flex-wrap: wrap; column-gap: 16px; }
+        .hoja-mapa .btn-premium { margin-top: 9px; padding: 12px; }
         /* La pista se sube: abajo chocaba con la hoja. */
         .mapa-grande .map-pista { bottom: auto; top: 12px; }
 
@@ -1469,6 +1492,46 @@
         .saludo-simple { font-family: var(--serif); font-size: 26px; color: var(--blanco);
                          text-align: left; width: 100%; margin: 2px 0 4px; }
 
+        /* ── FONDO DE LA BIENVENIDA ──────────────────────────────────────────
+           Las fotos de trabajos detrás de toda la pantalla, deslizándose cada
+           3 s (Tristán: "el inicio es muy aburrido"). Antes eran un carrusel
+           que había que deslizar con el dedo, a media pantalla. */
+        .bienvenida-fondo {
+            position: absolute; inset: 0; z-index: 0; overflow: hidden;
+            border-radius: inherit; pointer-events: none;
+            opacity: 0; transition: opacity 0.6s ease;
+        }
+        .app-container.en-bienvenida .bienvenida-fondo { opacity: 1; }
+        .bienvenida-capa {
+            position: absolute; inset: 0;
+            background: #0d0a12 center / cover no-repeat;
+            transition: transform 0.9s cubic-bezier(0.22, 1, 0.30, 1);
+        }
+        .bienvenida-capa.visible { transform: translateX(0); }
+        .bienvenida-capa.se-va   { transform: translateX(-100%); }
+        .bienvenida-capa.espera  { transform: translateX(100%); transition: none; }
+        /* El velo: oscuro arriba (encabezado y título) y más oscuro abajo (la
+           cita y el botón), con la foto viva en medio. Sin él, el texto blanco
+           se perdía sobre las partes claras de las fotos. */
+        .bienvenida-fondo::after {
+            content: ""; position: absolute; inset: 0;
+            background: linear-gradient(180deg,
+                rgba(9, 9, 11, 0.74) 0%, rgba(9, 9, 11, 0.30) 34%,
+                rgba(9, 9, 11, 0.42) 58%, rgba(9, 9, 11, 0.90) 100%);
+        }
+        #screen-welcome .titulo, #screen-welcome .saludo-simple {
+            text-shadow: 0 2px 14px rgba(0, 0, 0, 0.65);
+        }
+        /* El título arriba y lo demás (saludo, cita, botón) junto ABAJO, con la
+           foto libre en medio. Sin esto, sin cita agendada el "Hola" quedaba
+           flotando solo a media pantalla. */
+        #screen-welcome .saludo-simple { margin-top: auto; }
+        /* La cita flota sobre la foto: se le da cuerpo para que se lea. */
+        #screen-welcome .proxima-cita {
+            background: linear-gradient(145deg, rgba(24, 16, 38, 0.78), rgba(24, 16, 38, 0.60));
+            -webkit-backdrop-filter: blur(8px); backdrop-filter: blur(8px);
+        }
+
         /* --- AVISO DE LA MARCA (sustituye al alert() gris del navegador) --- */
         .aviso-fondo {
             position: absolute; inset: 0; z-index: 200; display: flex;
@@ -1815,6 +1878,14 @@
          primero, antes de que corra mostrarPantalla(). Sin esto, el encabezado
          aparecía un instante con su franja negra y luego saltaba. -->
     <div class="app-container en-login">
+        <!-- FONDO DE LA BIENVENIDA: las fotos de trabajos, deslizándose solas.
+             Va aquí (y no dentro de la pantalla) para cubrir también el
+             encabezado y no moverse si la pantalla se desplaza. Sólo se ve con
+             la clase en-bienvenida (ver mostrarPantalla). -->
+        <div class="bienvenida-fondo" id="bienvenida-fondo" aria-hidden="true">
+            <i class="bienvenida-capa visible" id="bienvenida-capa-a"></i>
+            <i class="bienvenida-capa espera" id="bienvenida-capa-b"></i>
+        </div>
         <div class="marca-header">
             <div class="marca-fila">
                 <img data-logo="1" alt="CarWashExpress" class="marca-logo" onerror="usarLogoDeRespaldo(this)">
@@ -2376,8 +2447,12 @@
                         <div class="etiqueta">Sector detectado</div>
                         <h3 id="sector-detected" class="hoja-sector">Buscando...</h3>
                         <p id="sector-message" class="hoja-nota"></p>
-                        <button class="enlace-suave" id="btn-ajustar-ubicacion"
-                                onclick="activarAjusteManual()">📍 No es aquí · marcarla yo</button>
+                        <div class="hoja-enlaces">
+                            <button class="enlace-suave hidden" id="btn-activar-ubicacion"
+                                    onclick="activarMiUbicacion()">📡 Activar mi ubicación</button>
+                            <button class="enlace-suave" id="btn-ajustar-ubicacion"
+                                    onclick="activarAjusteManual()">📍 No es aquí · marcarla yo</button>
+                        </div>
                         <button class="btn-premium" id="btn-confirm-sector" style="display:none;"
                                 onclick="irAServicios()">Confirmar y ver servicios</button>
                         <a class="btn-premium hidden" id="btn-lejos-whatsapp"
@@ -3920,7 +3995,7 @@ Cera rápida protectora
         // Al publicar, GitHub Actions la reemplaza sola por fecha + commit (la
         // misma que el Service Worker): este valor sólo se ve probando el archivo
         // del repo sin construir.
-        const VERSION_APP = '2026.09.26f';
+        const VERSION_APP = '2026.09.27a';
 
         // La versión del AVISO DE PRIVACIDAD y los TÉRMINOS. Es distinta de la
         // versión de la app a propósito: la app cambia cada semana y lo legal
@@ -4088,13 +4163,14 @@ Cera rápida protectora
 
             // Las fotos son archivos del propio sitio y no dependen de Firebase.
             // Si además hay reseñas cargadas, se agregan encima.
-            fotosDeTrabajos().then(fotos => {
-                pintarFeed(fotos);
-                if (!baseLista()) return;
-                conTiempoLimite(firebase.database().ref('resenas').once('value'), 8000)
-                    .then(snap => pintarFeed(Object.assign({}, fotos, snap.val() || {})))
-                    .catch(() => { /* Sin reseñas quedan las fotos: no se estorba al cliente */ });
-            });
+            // Las fotos de trabajos ya no van aquí en un carrusel para deslizar con
+            // el dedo: ahora son el FONDO de toda la pantalla y pasan solas (ver
+            // arrancarFondoDeBienvenida). Este bloque queda para las reseñas; sin
+            // ninguna, no se ve.
+            if (!baseLista()) return;
+            conTiempoLimite(firebase.database().ref('resenas').once('value'), 8000)
+                .then(snap => pintarFeed(snap.val() || {}))
+                .catch(() => { /* sin reseñas no se enseña nada: no se estorba al cliente */ });
         }
 
         // VISTA PREVIA DEL FEED, SÓLO PARA TRISTÁN.
@@ -4294,6 +4370,12 @@ Cera rápida protectora
             // para nadie.
             if (idPantalla === 'screen-login-phone') arrancarCarruselDelLogin();
             else detenerCarruselDelLogin();
+
+            // Igual con el fondo de la bienvenida: sólo corre mientras se ve.
+            const enBienvenida = idPantalla === 'screen-welcome';
+            document.querySelector('.app-container').classList.toggle('en-bienvenida', enBienvenida);
+            if (enBienvenida) arrancarFondoDeBienvenida();
+            else detenerFondoDeBienvenida();
         }
 
         // Regresar a la pantalla anterior. Lo usa el gesto de deslizar.
@@ -4667,6 +4749,89 @@ Cera rápida protectora
             relojDeFondos = setInterval(pasarAlSiguienteFondo, MS_ENTRE_FONDOS);
         }
 
+        // ── FONDO DE LA BIENVENIDA ───────────────────────────────────────────
+        // Usa las mismas fotos de trabajos que ya se buscan una vez por sesión
+        // (fotosDeTrabajos), la más reciente primero, y se desliza cada 3 s en
+        // TODOS los teléfonos (Tristán: nada de foto fija). Para que cada cambio
+        // caiga justo a tiempo, las dos fotos que siguen se bajan por adelantado
+        // mientras se ve la actual; si alguna no existe, se salta.
+        const MS_ENTRE_FOTOS_BIENVENIDA = 3000;
+        let fotosDelFondo = [];
+        let fotoDelFondo = 0;
+        let capaDelFondo = 'a';
+        let relojDelFondo = null;
+        const fotosDelFondoListas = new Map();   // url → true (bajó) / false (falló)
+
+        function adelantarFotoDelFondo(url) {
+            if (!url || fotosDelFondoListas.has(url)) return;
+            fotosDelFondoListas.set(url, null);   // bajando
+            const img = new Image();
+            img.onload  = () => fotosDelFondoListas.set(url, true);
+            img.onerror = () => fotosDelFondoListas.set(url, false);
+            img.src = url;
+        }
+
+        function adelantarLasQueSiguen() {
+            for (let paso = 1; paso <= 2; paso++) {
+                adelantarFotoDelFondo(fotosDelFondo[(fotoDelFondo + paso) % fotosDelFondo.length]);
+            }
+        }
+
+        function arrancarFondoDeBienvenida() {
+            fotosDeTrabajos().then(lista => {
+                const fotos = Object.values(lista || {})
+                    .sort((x, y) => (y.orden || 0) - (x.orden || 0))
+                    .map(f => f.foto || f.despues)
+                    .filter(Boolean);
+                if (!fotos.length) return;
+                const pantalla = document.getElementById('screen-welcome');
+                if (!pantalla || pantalla.classList.contains('hidden')) return;
+                if (!fotosDelFondo.length) {
+                    fotosDelFondo = fotos;
+                    fotoDelFondo = 0;
+                    document.getElementById('bienvenida-capa-' + capaDelFondo).style.backgroundImage =
+                        "url('" + fotos[0] + "')";
+                }
+                adelantarLasQueSiguen();
+                if (relojDelFondo || fotosDelFondo.length < 2) return;
+                relojDelFondo = setInterval(pasarFotoDelFondo, MS_ENTRE_FOTOS_BIENVENIDA);
+            });
+        }
+
+        function detenerFondoDeBienvenida() {
+            if (relojDelFondo) { clearInterval(relojDelFondo); relojDelFondo = null; }
+        }
+
+        function pasarFotoDelFondo() {
+            const pantalla = document.getElementById('screen-welcome');
+            if (!pantalla || pantalla.classList.contains('hidden') || document.hidden) return;
+            // La siguiente que YA esté lista (las que fallaron se saltan). Si con
+            // señal muy floja todavía no llega ninguna, se espera al próximo turno
+            // en vez de deslizar hacia un recuadro vacío.
+            let siguiente = -1;
+            for (let paso = 1; paso < fotosDelFondo.length; paso++) {
+                const i = (fotoDelFondo + paso) % fotosDelFondo.length;
+                const estado = fotosDelFondoListas.get(fotosDelFondo[i]);
+                if (estado === true) { siguiente = i; break; }
+                if (estado !== false) { adelantarFotoDelFondo(fotosDelFondo[i]); break; }
+            }
+            if (siguiente < 0) return;
+            const sale  = document.getElementById('bienvenida-capa-' + capaDelFondo);
+            const otra  = capaDelFondo === 'a' ? 'b' : 'a';
+            const entra = document.getElementById('bienvenida-capa-' + otra);
+            if (!sale || !entra) return;
+            // La que entra espera a la derecha (sin animación), con su foto…
+            entra.className = 'bienvenida-capa espera';
+            entra.style.backgroundImage = "url('" + fotosDelFondo[siguiente] + "')";
+            void entra.offsetWidth;          // el navegador la acomoda ANTES de moverla
+            // …y las dos se deslizan juntas hacia la izquierda.
+            entra.className = 'bienvenida-capa visible';
+            sale.className = 'bienvenida-capa se-va';
+            capaDelFondo = otra;
+            fotoDelFondo = siguiente;
+            adelantarLasQueSiguen();
+        }
+
         function detenerCarruselDelLogin() {
             if (relojDeFondos) { clearInterval(relojDeFondos); relojDeFondos = null; }
         }
@@ -4953,6 +5118,7 @@ Cera rápida protectora
             motivoUbicacionAproximada = "";
             ubicacionPrecargada = null;
             precisionUbicacion = null;
+            ultimoErrorDeUbicacion = null;
             apagarMapa();
             salirDeModoReagenda();
             limpiarFormularioDatos();
@@ -4985,6 +5151,40 @@ Cera rápida protectora
                 && precisionUbicacion != null && precisionUbicacion > METROS_PRECISION_ACEPTABLE;
         }
 
+        // Por qué falló la última vez: 1 = sin permiso, 2 = no disponible, 3 = tardó.
+        let ultimoErrorDeUbicacion = null;
+
+        // Cuando el permiso está negado, volver a preguntar no sirve: el navegador
+        // ya ni enseña la ventana. Lo único que funciona es que el cliente lo
+        // active en su teléfono, y cada teléfono lo esconde en un lugar distinto.
+        // Chrome en iPhone es el caso más engañoso: si en la Configuración del
+        // iPhone Chrome tiene la ubicación en "Nunca", la página recibe "negado"
+        // sin que el cliente haya visto ninguna pregunta.
+        function instruccionesDeUbicacion() {
+            const ua = navigator.userAgent || '';
+            const esIPhone = /iPhone|iPad|iPod/.test(ua) || (/Macintosh/.test(ua) && navigator.maxTouchPoints > 1);
+            if (esIPhone && /CriOS/.test(ua)) {
+                return "En tu iPhone abre Configuración (Ajustes) → Apps → Chrome → Ubicación, elige «Mientras se usa la app» y activa «Ubicación exacta».";
+            }
+            if (esIPhone) {
+                return "En tu iPhone abre Configuración (Ajustes) → Privacidad y seguridad → Localización → Sitios web de Safari, elige «Mientras se usa la app» y activa «Ubicación exacta».";
+            }
+            if (/Android/.test(ua)) {
+                return "Toca el ícono que está a la izquierda de la dirección de la página → Permisos → Ubicación → Permitir. Revisa también que la ubicación del teléfono esté encendida.";
+            }
+            return "Toca el ícono que está a la izquierda de la dirección de la página y permite la ubicación.";
+        }
+
+        function activarMiUbicacion() {
+            const reintentar = () => { ubicacionPrecargada = null; pedirGPS(); };
+            // Si sólo tardó o no estaba disponible, basta con volver a intentar.
+            if (ultimoErrorDeUbicacion !== 1) { reintentar(); return; }
+            preguntar("Para llegar a tu auto necesitamos tu ubicación.\n\n" + instruccionesDeUbicacion()
+                    + "\n\nCuando la actives, regresa aquí.",
+                "Ya la activé, intentar de nuevo", "Ahora no")
+                .then(si => { if (si) reintentar(); });
+        }
+
         // Los navegadores sólo entregan el GPS a páginas servidas por https:// (o a
         // localhost). Al abrir el archivo directo desde la tablet (file:// o
         // content://) SIEMPRE va a fallar, por más permisos que se den.
@@ -4997,6 +5197,8 @@ Cera rápida protectora
         function pedirGPS() {
             const satScreen = document.getElementById('screen-satellite');
             document.getElementById('screen-welcome').classList.add('hidden');
+            document.querySelector('.app-container').classList.remove('en-bienvenida');
+            detenerFondoDeBienvenida();
             satScreen.classList.remove('hidden');
             satScreen.classList.add('sky-drop');
             document.getElementById('btn-confirm-sector').style.display = 'none';
@@ -5017,6 +5219,7 @@ Cera rápida protectora
                 navigator.geolocation.getCurrentPosition(
                     (position) => {
                         ubicacionEsAproximada = false;
+                        ultimoErrorDeUbicacion = null;
                         precisionUbicacion = Math.round(position.coords.accuracy || 0) || null;
                         ubicacionPrecargada = { lat: position.coords.latitude, lon: position.coords.longitude,
                                                 precision: precisionUbicacion };
@@ -5028,6 +5231,7 @@ Cera rápida protectora
                         // diciendo el motivo real, para no adivinar qué salió mal.
                         ubicacionEsAproximada = true;
                         precisionUbicacion = null;
+                        ultimoErrorDeUbicacion = error ? error.code : 2;
                         if (error && error.code === 1 && !origenSeguro()) {
                             // Chrome devuelve "permiso denegado" cuando la página no viene
                             // de https://, aunque el cliente nunca haya dicho que no. Decir
@@ -5035,7 +5239,7 @@ Cera rápida protectora
                             // no hizo, y a Tristán le costó una hora de pruebas creerlo.
                             motivoUbicacionAproximada = "Esta app se abrió como archivo, no desde una dirección de internet, y por seguridad el navegador no entrega la ubicación así.";
                         } else if (error && error.code === 1) {
-                            motivoUbicacionAproximada = "No nos diste permiso de ubicación.";
+                            motivoUbicacionAproximada = "Tu teléfono no nos dio permiso de ubicación.";
                         } else if (error && error.code === 3) {
                             motivoUbicacionAproximada = "El GPS tardó demasiado en responder.";
                         } else {
@@ -5075,24 +5279,24 @@ Cera rápida protectora
                 .then(() => dibujarElMapa(lat, lon));
         }
 
-        // ¿Es un teléfono modesto? 2 GB de memoria o menos, 4 núcleos o menos, o
-        // con Ahorro de datos. El corte es a propósito conservador: un gama media
-        // de 4 GB y 8 núcleos (un Galaxy A, por ejemplo) SÍ ve el mapa en 3D, que
-        // es la firma de la app. (Safari no informa memoria ni núcleos: ahí se
-        // asume que no es gama baja.)
+        // ¿Es un teléfono modesto? 2 GB de memoria o menos, o con Ahorro de datos.
+        // 🐛 Antes también contaba "4 núcleos o menos", y eso marcaba como gama
+        // baja a TODOS los iPhone: Safari informa 2 o 4 núcleos a propósito (por
+        // privacidad), tenga los que tenga, y a Tristán le salía el mapa plano en
+        // su iPhone. La memoria sólo la informa Chrome/Android, que es justo donde
+        // hay teléfonos de 1 o 2 GB; Safari no la informa y ahí no es gama baja.
         function esGamaBaja() {
-            return !!((navigator.deviceMemory && navigator.deviceMemory <= 2)
-                || (navigator.hardwareConcurrency && navigator.hardwareConcurrency <= 4)
-                || quiereAhorrarDatos());
+            return !!((navigator.deviceMemory && navigator.deviceMemory <= 2) || quiereAhorrarDatos());
         }
 
-        // La cámara "de lujo" (inclinada, con edificios en 3D) cuesta: con el mapa
-        // inclinado se ve hasta el horizonte y hay que bajar y dibujar MUCHOS más
-        // mosaicos. En gama baja el mapa va cenital y plano: se ve limpio, carga
-        // menos datos y se mueve fluido. Un solo lugar, para que la cámara inicial
-        // y la de regresar del ajuste manual nunca se contradigan.
+        // El mapa va SIEMPRE inclinado, mirando hacia la ubicación: es la firma
+        // de la app, y cenital (desde arriba) se veía plano y sin gracia. En gama
+        // baja se inclina un poco menos y sin edificios en 3D: con menos
+        // inclinación se ve menos horizonte y hay que bajar menos mosaicos. Un solo
+        // lugar, para que la cámara inicial y la de regresar del ajuste manual
+        // nunca se contradigan.
         function camaraDelMapa() {
-            return esGamaBaja() ? { pitch: 0, bearing: 0 } : { pitch: 55, bearing: -10 };
+            return esGamaBaja() ? { pitch: 45, bearing: -10 } : { pitch: 55, bearing: -10 };
         }
 
         // Mantiene el logo y la atribución de Mapbox justo ENCIMA de la hoja
@@ -5103,7 +5307,9 @@ Cera rápida protectora
             const visor = document.querySelector('.mapa-grande');
             if (!hoja || !visor) return;
             const poner = () => {
-                const alto = hoja.offsetHeight;
+                // Lo que tapa la hoja: de su orilla de arriba al fondo del mapa
+                // (flota a 10 px del borde, así que no basta con su alto).
+                const alto = Math.round(visor.getBoundingClientRect().bottom - hoja.getBoundingClientRect().top);
                 visor.style.setProperty('--alto-hoja', alto + 'px');
                 // 🐛 El mapa ponía la ubicación del cliente en el centro de TODO el
                 // recuadro, y la hoja tapa la mitad de abajo: el marcador quedaba
@@ -5117,7 +5323,9 @@ Cera rápida protectora
                 const H = visor.clientHeight;
                 const visible = Math.max(0, H - alto);
                 const GOTA = 56;
-                const centro = Math.round(Math.min(visible - 6, Math.max(GOTA + 4, visible / 2 + GOTA / 2)));
+                const pista = document.getElementById('map-pista');
+                const libreArriba = pista ? pista.offsetTop + pista.offsetHeight + 4 : 4;
+                const centro = Math.round(Math.min(visible - 6, Math.max(GOTA + libreArriba, visible / 2 + GOTA / 2)));
                 visor.style.setProperty('--centro-mapa', centro + 'px');
                 if (map) {
                     map.setPadding(2 * centro <= H
@@ -5146,6 +5354,8 @@ Cera rápida protectora
                 if (map) { map.remove(); map = null; }
 
                 const camara = camaraDelMapa();
+                // La hoja lleva cristal (desenfoque) sólo donde el teléfono puede con él.
+                document.querySelector('.mapa-grande').classList.toggle('con-cristal', !esGamaBaja());
                 map = new mapboxgl.Map({
                     container: 'map',
                     style: 'mapbox://styles/tristan22/cmrmjntvf002q01s1ep52h6bw',
@@ -5471,11 +5681,14 @@ Cera rápida protectora
 
             document.getElementById('sector-detected').textContent = sectorNombre;
             document.getElementById('sector-message').textContent = ubicacionEsAproximada
-                ? "⚠️ " + motivoUbicacionAproximada + " Estamos usando el centro de Cuauhtémoc, así que tu sector puede estar mal. Si no es correcto, corrígelo con nosotros al confirmar."
+                ? "⚠️ " + motivoUbicacionAproximada + " Por ahora usamos el centro de Cuauhtémoc: actívala o marca tu casa aquí abajo."
                 : ubicacionPocoPrecisa()
                     ? sectorMsg + " Tu teléfono te ubicó con un margen de unos " + precisionUbicacion
                       + " m: revisa que el marcador esté en tu casa, o toca «No es aquí · marcarla yo»."
                     : sectorMsg;
+            const activar = document.getElementById('btn-activar-ubicacion');
+            if (activar) activar.classList.toggle('hidden',
+                !(ubicacionEsAproximada && !ubicacionEsManual && navigator.geolocation && origenSeguro()));
             document.getElementById('fuel-notice').textContent = recargoGasolina > 0
                 ? `${sectorNombre} · Traslado +${dinero(recargoGasolina)}`
                 : `${sectorNombre} · Sin cargo por traslado`;
