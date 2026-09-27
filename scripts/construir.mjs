@@ -168,48 +168,143 @@ async function construirIndex(version) {
     return salida.join('').trim() + '\n';
 }
 
-// ── 3. Las fotos de trabajos ──────────────────────────────────────────────
-// Reglas de nombre (las mismas de siempre): 15.jpg → foto suelta;
-// 3-antes.jpg + 3-despues.jpg → par antes/después. Ahora también sirven .jpeg,
-// .png y .webp. Lo que no siga la regla se avisa en Actions, para que Tristán
-// sepa por qué una foto no sale en vez de adivinar.
-const FOTO = /^(\d+)(?:-(antes|despues))?\.(jpe?g|png|webp)$/i;
+// ── 3. Las fotos ─────────────────────────────────────────────────────────
+// Tristán puede subir las fotos TAL CUAL salen del teléfono (4000 px, 3-5 MB,
+// con cualquier nombre, como IMG_4521.JPG). Aquí, antes de publicar:
+//   · se achican a un tamaño que se ve nítido a pantalla completa sin pesar de
+//     más (las originales no se tocan: se quedan en el repositorio);
+//   · se giran si el teléfono las guardó "acostadas";
+//   · se les BORRAN los datos ocultos (EXIF), que en una foto de celular
+//     incluyen la ubicación GPS exacta de donde se tomó: la casa del cliente.
+// Nombres: 15.jpg (el número manda el orden: el más alto sale primero),
+// 3-antes.jpg + 3-despues.jpg (par antes/después), o cualquier otro nombre:
+// ésas se acomodan por fecha de subida, la más nueva primero.
+const ES_FOTO = /\.(jpe?g|png|webp)$/i;
+const ES_HEIC = /\.(heic|heif)$/i;
+const FOTO_NUMERO = /^(\d+)\.(jpe?g|png|webp)$/i;
+const FOTO_PAR = /^(\d+)-(antes|despues)\.(jpe?g|png|webp)$/i;
 const PESO_MAXIMO_FOTO_KB = 450;
+// Menos que esto en su lado largo y la foto se ve borrosa a pantalla completa:
+// en el inicio sale enmarcada (nítida, más chica) en vez de estirada.
+const LADO_MINIMO_PANTALLA_COMPLETA = 1000;
+const LIMITES = {
+    trabajos: { ancho: 1440, alto: 1920, calidad: 80 },
+    fondos:   { ancho: 1080, alto: 2340, calidad: 78 }
+};
 
-function listaDeFotos() {
+async function cargarSharp() {
+    try { return (await import('sharp')).default; } catch { return null; }
+}
+
+function fechaDeSubida(ruta) {
+    try {
+        const t = Number(sh(`git log -1 --format=%ct -- "${ruta}"`));
+        if (t) return t;
+    } catch { /* sin git */ }
+    return Math.floor(statSync(path.join(RAIZ, ruta)).mtimeMs / 1000);
+}
+
+// Achica, gira y limpia las fotos YA copiadas en dist/. Devuelve sus medidas.
+async function optimizarFotos(sharp, carpeta) {
+    const dir = path.join(DIST, carpeta);
+    const medidas = new Map();
+    if (!existsSync(dir)) return medidas;
+    const limite = LIMITES[carpeta];
+    let antes = 0, despues = 0, tocadas = 0;
+    for (const archivo of readdirSync(dir).sort()) {
+        if (!ES_FOTO.test(archivo)) continue;
+        const ruta = path.join(dir, archivo);
+        const original = readFileSync(ruta);
+        antes += original.length;
+        if (!sharp) { medidas.set(archivo, {}); despues += original.length; continue; }
+        const meta = await sharp(original, { failOn: 'none' }).metadata();
+        const acostada = (meta.orientation || 1) >= 5;          // EXIF 5-8: vienen de lado
+        const ancho = acostada ? meta.height : meta.width;
+        const alto = acostada ? meta.width : meta.height;
+        const excede = ancho > limite.ancho || alto > limite.alto;
+        const conDatos = !!(meta.exif || meta.xmp || meta.iptc) || (meta.orientation || 1) !== 1;
+        if (!excede && !conDatos) {
+            medidas.set(archivo, { w: ancho, h: alto });
+            despues += original.length;
+            continue;                                            // ya está bien: no se re-comprime
+        }
+        const calidad = excede ? limite.calidad : 90;            // si no se achica, casi sin pérdida
+        let proceso = sharp(original, { failOn: 'none' }).rotate()
+            .resize({ width: limite.ancho, height: limite.alto, fit: 'inside', withoutEnlargement: true });
+        const tipo = archivo.toLowerCase().split('.').pop();
+        proceso = tipo === 'png' ? proceso.png({ compressionLevel: 9 })
+                : tipo === 'webp' ? proceso.webp({ quality: calidad })
+                : proceso.jpeg({ quality: calidad, mozjpeg: true, progressive: true });
+        const { data, info } = await proceso.toBuffer({ resolveWithObject: true });
+        writeFileSync(ruta, data);
+        medidas.set(archivo, { w: info.width, h: info.height });
+        despues += data.length;
+        tocadas++;
+    }
+    if (tocadas) console.log(`${carpeta}/: ${tocadas} foto(s) optimizadas, sin datos de ubicación (${kb(antes)} → ${kb(despues)})`);
+    return medidas;
+}
+
+function listaDeFotos(medidas) {
     const carpeta = path.join(RAIZ, 'trabajos');
     const archivos = existsSync(carpeta) ? readdirSync(carpeta).sort() : [];
-    const sueltas = new Map(), antes = new Map(), despues = new Map();
+    const numeradas = new Map(), antes = new Map(), despues = new Map(), libres = [];
     for (const archivo of archivos) {
         if (archivo === 'lista.json' || archivo.startsWith('.')) continue;
-        const m = archivo.match(FOTO);
-        if (!m) {
-            avisar(`La foto "${archivo}" no se va a ver: el nombre debe ser un número (15.jpg) o un par (3-antes.jpg y 3-despues.jpg).`, `trabajos/${archivo}`);
+        if (ES_HEIC.test(archivo)) {
+            avisar(`"${archivo}" está en formato HEIC del iPhone y la página no lo puede mostrar. Súbela como JPG (en el iPhone: Configuración → Cámara → Formatos → Más compatible).`, `trabajos/${archivo}`);
             continue;
         }
-        const n = Number(m[1]);
-        const destino = m[2] === 'antes' ? antes : m[2] === 'despues' ? despues : sueltas;
+        if (!ES_FOTO.test(archivo)) {
+            avisar(`"${archivo}" no es una foto (sirven .jpg, .jpeg, .png y .webp).`, `trabajos/${archivo}`);
+            continue;
+        }
+        const par = archivo.match(FOTO_PAR), num = archivo.match(FOTO_NUMERO);
+        const destino = par ? (par[2].toLowerCase() === 'antes' ? antes : despues) : num ? numeradas : null;
+        if (!destino) { libres.push(archivo); continue; }
+        const n = Number((par || num)[1]);
         if (destino.has(n)) {
             avisar(`Hay dos fotos con el número ${n} ("${destino.get(n)}" y "${archivo}"); sólo se usa la primera.`, `trabajos/${archivo}`);
             continue;
         }
         destino.set(n, archivo);
-        const kb = Math.round(statSync(path.join(carpeta, archivo)).size / 1024);
-        if (kb > PESO_MAXIMO_FOTO_KB) {
-            avisar(`"${archivo}" pesa ${kb} KB: conviene bajarla a menos de ${PESO_MAXIMO_FOTO_KB} KB (con datos móviles tarda en salir).`, `trabajos/${archivo}`);
-        }
     }
+    // Las de nombre libre van DESPUÉS de las numeradas, por fecha de subida:
+    // la más nueva recibe el número más alto y por eso sale primero.
+    let siguiente = Math.max(0, ...numeradas.keys()) + 1;
+    libres
+        .map(archivo => ({ archivo, fecha: fechaDeSubida(`trabajos/${archivo}`) }))
+        .sort((x, y) => x.fecha - y.fecha || x.archivo.localeCompare(y.archivo))
+        .forEach(({ archivo }) => numeradas.set(siguiente++, archivo));
+
+    const conMedidas = (datos, archivo) => {
+        const m = medidas.get(archivo) || {};
+        return m.w ? Object.assign(datos, { w: m.w, h: m.h }) : datos;
+    };
     const pares = [];
     for (const [n, a] of antes) {
-        if (despues.has(n)) pares.push({ n, antes: a, despues: despues.get(n) });
+        if (despues.has(n)) pares.push(conMedidas({ n, antes: a, despues: despues.get(n) }, despues.get(n)));
         else avisar(`"${a}" no tiene su "${n}-despues": media comparación no se muestra.`, `trabajos/${a}`);
     }
     for (const [n, d] of despues) {
         if (!antes.has(n)) avisar(`"${d}" no tiene su "${n}-antes": media comparación no se muestra.`, `trabajos/${d}`);
     }
+    const sueltas = [...numeradas].map(([n, foto]) => conMedidas({ n, foto }, foto));
+
+    // Avisos útiles: las que pesan de más (sin sharp) y las que son chicas.
+    const chicas = [];
+    for (const f of [...sueltas, ...pares]) {
+        const archivo = f.foto || f.despues;
+        const pesa = Math.round(statSync(path.join(DIST, 'trabajos', archivo)).size / 1024);
+        if (pesa > PESO_MAXIMO_FOTO_KB) avisar(`"${archivo}" pesa ${pesa} KB: con datos móviles tarda en salir.`, `trabajos/${archivo}`);
+        if (f.w && Math.max(f.w, f.h) < LADO_MINIMO_PANTALLA_COMPLETA) chicas.push(archivo);
+    }
+    if (chicas.length) {
+        avisar(`${chicas.length} foto(s) miden menos de ${LADO_MINIMO_PANTALLA_COMPLETA} px (${chicas.slice(0, 6).join(', ')}${chicas.length > 6 ? '…' : ''}): en el inicio salen enmarcadas en vez de a pantalla completa. Sube las originales del teléfono para que se vean grandes.`);
+    }
     return {
         pares: pares.sort((x, y) => x.n - y.n),
-        sueltas: [...sueltas].map(([n, foto]) => ({ n, foto })).sort((x, y) => x.n - y.n)
+        sueltas: sueltas.sort((x, y) => x.n - y.n)
     };
 }
 
@@ -247,7 +342,15 @@ async function construir() {
     const manifest = JSON.parse(readFileSync(path.join(RAIZ, 'manifest.json'), 'utf8'));
     writeFileSync(path.join(DIST, 'manifest.json'), JSON.stringify(manifest));
 
-    const fotos = listaDeFotos();
+    const sharp = await cargarSharp();
+    if (!sharp) {
+        // En GitHub NUNCA se publica sin esto: se publicarían las fotos con la
+        // ubicación GPS de donde se tomaron. En la tablet sólo se avisa.
+        if (EN_ACTIONS) throw new Error('No se pudo cargar sharp (la herramienta de fotos): no se publica para no subir fotos con su ubicación GPS.');
+        avisar('Sin la herramienta de fotos (sharp) las fotos se copian tal cual: sin achicar y con sus datos de ubicación. Está bien para probar en la tablet; en GitHub sí se optimizan.');
+    }
+    await optimizarFotos(sharp, 'fondos');
+    const fotos = listaDeFotos(await optimizarFotos(sharp, 'trabajos'));
     mkdirSync(path.join(DIST, 'trabajos'), { recursive: true });
     writeFileSync(path.join(DIST, 'trabajos', 'lista.json'), JSON.stringify(fotos));
 

@@ -35,6 +35,10 @@ jobs:
     timeout-minutes: 15
     steps:
       - uses: actions/checkout@v5
+        with:
+          # Con el historial completo se sabe cuándo se subió cada foto: las de
+          # nombre libre (IMG_1234.JPG) se acomodan por fecha, la más nueva primero.
+          fetch-depth: 0
 
       - uses: actions/setup-node@v5
         with:
