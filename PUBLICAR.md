@@ -88,7 +88,7 @@ Van en la carpeta **`trabajos/`**. Salen en el fondo del inicio (una cada
 iPhone. No hace falta achicarlas, convertirlas ni renombrarlas. Antes de
 publicar, GitHub:
 - convierte las HEIC a JPG;
-- las deja del tamaño de una pantalla de teléfono en vertical (1296×2304):
+- las deja un poco más grandes que la pantalla de cualquier teléfono, en vertical (1620×2880):
   nítidas a pantalla completa y sin pesar de más (la original se queda
   guardada en el repositorio). Las horizontales se recortan a vertical
   quedándose con la parte más llamativa de la foto;
