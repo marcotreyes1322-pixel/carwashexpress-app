@@ -188,17 +188,20 @@ const ES_FOTO = /\.(jpe?g|png|webp|heic|heif)$/i;
 const ES_HEIC = /\.(heic|heif)$/i;
 const FOTO_NUMERO = /^(\d+)\.(jpe?g|png|webp|heic|heif)$/i;
 const FOTO_PAR = /^(\d+)-(antes|despues)\.(jpe?g|png|webp|heic|heif)$/i;
-// Son fotos de pantalla completa en calidad alta: hasta ~700 KB es normal.
-const PESO_MAXIMO_FOTO_KB = 700;
+// Son fotos de pantalla completa en calidad alta: hasta ~1 MB es normal.
+const PESO_MAXIMO_FOTO_KB = 1000;
 // Menos que esto en su lado largo y la foto se vería borrosa a pantalla completa
 // si el teléfono la estira solo. Ésas se AGRANDAN aquí con un filtro fino
 // (lanczos) y un toque de nitidez, que se ve mejor que el estirado del
 // navegador, para que TODAS salgan en el fondo del inicio.
 const LADO_MINIMO_PANTALLA_COMPLETA = 1000;
-// 1296×2304 es una pantalla de iPhone en vertical (9:16) a tamaño real: la foto
-// se ve nítida de orilla a orilla y pesa ~300 KB en vez de 2-3 MB.
+// 1620×2880 (9:16): más alto que la pantalla de cualquier teléfono (un iPhone
+// Pro Max mide 2796 px de alto), así que la foto se ve a resolución completa
+// de orilla a orilla — en un teléfono se ve igual que una 4K — y pesa ~500 KB
+// en vez de los 2-4 MB de la original. (Antes era 1296×2304 y en los iPhone
+// grandes la foto se estiraba un poco.)
 const LIMITES = {
-    trabajos: { ancho: 1296, alto: 2304, calidad: 80, vertical: true },
+    trabajos: { ancho: 1620, alto: 2880, calidad: 80, vertical: true },
     fondos:   { ancho: 1080, alto: 2340, calidad: 78 }
 };
 
