@@ -3995,7 +3995,7 @@ Cera rápida protectora
         // Al publicar, GitHub Actions la reemplaza sola por fecha + commit (la
         // misma que el Service Worker): este valor sólo se ve probando el archivo
         // del repo sin construir.
-        const VERSION_APP = '2026.09.26h';
+        const VERSION_APP = '2026.09.27a';
 
         // La versión del AVISO DE PRIVACIDAD y los TÉRMINOS. Es distinta de la
         // versión de la app a propósito: la app cambia cada semana y lo legal
@@ -4751,15 +4751,31 @@ Cera rápida protectora
 
         // ── FONDO DE LA BIENVENIDA ───────────────────────────────────────────
         // Usa las mismas fotos de trabajos que ya se buscan una vez por sesión
-        // (fotosDeTrabajos), la más reciente primero. Cada foto se baja ANTES de
-        // deslizarla, así nunca entra un recuadro vacío con señal floja. Con
-        // "movimiento reducido" o "Ahorro de datos" se queda la primera, quieta.
+        // (fotosDeTrabajos), la más reciente primero, y se desliza cada 3 s en
+        // TODOS los teléfonos (Tristán: nada de foto fija). Para que cada cambio
+        // caiga justo a tiempo, las dos fotos que siguen se bajan por adelantado
+        // mientras se ve la actual; si alguna no existe, se salta.
         const MS_ENTRE_FOTOS_BIENVENIDA = 3000;
         let fotosDelFondo = [];
         let fotoDelFondo = 0;
         let capaDelFondo = 'a';
         let relojDelFondo = null;
-        let bajandoFotoDelFondo = false;
+        const fotosDelFondoListas = new Map();   // url → true (bajó) / false (falló)
+
+        function adelantarFotoDelFondo(url) {
+            if (!url || fotosDelFondoListas.has(url)) return;
+            fotosDelFondoListas.set(url, null);   // bajando
+            const img = new Image();
+            img.onload  = () => fotosDelFondoListas.set(url, true);
+            img.onerror = () => fotosDelFondoListas.set(url, false);
+            img.src = url;
+        }
+
+        function adelantarLasQueSiguen() {
+            for (let paso = 1; paso <= 2; paso++) {
+                adelantarFotoDelFondo(fotosDelFondo[(fotoDelFondo + paso) % fotosDelFondo.length]);
+            }
+        }
 
         function arrancarFondoDeBienvenida() {
             fotosDeTrabajos().then(lista => {
@@ -4776,7 +4792,8 @@ Cera rápida protectora
                     document.getElementById('bienvenida-capa-' + capaDelFondo).style.backgroundImage =
                         "url('" + fotos[0] + "')";
                 }
-                if (relojDelFondo || fotosDelFondo.length < 2 || animacionReducida() || quiereAhorrarDatos()) return;
+                adelantarLasQueSiguen();
+                if (relojDelFondo || fotosDelFondo.length < 2) return;
                 relojDelFondo = setInterval(pasarFotoDelFondo, MS_ENTRE_FOTOS_BIENVENIDA);
             });
         }
@@ -4787,29 +4804,32 @@ Cera rápida protectora
 
         function pasarFotoDelFondo() {
             const pantalla = document.getElementById('screen-welcome');
-            if (!pantalla || pantalla.classList.contains('hidden') || document.hidden || bajandoFotoDelFondo) return;
-            const siguiente = (fotoDelFondo + 1) % fotosDelFondo.length;
-            const url = fotosDelFondo[siguiente];
-            bajandoFotoDelFondo = true;
-            const prueba = new Image();
-            prueba.onload = () => {
-                bajandoFotoDelFondo = false;
-                const sale  = document.getElementById('bienvenida-capa-' + capaDelFondo);
-                const otra  = capaDelFondo === 'a' ? 'b' : 'a';
-                const entra = document.getElementById('bienvenida-capa-' + otra);
-                if (!sale || !entra) return;
-                // La que entra espera a la derecha (sin animación), con su foto…
-                entra.className = 'bienvenida-capa espera';
-                entra.style.backgroundImage = "url('" + url + "')";
-                void entra.offsetWidth;          // el navegador la acomoda ANTES de moverla
-                // …y las dos se deslizan juntas hacia la izquierda.
-                entra.className = 'bienvenida-capa visible';
-                sale.className = 'bienvenida-capa se-va';
-                capaDelFondo = otra;
-                fotoDelFondo = siguiente;
-            };
-            prueba.onerror = () => { bajandoFotoDelFondo = false; fotoDelFondo = siguiente; };
-            prueba.src = url;
+            if (!pantalla || pantalla.classList.contains('hidden') || document.hidden) return;
+            // La siguiente que YA esté lista (las que fallaron se saltan). Si con
+            // señal muy floja todavía no llega ninguna, se espera al próximo turno
+            // en vez de deslizar hacia un recuadro vacío.
+            let siguiente = -1;
+            for (let paso = 1; paso < fotosDelFondo.length; paso++) {
+                const i = (fotoDelFondo + paso) % fotosDelFondo.length;
+                const estado = fotosDelFondoListas.get(fotosDelFondo[i]);
+                if (estado === true) { siguiente = i; break; }
+                if (estado !== false) { adelantarFotoDelFondo(fotosDelFondo[i]); break; }
+            }
+            if (siguiente < 0) return;
+            const sale  = document.getElementById('bienvenida-capa-' + capaDelFondo);
+            const otra  = capaDelFondo === 'a' ? 'b' : 'a';
+            const entra = document.getElementById('bienvenida-capa-' + otra);
+            if (!sale || !entra) return;
+            // La que entra espera a la derecha (sin animación), con su foto…
+            entra.className = 'bienvenida-capa espera';
+            entra.style.backgroundImage = "url('" + fotosDelFondo[siguiente] + "')";
+            void entra.offsetWidth;          // el navegador la acomoda ANTES de moverla
+            // …y las dos se deslizan juntas hacia la izquierda.
+            entra.className = 'bienvenida-capa visible';
+            sale.className = 'bienvenida-capa se-va';
+            capaDelFondo = otra;
+            fotoDelFondo = siguiente;
+            adelantarLasQueSiguen();
         }
 
         function detenerCarruselDelLogin() {
