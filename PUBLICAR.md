@@ -108,9 +108,11 @@ entra a `github.com/marcotreyes1322-pixel/carwashexpress-app/tree/main/trabajos`
 | `3-antes.jpg` + `3-despues.jpg` | Par antes/después |
 
 - Sirven `.jpg`, `.jpeg`, `.png`, `.webp` y `.heic`.
-- **Fotos chicas** (menos de 1000 px en su lado largo): no se usan de fondo
-  en el inicio, porque estiradas a toda la pantalla se verían borrosas (sí
-  salen en el menú). La corrida de Actions avisa cuáles son.
+- **Fotos chicas** (menos de 1000 px en su lado largo, como las que se bajan
+  de redes sociales): también salen de fondo. GitHub las agranda con un filtro
+  fino y las intercala con las originales, pero se ven menos nítidas que una
+  foto directa del teléfono. La corrida de Actions avisa cuáles son; si tienes
+  la original, súbela con el mismo nombre.
 - Para quitar una foto: ábrela en GitHub → ícono del bote de basura →
   **Commit changes**.
 

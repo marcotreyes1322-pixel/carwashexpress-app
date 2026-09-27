@@ -190,8 +190,10 @@ const FOTO_NUMERO = /^(\d+)\.(jpe?g|png|webp|heic|heif)$/i;
 const FOTO_PAR = /^(\d+)-(antes|despues)\.(jpe?g|png|webp|heic|heif)$/i;
 // Son fotos de pantalla completa en calidad alta: hasta ~700 KB es normal.
 const PESO_MAXIMO_FOTO_KB = 700;
-// Menos que esto en su lado largo y la foto se ve borrosa a pantalla completa:
-// la app no la usa de fondo en el inicio (sí en el menú).
+// Menos que esto en su lado largo y la foto se vería borrosa a pantalla completa
+// si el teléfono la estira solo. Ésas se AGRANDAN aquí con un filtro fino
+// (lanczos) y un toque de nitidez, que se ve mejor que el estirado del
+// navegador, para que TODAS salgan en el fondo del inicio.
 const LADO_MINIMO_PANTALLA_COMPLETA = 1000;
 // 1296×2304 es una pantalla de iPhone en vertical (9:16) a tamaño real: la foto
 // se ve nítida de orilla a orilla y pesa ~300 KB en vez de 2-3 MB.
@@ -262,14 +264,21 @@ async function optimizarFotos(sharp, carpeta) {
             ? (horizontal ? alto > limite.ancho : ancho > limite.ancho || alto > limite.alto)
             : ancho > limite.ancho || alto > limite.alto;
         const nombre = esHeic ? archivo.replace(/(\.(heic|heif))+$/i, '') + '.jpg' : archivo;
-        if (!excede && !conDatos && !esHeic) {
+        // Chica (menos de 1000 px): se agranda hasta el alto de una pantalla.
+        const chica = !!limite.vertical && !horizontal && Math.max(ancho, alto) < LADO_MINIMO_PANTALLA_COMPLETA;
+        if (!excede && !conDatos && !esHeic && !chica) {
             medidas.set(archivo, { archivo, w: ancho, h: alto });
             despues += original.length;
             continue;                                            // ya está bien: no se re-comprime
         }
-        const calidad = excede ? limite.calidad : 90;            // si no se achica, casi sin pérdida
+        const calidad = excede ? limite.calidad : chica ? 84 : 90;  // si no se achica, casi sin pérdida
         let proceso = entrada.rotate();
-        proceso = (limite.vertical && horizontal)
+        proceso = chica
+            // Al tamaño de pantalla (9:16), recortando los lados con lo más llamativo
+            // al centro: es lo mismo que haría el teléfono, pero con mejor filtro.
+            ? proceso.resize({ width: limite.ancho, height: limite.alto, fit: 'cover', position: 'attention', kernel: 'lanczos3' })
+                     .sharpen({ sigma: 1.2, m1: 0.6, m2: 2.5 })
+            : (limite.vertical && horizontal)
             // Horizontal → vertical, quedándose con lo más llamativo de la foto.
             ? proceso.resize({ width: Math.min(limite.ancho, Math.round(alto * 9 / 16)), height: Math.min(limite.alto, alto),
                                fit: 'cover', position: 'attention', withoutEnlargement: true })
@@ -281,7 +290,8 @@ async function optimizarFotos(sharp, carpeta) {
         const { data, info } = await proceso.toBuffer({ resolveWithObject: true });
         if (nombre !== archivo) rmSync(ruta);
         writeFileSync(path.join(dir, nombre), data);
-        medidas.set(archivo, { archivo: nombre, w: info.width, h: info.height });
+        medidas.set(archivo, chica ? { archivo: nombre, w: info.width, h: info.height, agrandada: true }
+                                   : { archivo: nombre, w: info.width, h: info.height });
         despues += data.length;
         tocadas++;
     }
@@ -322,6 +332,7 @@ function listaDeFotos(medidas) {
     const publicada = (archivo) => (medidas.get(archivo) || {}).archivo || archivo;
     const conMedidas = (datos, archivo) => {
         const m = medidas.get(archivo) || {};
+        if (m.agrandada) datos.agrandada = true;
         return m.w ? Object.assign(datos, { w: m.w, h: m.h }) : datos;
     };
     const pares = [];
@@ -334,16 +345,16 @@ function listaDeFotos(medidas) {
     }
     const sueltas = [...numeradas].map(([n, foto]) => conMedidas({ n, foto: publicada(foto) }, foto));
 
-    // Avisos útiles: las que pesan de más (sin sharp) y las que son chicas.
+    // Avisos útiles: las que pesan de más (sin sharp) y las que eran chicas.
     const chicas = [];
     for (const f of [...sueltas, ...pares]) {
         const archivo = f.foto || f.despues;
         const pesa = Math.round(statSync(path.join(DIST, 'trabajos', archivo)).size / 1024);
         if (pesa > PESO_MAXIMO_FOTO_KB) avisar(`"${archivo}" pesa ${pesa} KB: con datos móviles tarda en salir.`, `trabajos/${archivo}`);
-        if (f.w && Math.max(f.w, f.h) < LADO_MINIMO_PANTALLA_COMPLETA) chicas.push(archivo);
+        if (f.agrandada || (f.w && Math.max(f.w, f.h) < LADO_MINIMO_PANTALLA_COMPLETA)) chicas.push(archivo);
     }
     if (chicas.length) {
-        avisar(`${chicas.length} foto(s) miden menos de ${LADO_MINIMO_PANTALLA_COMPLETA} px (${chicas.slice(0, 6).join(', ')}${chicas.length > 6 ? '…' : ''}): no se usan de fondo en el inicio porque se verían borrosas (sí salen en el menú). Sube la original del teléfono si quieres que salgan.`);
+        avisar(`${chicas.length} foto(s) medían menos de ${LADO_MINIMO_PANTALLA_COMPLETA} px (${chicas.slice(0, 6).join(', ')}${chicas.length > 6 ? '…' : ''}): se agrandaron para el fondo del inicio, pero se ven menos nítidas que una original del teléfono. Si tienes la original, súbela con el mismo nombre.`);
     }
     return {
         pares: pares.sort((x, y) => x.n - y.n),
