@@ -36,6 +36,11 @@ jobs:
       - run: npx playwright install --with-deps chromium
       - name: Prueba real contra Firebase
         run: node scripts/prueba-real.mjs
+      - name: La misma prueba, como un teléfono con la nota "WebSocket falló"
+        if: always()
+        run: node scripts/prueba-real.mjs
+        env:
+          NOTA_WEBSOCKET: '1'
       - name: Guardar la captura del ticket
         if: always()
         uses: actions/upload-artifact@v4

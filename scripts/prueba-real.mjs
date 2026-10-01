@@ -20,6 +20,10 @@ mkdirSync(CAPTURAS, { recursive: true });
 // 555 + 7 dígitos: claramente de prueba, nunca de un cliente real.
 const TELEFONO = '555' + String(Date.now()).slice(-7);
 const CLAVE = 'Prueba-' + Math.random().toString(36).slice(2, 10);
+// NOTA_WEBSOCKET=1: como un teléfono al que Firebase le dejó la nota "el
+// WebSocket falló" (entra por long polling). Fue lo que tumbó la base en la
+// tablet de Tristán en septiembre de 2026.
+const NOTA_WEBSOCKET = !!process.env.NOTA_WEBSOCKET;
 
 const servidor = await servir('dist', PUERTO);
 const navegador = await chromium.launch();
@@ -43,6 +47,11 @@ p.on('console', m => {
 // El mapa no hace falta para agendar (la ubicación se pone como lo hace el GPS)
 // y la llave de Mapbox no está autorizada para localhost:4173.
 await p.route(/api\.mapbox\.com|events\.mapbox\.com/, r => r.abort());
+if (NOTA_WEBSOCKET) {
+    // eslint-disable-next-line no-undef
+    await p.addInitScript(() => { try { localStorage.setItem('firebase:previous_websocket_failure', 'true'); } catch (e) { /* sin almacenamiento */ } });
+    console.log('(con la nota de "WebSocket falló": Firebase entra por long polling)');
+}
 
 let uid = null, citaId = null, cita = null;
 try {
@@ -96,7 +105,7 @@ try {
     const aviso = await p.evaluate(() => document.getElementById('aviso-fondo').classList.contains('hidden') ? null : document.getElementById('aviso-texto').textContent);
     paso(confirmada, `guarda la cita y sale la pantalla del ticket (en ${((Date.now() - tGuardar) / 1000).toFixed(1)} s)`, aviso);
     await p.waitForTimeout(2500);   // deja que corra la animación del ticket
-    await p.screenshot({ path: `${CAPTURAS}/ticket.png` });
+    await p.screenshot({ path: `${CAPTURAS}/ticket${NOTA_WEBSOCKET ? '-long-polling' : ''}.png` });
     const folio = await p.textContent('#conf-folio');
     paso(/\S/.test(folio) && folio !== '—', 'el ticket trae folio', folio);
 
