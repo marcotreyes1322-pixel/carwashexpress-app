@@ -59,22 +59,32 @@ muy incómodo.
    `appsscript.json`: ábrelo y borra lo que trae.
 4. Abre este enlace, cópialo todo y pégalo ahí:
    https://raw.githubusercontent.com/marcotreyes1322-pixel/carwashexpress-app/main/integraciones/google-calendar/appsscript.json
-5. 💾 **Guardar**.
+5. Revisa que termine en la **línea 12** con `}`. Si hay una línea 13 con
+   otra `}` en rojo (se queda de lo que traía el archivo), bórrala. Que los
+   renglones salgan "en escalera" no importa.
+6. 💾 **Guardar**. Arriba debe dejar de decir "Cambios sin guardar".
 
 ### 4. Enciéndelo
 
-1. Abre otra vez `Código.gs`.
-2. Arriba, junto a **▷ Ejecutar**, hay una lista de funciones: elige
-   **instalar**.
-3. Toca **▷ Ejecutar**.
-4. Google pide permiso (es normal, el programa es tuyo):
+1. Toca `Código.gs` en la lista de archivos de la izquierda. **Los botones
+   ▷ Ejecutar y la lista de funciones sólo aparecen con un archivo `.gs`
+   abierto**; con `appsscript.json` abierto no salen.
+2. Si `Código.gs` tiene un circulito naranja junto al nombre, falta guardarlo:
+   💾 **Guardar**. Si al guardar sale un error rojo con un número de línea,
+   algo se pegó mal: vuelve a copiar y pegar el archivo completo.
+3. En la barra de arriba, junto a **▷ Ejecutar** y **Depurar**, hay una lista
+   de funciones: elige **instalar**.
+4. Toca **▷ Ejecutar**.
+5. Google pide permiso (es normal, el programa es tuyo):
    1. **Revisar permisos** → elige tu cuenta.
    2. Sale "Google no verificó esta app": toca **Configuración avanzada** →
-      **Ir a Car Wash Express → Calendario (no seguro)**.
+      **Ir a Car Wash Express → Calendario (no seguro)** (sale el nombre
+      que le pusiste al proyecto; si no le cambiaste el nombre, dice
+      "Proyecto sin título").
    3. Si salen casillas, marca **Seleccionar todo** (si falta una, el
       programa no puede trabajar) y toca **Continuar**. Si sale un botón
       **Permitir**, tócalo.
-5. Abajo, en el **Registro de ejecución**, debe salir:
+6. Abajo, en el **Registro de ejecución**, debe salir:
    `✅ Listo. Calendario "Car Wash Express". Se revisa cada 5 minutos...`
 
 Listo: ya corre solo, aunque cierres la página y apagues la computadora.
