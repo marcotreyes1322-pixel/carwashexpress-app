@@ -7,10 +7,11 @@
     "servir": "node scripts/servidor.mjs . 3000",
     "construir": "node scripts/construir.mjs",
     "ver-construida": "node scripts/servidor.mjs dist 3001",
-    "lint": "eslint .construccion/app-fuente.js sw.js scripts",
+    "lint": "eslint .construccion/app-fuente.js sw.js scripts integraciones/google-calendar/Codigo.gs",
     "humo": "node scripts/humo.mjs",
+    "prueba-calendario": "node scripts/prueba-calendario.mjs",
     "revisar": "npm run construir && npm run lint",
-    "revisar-todo": "npm run construir && npm run lint && npm run humo"
+    "revisar-todo": "npm run construir && npm run lint && npm run prueba-calendario && npm run humo"
   },
   "devDependencies": {
     "esbuild": "0.28.2",
