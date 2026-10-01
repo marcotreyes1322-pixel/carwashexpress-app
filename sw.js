@@ -16,7 +16,7 @@
    (Sólo si se publicara SIN construir habría que cambiarla a mano.)
    ===================================================================== */
 
-const VERSION = 'cwe-2026.09.27o';
+const VERSION = 'cwe-2026.10.01a';
 
 // Lo mínimo para que la app abra sin red. Las librerías (Mapbox, Firebase,
 // Three.js) NO se guardan a propósito: pesan 2 MB, cambian por su cuenta, y

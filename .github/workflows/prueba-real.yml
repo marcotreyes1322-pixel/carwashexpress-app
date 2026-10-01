@@ -13,7 +13,7 @@ on:
   # TEMPORAL (sólo para estrenarla desde esta rama; se quita antes del PR)
   push:
     branches: [claude/car-wash-express-audit-0cic1t]
-    paths: [scripts/prueba-real.mjs, .github/workflows/prueba-real.yml]
+    paths: [scripts/prueba-real.mjs, .github/workflows/prueba-real.yml, index.html]
 permissions:
   contents: read
 concurrency:

@@ -4105,7 +4105,7 @@ Cera rápida protectora
         // Al publicar, GitHub Actions la reemplaza sola por fecha + commit (la
         // misma que el Service Worker): este valor sólo se ve probando el archivo
         // del repo sin construir.
-        const VERSION_APP = '2026.09.27o';
+        const VERSION_APP = '2026.10.01a';
 
         // La versión del AVISO DE PRIVACIDAD y los TÉRMINOS. Es distinta de la
         // versión de la app a propósito: la app cambia cada semana y lo legal
@@ -4140,6 +4140,10 @@ Cera rápida protectora
                     if (!d || !d.version || d.version === VERSION_APP) return;
                     const visible = document.querySelector('.screen:not(.hidden)');
                     if (visible && !/^screen-(login-phone|welcome|sin-conexion)$/.test(visible.id)) return;
+                    // Si está escribiendo (su número o contraseña), no se le recarga
+                    // encima: la versión nueva llega la próxima vez que abra.
+                    const enUso = document.activeElement;
+                    if (enUso && /^(INPUT|TEXTAREA|SELECT)$/.test(enUso.tagName)) return;
                     let intentada = null;
                     try { intentada = sessionStorage.getItem('cwe-recarga'); } catch (e) { return; }
                     if (intentada === d.version) return;
@@ -8617,28 +8621,30 @@ Cera rápida protectora
             });
         }
 
+        // Con tope de tiempo (auditoría, octubre 2026): sin conexión, Firebase no
+        // contesta nunca y el botón se quedaba sin hacer nada y sin avisar.
         function cerrarHorario(fecha, hora) {
             const ref = firebase.database().ref('agenda/' + fecha + '/' + claveHora(hora));
-            ref.transaction(actual => {
+            conTiempoLimite(ref.transaction(actual => {
                 if (actual === null) {
                     return { uid: usuarioActual.uid, folio: 'CERRADO-POR-ADMIN', timestamp: Date.now() };
                 }
                 return; // ya había algo: no lo pisamos
-            }).then(res => {
+            }), ESPERA_MAXIMA_CITAS).then(res => {
                 if (!res.committed) mostrarAviso("Ese horario ya está tomado por una cita.");
                 cargarAgendaAdmin();
             }).catch(err => {
                 console.error("No se pudo cerrar el horario:", err);
-                mostrarAviso("⚠️ No se pudo cerrar el horario. Revisa tu conexión.");
+                mostrarAviso("⚠️ No se pudo cerrar el horario. Revisa tu conexión." + detalleParaAdmin());
             });
         }
 
         function abrirHorario(fecha, hora) {
-            firebase.database().ref('agenda/' + fecha + '/' + claveHora(hora)).remove()
+            conTiempoLimite(firebase.database().ref('agenda/' + fecha + '/' + claveHora(hora)).remove(), ESPERA_MAXIMA_CITAS)
                 .then(() => cargarAgendaAdmin())
                 .catch(err => {
                     console.error("No se pudo abrir el horario:", err);
-                    mostrarAviso("⚠️ No se pudo abrir el horario. Revisa tu conexión.");
+                    mostrarAviso("⚠️ No se pudo abrir el horario. Revisa tu conexión." + detalleParaAdmin());
                 });
         }
     </script>
