@@ -1,0 +1,45 @@
+# PRUEBA REAL DE PUNTA A PUNTA (manual)
+#
+# Hace lo mismo que un cliente, contra el Firebase de producción: crea una
+# cuenta "Prueba automática", agenda un lavado en una fecha lejana, revisa que
+# salga el ticket y que la cita quede guardada, la cancela y borra la cuenta.
+# Pase lo que pase, al final limpia: no deja cuenta, cita ni horario apartado.
+# Por unos segundos la cita de prueba se ve en la agenda del administrador.
+#
+# Cómo correrla: pestaña Actions → "Prueba real" → Run workflow.
+name: Prueba real
+on:
+  workflow_dispatch:
+  # TEMPORAL (sólo para estrenarla desde esta rama; se quita antes del PR)
+  push:
+    branches: [claude/car-wash-express-audit-0cic1t]
+    paths: [scripts/prueba-real.mjs, .github/workflows/prueba-real.yml]
+permissions:
+  contents: read
+concurrency:
+  group: prueba-real
+  cancel-in-progress: false
+jobs:
+  prueba:
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    steps:
+      - uses: actions/checkout@v5
+        with:
+          fetch-depth: 0
+      - uses: actions/setup-node@v5
+        with:
+          node-version: 22
+          cache: npm
+      - run: npm ci
+      - run: npm run construir
+      - run: npx playwright install --with-deps chromium
+      - name: Prueba real contra Firebase
+        run: node scripts/prueba-real.mjs
+      - name: Guardar la captura del ticket
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: prueba-real
+          path: prueba-real/
+          retention-days: 7

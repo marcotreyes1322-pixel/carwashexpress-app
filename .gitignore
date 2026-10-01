@@ -7,3 +7,6 @@ dist/
 
 # Las capturas de `npm run humo`
 capturas/
+
+# Las capturas de la prueba real (Actions → Prueba real)
+prueba-real/
