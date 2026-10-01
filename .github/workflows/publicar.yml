@@ -54,6 +54,9 @@ jobs:
       - name: Revisar el código
         run: npm run lint
 
+      - name: Probar el sincronizador de Google Calendar
+        run: npm run prueba-calendario
+
       - name: Instalar Chrome para la prueba
         run: npx playwright install --with-deps chromium
 

@@ -73,6 +73,11 @@ cwp() { git add -A && git commit -m "$*" && git push; }   # uso: cwp "cambié el
 - Un aviso amarillo que dice **"Node.js 20 is deprecated"** es de las
   herramientas de GitHub (se arregla solo cuando GitHub las actualice), no de
   la app: se puede ignorar.
+- **Después de un cambio grande**, en **Actions → Prueba real → Run workflow**
+  GitHub agenda y cancela una cita de prueba contra el Firebase real (normal y
+  como un teléfono con la conexión rápida fallida), revisa que salga el ticket
+  y borra la cuenta de prueba. Tarda un minuto y no deja nada; por unos
+  segundos la cita se ve en la agenda.
 - ¿La app se queda "cargando" o dice que no se pudo conectar? En **Actions →
   Diagnóstico Firebase → Run workflow** GitHub abre la app con internet de
   verdad y dice si reCAPTCHA, App Check y la base de datos conectan. Si ahí
@@ -125,11 +130,21 @@ una, sube la nueva con el mismo nombre.
 
 ---
 
+## Citas en Google Calendar (y TimeTree)
+
+Un programa en tu cuenta de Google copia las citas de la app a un calendario
+"Car Wash Express" cada 5 minutos. No es parte de la app: se instala una sola
+vez en script.google.com. Pasos en
+[`integraciones/google-calendar/LEEME.md`](integraciones/google-calendar/LEEME.md).
+
+---
+
 ## Qué revisa cada push
 
 | Paso | Qué hace | Si falla |
 |---|---|---|
 | Construir | Minifica, sella la versión (fecha + commit) en la app y en el Service Worker y arma `trabajos/lista.json` | No se publica. El mensaje dice qué faltó |
 | Revisar el código | Busca errores que rompen la app sin avisar: variables mal escritas, funciones que no existen | El número de línea es **el mismo de `index.html`** |
+| Sincronizador de Google Calendar | Corre `integraciones/google-calendar/Codigo.gs` con un Google simulado: citas nuevas, reagendadas, canceladas, completadas, detallados, datos raros, Firebase caído y base vacía | El resumen dice qué caso falló |
 | Prueba de humo | Abre la app a 320, 360, 390 y 800 px: errores de JavaScript, cosas cortadas o salidas de lado, botones que llaman funciones inexistentes, versión de la app ≠ del Service Worker, fotos, y que abra sin internet | El resumen dice qué revisión falló, y están las capturas |
 | Publicar | Sólo en `main` y sólo si todo lo anterior salió bien | — |

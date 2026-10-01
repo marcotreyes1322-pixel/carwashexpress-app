@@ -44,6 +44,16 @@ export default [
         rules: errores
     },
     {
+        // El sincronizador con Google Calendar corre en Google Apps Script (no en la app).
+        files: ['integraciones/google-calendar/*.gs'],
+        languageOptions: {
+            ecmaVersion: 2022, sourceType: 'script',
+            globals: Object.fromEntries(['CalendarApp', 'ScriptApp', 'UrlFetchApp', 'PropertiesService', 'LockService',
+                'Logger', 'Utilities', 'console'].map(n => [n, 'readonly']))
+        },
+        rules: errores
+    },
+    {
         files: ['scripts/**/*.mjs'],
         languageOptions: {
             ecmaVersion: 2022, sourceType: 'module',
