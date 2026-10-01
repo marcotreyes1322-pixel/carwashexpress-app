@@ -73,6 +73,11 @@ cwp() { git add -A && git commit -m "$*" && git push; }   # uso: cwp "cambié el
 - Un aviso amarillo que dice **"Node.js 20 is deprecated"** es de las
   herramientas de GitHub (se arregla solo cuando GitHub las actualice), no de
   la app: se puede ignorar.
+- **Después de un cambio grande**, en **Actions → Prueba real → Run workflow**
+  GitHub agenda y cancela una cita de prueba contra el Firebase real (normal y
+  como un teléfono con la conexión rápida fallida), revisa que salga el ticket
+  y borra la cuenta de prueba. Tarda un minuto y no deja nada; por unos
+  segundos la cita se ve en la agenda.
 - ¿La app se queda "cargando" o dice que no se pudo conectar? En **Actions →
   Diagnóstico Firebase → Run workflow** GitHub abre la app con internet de
   verdad y dice si reCAPTCHA, App Check y la base de datos conectan. Si ahí
