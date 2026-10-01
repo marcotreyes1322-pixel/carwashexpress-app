@@ -72,7 +72,7 @@ function instalar() {
   ScriptApp.newTrigger('sincronizar').timeBased().everyMinutes(CONFIG.CADA_MINUTOS).create();
   propiedades_().deleteProperty('fallasSeguidas');
   Logger.log('✅ Listo. Calendario "%s". Se revisa cada %s minutos. Primera vuelta: %s',
-    calendario.getName(), CONFIG.CADA_MINUTOS, JSON.stringify(r));
+    calendario.getName(), String(CONFIG.CADA_MINUTOS), JSON.stringify(r));
   return r;
 }
 
@@ -103,7 +103,7 @@ function sincronizar() {
     const fallas = Number(propiedades.getProperty('fallasSeguidas') || 0) + 1;
     propiedades.setProperty('fallasSeguidas', String(fallas));
     if (fallas >= 3) throw e;
-    Logger.log('No se pudo esta vez (%s seguida/s), se reintenta en %s minutos: %s', fallas, CONFIG.CADA_MINUTOS, e.message);
+    Logger.log('No se pudo esta vez (%s seguida/s), se reintenta en %s minutos: %s', String(fallas), String(CONFIG.CADA_MINUTOS), e.message);
     return { error: e.message, fallasSeguidas: fallas };
   }
 }
@@ -216,7 +216,9 @@ function eventoDesdeCita_(cita, citaId) {
   const tel = String(cita.contacto || '').replace(/\D/g, '');
   const tieneUbicacion = typeof cita.lat === 'number' && typeof cita.lon === 'number';
   const mapa = tieneUbicacion ? 'https://www.google.com/maps?q=' + cita.lat + ',' + cita.lon : '';
-  const extras = Object.keys(cita.extras || {}).map(k => (NOMBRES_DE_EXTRAS[k] || k) + ' (' + dinero_(cita.extras[k]) + ')');
+  // Un extra en $0 es de los que se cotizan (el bedliner): se dice así, no "$0".
+  const extras = Object.keys(cita.extras || {}).map(k => (NOMBRES_DE_EXTRAS[k] || k)
+    + (Number(cita.extras[k]) > 0 ? ' (' + dinero_(cita.extras[k]) + ')' : ' (por cotizar)'));
   const corriente = { si: 'Sí, a menos de 40 m', nose: '⚠️ No está seguro: confirmarlo antes de ir', taller: 'No aplica (en el taller)' }[cita.tomaCorriente];
   const tipo = { completo: 'Completo (exterior + interior)', exterior: 'Sólo exterior', interior: 'Sólo interior' }[cita.tipoLavado];
 

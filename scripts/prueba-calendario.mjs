@@ -143,6 +143,14 @@ for (const [texto, que] of [['https://wa.me/526251234567', 'enlace de WhatsApp d
     ['https://www.google.com/maps?q=28.4053,-106.8664', 'enlace al mapa'], ['Completo (exterior + interior)', 'tipo de lavado']]) {
     ver(ev.descripcion.includes(texto), 'la descripción trae ' + que, ev.descripcion);
 }
+g.ordenes({ uidJuan: { citaA: lavado(), citaBed: lavado({ idLocal: 'CWE-1002', cliente: 'Bed Liner', agendaHora: '12:00 PM', extras: { bedliner: 0, cajuela: 80 } }) } });
+g.correr();
+const conBedliner = g.cal().eventos.find(e => e.titulo.includes('Bed Liner'));
+ver(conBedliner && conBedliner.descripcion.includes('Extras: Aplicación de Bedliner (por cotizar), Aspirado de Cajuela o 3ª Fila ($80)'),
+    'un extra que se cotiza dice "por cotizar", no "$0"', conBedliner && conBedliner.descripcion);
+conBedliner.deleteEvent();
+g.props.delete('cita:citaBed');
+g.ordenes({ uidJuan: { citaA: lavado() } });
 ver(ev.color === '9' && ev.avisos.length === 1 && ev.avisos[0] === 60, 'color azul (lavado) y aviso 1 hora antes', { color: ev.color, avisos: ev.avisos });
 
 // ── 2) Sin cambios: no toca nada ─────────────────────────────────────
