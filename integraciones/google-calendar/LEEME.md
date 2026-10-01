@@ -20,8 +20,10 @@ detallados en morado, y ocupan el día entero (o dos días, si es Completo).
 
 > ⚠️ El calendario lo escribe el programa. Si mueves un evento a mano, se
 > regresa a como está en la app la próxima vez que esa cita cambie. **Los
-> cambios se hacen en la app.** Si borras un evento a mano, vuelve a aparecer
-> en 5 minutos (mientras la cita siga en la app).
+> cambios se hacen en la app.** Si borras a mano el evento de una cita que
+> todavía no pasa, vuelve a aparecer en 5 minutos (mientras la cita siga en la
+> app); el de una cita que ya pasó no regresa. Para quitar citas de prueba,
+> ve a [Citas de prueba](#citas-de-prueba-y-el-día-que-salga-la-app).
 
 No cuesta nada ni hay que guardar contraseñas: corre con tu permiso de dueño
 del proyecto de Firebase.
@@ -115,12 +117,41 @@ Listo: ya corre solo, aunque cierres la página y apagues la computadora.
 | `Firebase contestó 401` o `403` | La cuenta no es dueña del proyecto de Firebase. Entra a script.google.com con la cuenta correcta, o agrega esa cuenta en la consola de Firebase → ⚙️ → **Usuarios y permisos** como **Propietario** o **Editor**. Después corre **instalar** otra vez |
 | No aparecen eventos | Tienen que ser citas de hoy en adelante (o de la última semana). En Apps Script, ícono ☰▶ **Ejecuciones** a la izquierda: ahí sale cada vuelta y si hubo error |
 | Te llega un correo "Summary of failures" de Google | El programa falló 3 veces seguidas (15 min). Abre **Ejecuciones** y mira el mensaje. Si es un error de internet, se arregla solo |
-| `Por seguridad no se borró nada` | Firebase contestó vacío, lo cual nunca pasa en un negocio con citas. El programa no borró nada y lo reintenta en 5 minutos |
+| `Por seguridad no se borró nada` | Firebase contestó vacío. Si tú borraste las citas (p. ej. las de prueba), corre **empezarDeCero** (ver abajo). Si no, el programa no borró nada y lo reintenta en 5 minutos |
 | Quieres apagarlo | En `Código.gs` elige la función **desinstalar** → ▷ Ejecutar. Los eventos que ya están se quedan |
 
 **Antes de activar App Check en modo "Aplicar"** (pendiente de la
 auditoría): al día siguiente de activarlo, revisa **Ejecuciones**. Si sale
 `401` o `403`, regrésalo a "Supervisión" y avísame.
+
+---
+
+## Citas de prueba (y el día que salga la app)
+
+El calendario copia lo que hay en la app: borrar un evento en el calendario
+no borra la cita. Para quitar las de prueba, se borran en Firebase y luego se
+limpia el calendario:
+
+1. **Borra las citas de prueba en Firebase:**
+   1. Entra a **console.firebase.google.com** → proyecto **carwashexpress** →
+      **Realtime Database** → pestaña **Datos**.
+   2. Pasa el dedo (o el mouse) sobre **ordenes** → toca la 🗑 → **Borrar**.
+      Ahí están todas las citas.
+   3. Haz lo mismo con **agenda**: son los horarios apartados por esas citas.
+      Si tenías horarios cerrados a mano, también se abren; ciérralos otra vez
+      desde la app si hace falta.
+   4. **No borres `usuarios`**: ahí están las cuentas, incluida la tuya.
+2. **Limpia el calendario:** en script.google.com, abre el proyecto → en la
+   lista de funciones elige **empezarDeCero** → **▷ Ejecutar**. Quita todos los
+   eventos que puso el programa, también los de citas ya pasadas, y vuelve a
+   poner sólo las citas que haya en la app. Los eventos que hayas puesto tú a
+   mano en ese calendario no los toca.
+
+En el **Registro de ejecución** sale cuántos eventos quitó. Desde ahí, cada
+cita nueva aparece sola, igual que antes.
+
+> Si sólo quieres quitar UNA cita de prueba tuya, cancélala desde
+> **Mis citas** en la app: su evento se borra solo en 5 minutos.
 
 ---
 
@@ -152,6 +183,9 @@ igual; no hace falta correr **instalar** otra vez, salvo que también cambie
   - Si la base contesta vacía con 3 o más citas por venir, no se borra nada.
   - Una cita con datos raros no frena a las demás, y su evento no se borra.
   - Las fallas sueltas no mandan correo; desde la 3ª seguida, sí.
+  - El evento borrado a mano de una cita que ya pasó no se vuelve a poner.
+- **empezarDeCero:** borra sólo los eventos cuya descripción trae la marca del
+  programa (`MARCA`), olvida todas las citas guardadas y hace una vuelta.
 - **Pruebas:** `npm run prueba-calendario` corre este mismo `Codigo.gs` con un
   Google simulado (Calendar, Firebase, propiedades y reloj) por todos los
   casos. Corre en cada push (Actions).

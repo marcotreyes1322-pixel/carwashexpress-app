@@ -3,7 +3,7 @@
 // Firebase, propiedades, reloj de 5 minutos) que se porta como el real, y lo
 // pasa por todos los casos: cita nueva, sin cambios, reagendada, completada,
 // cancelada, detallados, datos raros, evento o calendario borrado a mano,
-// tropiezos de internet, error de Firebase y base vacía.
+// tropiezos de internet, error de Firebase, base vacía y empezar de cero.
 // Uso: npm run prueba-calendario
 import { readFileSync } from 'node:fs';
 import vm from 'node:vm';
@@ -39,7 +39,7 @@ function crearGoogle() {
             id: 'ev' + (g.siguienteId++), titulo, inicio, fin, descripcion: opciones.description || '', lugar: opciones.location || '',
             color: null, avisos: [], borrado: false,
             getId() { return this.id; }, setTitle(t) { this.titulo = t; }, setTime(a, b) { if (isNaN(a) || isNaN(b) || b <= a) throw new Error('setTime: fechas inválidas'); this.inicio = a; this.fin = b; },
-            setDescription(d) { this.descripcion = d; }, setLocation(l) { this.lugar = l; }, setColor(c) { this.color = c; },
+            setDescription(d) { this.descripcion = d; }, getDescription() { return this.descripcion; }, setLocation(l) { this.lugar = l; }, setColor(c) { this.color = c; },
             removeAllReminders() { this.avisos = []; }, addPopupReminder(m) { this.avisos.push(m); },
             deleteEvent() { this.borrado = true; cal.eventos = cal.eventos.filter(e => e !== this); }
         };
@@ -305,6 +305,48 @@ r = g.intentar();
 g.contexto.eventoDesdeCita_ = original;
 ver(r.errores === 1 && g.cal().eventos.length === eventosAntes && g.props.has('cita:buena'),
     'si una cita truena antes de leerse, su evento NO se borra (no se confunde con cancelada)', r);
+
+// ── 12) Borrar a mano una cita que ya pasó ───────────────────────
+console.log('\n12) Borrar a mano una cita que ya pasó');
+g = crearGoogle();
+g.ordenes({ u: { pasada: lavado({ idLocal: 'P', cliente: 'Ya Pasó', agendaDia: dia(-2) }), futura: lavado({ idLocal: 'F', cliente: 'Viene', agendaDia: dia(2) }) } });
+g.correr('instalar');
+ver(g.cal().eventos.length === 2, 'al instalar pone también las de la última semana (historial)', g.cal().eventos.map(e => e.titulo));
+g.cal().eventos.slice().forEach(e => e.deleteEvent());
+r = g.correr();
+ver(r.creadas === 1 && g.cal().eventos.length === 1 && g.cal().eventos[0].titulo.includes('Viene'), 'la que ya pasó NO regresa; la que viene sí (por si fue un borrón sin querer)', r);
+g.ordenes({ u: { pasada: lavado({ idLocal: 'P', cliente: 'Ya Pasó', agendaDia: dia(-2), status: 'Completada' }), futura: lavado({ idLocal: 'F', cliente: 'Viene', agendaDia: dia(2) }) } });
+r = g.correr();
+ver(r.creadas === 0 && g.cal().eventos.length === 1, 'aunque después cambie su estado, sigue sin regresar', r);
+
+// ── 13) Empezar de cero (citas de prueba antes de lanzar la app) ──────
+console.log('\n13) Empezar de cero');
+g = crearGoogle();
+g.ordenes({ u: {
+    a: lavado({ idLocal: 'A', cliente: 'Prueba A', agendaDia: dia(-3) }),
+    b: lavado({ idLocal: 'B', cliente: 'Prueba B' }), c: lavado({ idLocal: 'C', cliente: 'Prueba C', agendaHora: '12:00 PM' }),
+    d: lavado({ idLocal: 'D', cliente: 'Prueba D', agendaHora: '04:00 PM' })
+} });
+g.correr('instalar');
+const vieja = g.cal().createEvent('Prueba vieja', new Date(`${dia(-200)}T10:00:00-06:00`), new Date(`${dia(-200)}T12:00:00-06:00`), { description: 'Cliente: X\n\nAgendada en la app. Este evento se actualiza solo: los cambios se hacen en la app, no aquí.' });
+const mia = g.cal().createEvent('Cumpleaños de mi mamá', new Date(`${dia(5)}T15:00:00-06:00`), new Date(`${dia(5)}T17:00:00-06:00`));
+ver(g.cal().eventos.length === 6 && vieja && mia, 'antes: 4 citas de prueba + 1 de hace meses + 1 evento personal', g.cal().eventos.length);
+// Se borran las citas de prueba en Firebase: el seguro de "base vacía" detiene la vuelta normal…
+g.respuesta = { codigo: 200, cuerpo: 'null' };
+r = g.intentar();
+ver(/empezarDeCero/.test(r.error || '') && g.cal().eventos.length === 6, 'con la base vacía, la vuelta normal no borra nada y dice que corras empezarDeCero', r);
+// …y empezarDeCero deja el calendario limpio
+r = g.intentar('empezarDeCero');
+ver(r && r.quitados === 5 && g.cal().eventos.length === 1 && g.cal().eventos[0] === mia, 'empezarDeCero quita los 5 eventos del programa (también los viejos) y deja el personal', r);
+ver(![...g.props.keys()].some(k => k.startsWith('cita:')) && !g.props.has('fallasSeguidas'), 'y olvida las citas de prueba (y el contador de fallas)', [...g.props.keys()]);
+r = g.intentar();
+ver(!r.error && !r.lanzo && g.cal().eventos.length === 1, 'después, las vueltas normales siguen sin error', r);
+g.ordenes({ u: { real: lavado({ idLocal: 'R', cliente: 'Primer Cliente' }) } });
+r = g.correr();
+ver(r.creadas === 1 && g.cal().eventos.some(e => e.titulo.includes('Primer Cliente')), 'y la primera cita de verdad aparece normal', r);
+g.ordenes({ u: { real: lavado({ idLocal: 'R', cliente: 'Primer Cliente' }), otra: lavado({ idLocal: 'O', cliente: 'Segundo', agendaHora: '06:00 PM' }) } });
+r = g.intentar('empezarDeCero');
+ver(r.quitados === 1 && r.vuelta.creadas === 2 && g.cal().eventos.length === 3, 'con citas en la app, empezarDeCero las vuelve a poner todas', r);
 
 console.log(`\nRESULTADO: ${pasadas} bien, ${fallas} mal`);
 process.exitCode = fallas ? 1 : 0;

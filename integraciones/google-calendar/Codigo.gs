@@ -53,6 +53,9 @@ const NOMBRES_DE_EXTRAS = {
 };
 
 const PREFIJO = 'cita:';   // así se guarda en las propiedades qué evento es de qué cita
+// Última línea de la descripción de cada evento: así se reconocen los que puso
+// este programa (empezarDeCero no toca los eventos que pongas tú a mano).
+const MARCA = 'Agendada en la app. Este evento se actualiza solo: los cambios se hacen en la app, no aquí.';
 
 // ─────────────────────────────────────────────────────────────────────
 // 1) LO QUE SE CORRE A MANO
@@ -74,6 +77,32 @@ function instalar() {
   Logger.log('✅ Listo. Calendario "%s". Se revisa cada %s minutos. Primera vuelta: %s',
     calendario.getName(), String(CONFIG.CADA_MINUTOS), JSON.stringify(r));
   return r;
+}
+
+/**
+ * Para dejar el calendario limpio (p. ej. el día que salga la app, después de
+ * borrar las citas de prueba en Firebase): quita TODOS los eventos que puso
+ * este programa, también los de citas ya pasadas, y vuelve a poner sólo las
+ * citas que haya en la app. Los eventos que hayas puesto tú a mano se quedan.
+ */
+function empezarDeCero() {
+  const calendario = obtenerCalendario_();
+  const propiedades = propiedades_();
+  const ahora = new Date();
+  const desde = new Date(ahora.getTime() - 3 * 365 * 24 * 3600 * 1000);
+  const hasta = new Date(ahora.getTime() + 3 * 365 * 24 * 3600 * 1000);
+  let quitados = 0;
+  calendario.getEvents(desde, hasta).forEach(ev => {
+    if (String(ev.getDescription() || '').indexOf(MARCA) === -1) return;
+    ev.deleteEvent();
+    quitados++;
+  });
+  Object.keys(cargarGuardados_(propiedades)).forEach(id => propiedades.deleteProperty(PREFIJO + id));
+  propiedades.deleteProperty('fallasSeguidas');
+  const r = sincronizarAhora_();
+  Logger.log('🧹 Se quitaron %s eventos del calendario. Citas que hay ahora en la app: %s',
+    String(quitados), JSON.stringify(r));
+  return { quitados: quitados, vuelta: r };
 }
 
 /** Para apagarlo (los eventos que ya están se quedan). */
@@ -146,6 +175,10 @@ function sincronizarAhora_() {
       }
       const sigueAhi = !!(guardado && enCalendario[guardado.e]);
       if (sigueAhi && guardado.h === evento.huella) { r.sinCambios++; return; }
+      // Una cita que ya pasó y cuyo evento borraste a mano: se respeta, no
+      // vuelve. (Las que vienen sí regresan, para no perder una cita real por
+      // un borrón sin querer.)
+      if (guardado && !sigueAhi && evento.ultimoDia < hoy) { r.sinCambios++; return; }
 
       let existente = null;
       if (sigueAhi) { try { existente = calendario.getEventById(guardado.e); } catch (e) { existente = null; } }
@@ -183,7 +216,8 @@ function sincronizarAhora_() {
     // tiene varias citas por venir, es una lectura rara: no se borra nada y se avisa.
     if (futurasDesaparecidas.length >= 3 && Object.keys(ordenes).length === 0) {
       throw new Error('La base contestó sin citas pero había ' + futurasDesaparecidas.length +
-        ' en el calendario. Por seguridad no se borró nada; se vuelve a intentar en ' + CONFIG.CADA_MINUTOS + ' minutos.');
+        ' en el calendario. Por seguridad no se borró nada; se vuelve a intentar en ' + CONFIG.CADA_MINUTOS + ' minutos.' +
+        ' Si borraste las citas a propósito (p. ej. las de prueba), corre la función empezarDeCero.');
     }
     desaparecidas.forEach(id => {
       if (guardados[id].f >= hoy) { borrarEvento_(calendario, guardados[id].e); r.borradas++; }
@@ -235,7 +269,7 @@ function eventoDesdeCita_(cita, citaId) {
     'Total: ' + dinero_(cita.total) + ' MXN',
     'Folio: ' + (cita.idLocal || citaId) + '  ·  Estado: ' + ({ Pendiente: 'Pendiente', Completada: 'Completada', NoSeHizo: 'No se hizo' }[estado] || estado),
     '',
-    'Agendada en la app. Este evento se actualiza solo: los cambios se hacen en la app, no aquí.'
+    MARCA
   ].filter(l => l !== null);
 
   const color = estado === 'Completada' ? CalendarApp.EventColor.GREEN
